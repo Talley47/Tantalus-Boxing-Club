@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Lint
+        run: npm run lint -- --no-warn-ignored
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Type Check
+        run: npx tsc -noEmit
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Unit Tests
+        run: npm run test -- --run
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Build
+        run: npm run build
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Start App
+        run: npm run dev & npx wait-on http://localhost:3000
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+      - name: Run E2E Tests
+        run: npm run e2e
+        working-directory: tantalus-boxing-club/tantalus-boxing-club/tantalus-boxing-nextjs
+
+
+

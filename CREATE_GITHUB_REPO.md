@@ -119,6 +119,11 @@ git branch -M main
 git push -u origin main
 ```
 
+**OR use the ready-made scripts:**
+- **PowerShell:** `.\connect-to-github.ps1` (edit username first)
+- **Batch:** `connect-to-github.bat` (edit username first)
+- **See:** `GITHUB_CONNECTION_COMMANDS.md` for detailed instructions
+
 ---
 
 ## 📝 **WHAT TO DO NOW**

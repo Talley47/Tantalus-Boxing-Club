@@ -7,7 +7,7 @@ echo 🚀 Connecting to GitHub...
 echo.
 
 REM IMPORTANT: Replace YOUR_USERNAME with your actual GitHub username
-set GITHUB_USERNAME=YOUR_USERNAME
+set GITHUB_USERNAME=Talley47
 set REPO_NAME=tantalus-boxing-club
 
 REM Check if remote already exists
@@ -28,7 +28,7 @@ if %errorlevel% equ 0 (
 REM Add remote
 echo.
 echo 📡 Adding GitHub remote...
-set remoteUrl=https://github.com/%GITHUB_USERNAME%/%REPO_NAME%.git
+set remoteUrl=https://github.com/Talley47/%REPO_NAME%.git
 git remote add origin %remoteUrl%
 
 if %errorlevel% neq 0 (

@@ -33,10 +33,11 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-// Use public folder for static assets - more reliable for Vercel builds
-const backgroundImage = '/AdobeStock_567110431.jpeg';
 import { WEIGHT_CLASS_ORDER } from '../../utils/weightClassUtils';
 import { COMMON_TIMEZONES, getUserTimezone } from '../../utils/timezones';
+
+// Use public folder for static assets - more reliable for Vercel builds
+const backgroundImage = '/AdobeStock_567110431.jpeg';
 
 const RegisterPage = () => {
   const [activeStep, setActiveStep] = useState(0);

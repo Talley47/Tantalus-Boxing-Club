@@ -294,7 +294,7 @@ class CalloutService {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      // Create callout request
+      // Create callout request (without joins - Supabase PostgREST can't auto-detect FK relationships)
       const { data: callout, error: insertError } = await supabase
         .from('callout_requests')
         .insert({
@@ -309,14 +309,30 @@ class CalloutService {
           message: request.message || null,
           expires_at: expiresAt.toISOString()
         })
-        .select(`
-          *,
-          caller:fighter_profiles!caller_id(*),
-          target:fighter_profiles!target_id(*)
-        `)
+        .select('*')
         .single();
 
       if (insertError) throw insertError;
+
+      // Fetch related fighter profiles separately
+      const { data: callerProfile } = await supabase
+        .from('fighter_profiles')
+        .select('*')
+        .eq('id', caller.id)
+        .single();
+
+      const { data: targetProfile } = await supabase
+        .from('fighter_profiles')
+        .select('*')
+        .eq('id', target.id)
+        .single();
+
+      // Combine callout with related profiles
+      const calloutWithProfiles = {
+        ...callout,
+        caller: callerProfile,
+        target: targetProfile
+      };
 
       // Create notification for target
       await supabase
@@ -329,7 +345,7 @@ class CalloutService {
           action_url: '/profile'
         });
 
-      return callout;
+      return calloutWithProfiles as CalloutRequest;
     } catch (error) {
       console.error('Error creating callout:', error);
       throw error;
@@ -339,14 +355,10 @@ class CalloutService {
   // Accept a callout request
   async acceptCallout(calloutId: string, targetUserId: string): Promise<CalloutRequest> {
     try {
-      // Get callout
+      // Get callout (without joins)
       const { data: callout, error: calloutError } = await supabase
         .from('callout_requests')
-        .select(`
-          *,
-          caller:fighter_profiles!caller_id(*),
-          target:fighter_profiles!target_id(*)
-        `)
+        .select('*')
         .eq('id', calloutId)
         .single();
 
@@ -354,8 +366,15 @@ class CalloutService {
         throw new Error('Callout not found');
       }
 
+      // Fetch target profile to verify
+      const { data: targetProfile } = await supabase
+        .from('fighter_profiles')
+        .select('user_id')
+        .eq('id', callout.target_id)
+        .single();
+
       // Verify target
-      if (callout.target?.user_id !== targetUserId) {
+      if (targetProfile?.user_id !== targetUserId) {
         throw new Error('Unauthorized: You are not the target');
       }
 
@@ -367,6 +386,19 @@ class CalloutService {
       if (new Date(callout.expires_at) < new Date()) {
         throw new Error('Callout has expired');
       }
+
+      // Fetch fighter profiles for names
+      const { data: callerProfile } = await supabase
+        .from('fighter_profiles')
+        .select('name, user_id')
+        .eq('id', callout.caller_id)
+        .single();
+
+      const { data: targetProfileForName } = await supabase
+        .from('fighter_profiles')
+        .select('name')
+        .eq('id', callout.target_id)
+        .single();
 
       // Schedule the fight
       // Use default timezone and platform (columns don't exist in current schema)
@@ -380,7 +412,7 @@ class CalloutService {
         scheduled_date: this.getNextAvailableDate(fighterTimezone).toISOString(),
         timezone: fighterTimezone,
         platform: fighterPlatform,
-        connection_notes: `Scheduled via Callout: ${callout.caller?.name} called out ${callout.target?.name}. Must be completed within 1 week.`,
+        connection_notes: `Scheduled via Callout: ${callerProfile?.name || 'Unknown'} called out ${targetProfileForName?.name || 'Unknown'}. Must be completed within 1 week.`,
         house_rules: 'Standard boxing rules apply. Fight must be completed within 7 days of scheduling.'
       });
 
@@ -401,36 +433,49 @@ class CalloutService {
           updated_at: new Date().toISOString()
         })
         .eq('id', calloutId)
-        .select(`
-          *,
-          caller:fighter_profiles!caller_id(*),
-          target:fighter_profiles!target_id(*)
-        `)
+        .select('*')
         .single();
 
       if (updateError) throw updateError;
+
+      // Fetch full profiles for return value
+      const { data: fullCallerProfile } = await supabase
+        .from('fighter_profiles')
+        .select('*')
+        .eq('id', callout.caller_id)
+        .single();
+
+      const { data: fullTargetProfile } = await supabase
+        .from('fighter_profiles')
+        .select('*')
+        .eq('id', callout.target_id)
+        .single();
 
       // Create notifications for both fighters
       await supabase
         .from('notifications')
         .insert([
           {
-            user_id: callout.caller?.user_id,
+            user_id: callerProfile?.user_id,
             type: 'Callout',
             title: 'Rematch Accepted',
-            message: `${callout.target?.name} has accepted your rematch request. Fight scheduled!`,
+            message: `${targetProfileForName?.name || 'Unknown'} has accepted your rematch request. Fight scheduled!`,
             action_url: '/profile'
           },
           {
             user_id: targetUserId,
             type: 'Callout',
             title: 'Rematch Accepted',
-            message: `You have accepted ${callout.caller?.name}'s rematch request. Fight scheduled!`,
+            message: `You have accepted ${callerProfile?.name || 'Unknown'}'s rematch request. Fight scheduled!`,
             action_url: '/profile'
           }
         ]);
 
-      return updatedCallout;
+      return {
+        ...updatedCallout,
+        caller: fullCallerProfile,
+        target: fullTargetProfile
+      } as CalloutRequest;
     } catch (error) {
       console.error('Error accepting callout:', error);
       throw error;
@@ -440,10 +485,10 @@ class CalloutService {
   // Decline a callout request
   async declineCallout(calloutId: string, targetUserId: string): Promise<void> {
     try {
-      // Get callout
+      // Get callout (without joins)
       const { data: callout, error: calloutError } = await supabase
         .from('callout_requests')
-        .select('*, caller:fighter_profiles!caller_id(*)')
+        .select('*')
         .eq('id', calloutId)
         .single();
 
@@ -455,6 +500,13 @@ class CalloutService {
       if (callout.target_id && (await this.getFighterUserId(callout.target_id)) !== targetUserId) {
         throw new Error('Unauthorized: You are not the target');
       }
+
+      // Fetch caller profile for notification
+      const { data: callerProfile } = await supabase
+        .from('fighter_profiles')
+        .select('user_id')
+        .eq('id', callout.caller_id)
+        .single();
 
       // Update callout to declined
       const { error: updateError } = await supabase
@@ -468,15 +520,17 @@ class CalloutService {
       if (updateError) throw updateError;
 
       // Create notification for caller
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: callout.caller?.user_id,
-          type: 'Callout',
-          title: 'Rematch Declined',
-          message: `Your rematch request has been declined.`,
-          action_url: '/profile'
-        });
+      if (callerProfile?.user_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: callerProfile.user_id,
+            type: 'Callout',
+            title: 'Rematch Declined',
+            message: `Your rematch request has been declined.`,
+            action_url: '/profile'
+          });
+      }
     } catch (error) {
       console.error('Error declining callout:', error);
       throw error;

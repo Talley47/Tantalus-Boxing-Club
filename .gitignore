@@ -26,3 +26,6 @@ yarn-error.log*
 *.mov
 *.mp4
 src/AdobeStock_429519159.mov
+
+# Prevent accidentally committing images to src folder (use public folder instead)
+src/AdobeStock_567110431.jpeg

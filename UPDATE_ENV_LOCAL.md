@@ -6,9 +6,14 @@ Copy these into your `.env.local` file:
 
 ```env
 REACT_APP_SUPABASE_URL=https://andmtvsqqomgwphotdwf.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuZG10dnNxcW9tZ3dwaG90ZHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5OTQwMTcsImV4cCI6MjA3ODM1NDAxN30.KMkOUaaf61Wsfk3HoMgbDTetBj-dhgtJsj453aCrJSo
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuZG10dnNxcW9tZ3dwaG90ZHdmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Mjk5NDAxNywiZXhwIjoyMDc4MzU0MDE3fQ.c78wDF-n_e3BlPdyOLlEkK-U35GPYwLZYzWmptf4fbc
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
+
+**⚠️ SECURITY WARNING:** Never commit service role keys to Git! Get your keys from:
+- Supabase Dashboard → Settings → API
+- Copy the "anon public" key for `REACT_APP_SUPABASE_ANON_KEY`
+- Copy the "service_role secret" key for `SUPABASE_SERVICE_ROLE_KEY` (server-side only)
 
 ---
 
@@ -26,9 +31,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 After updating, test that the old exposed key no longer works:
 
 ```bash
-# The old key should fail
-# Old key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...UhaH4pPCppApMPjKsguPqb237NFzX0sB1xnC6-NsnEY
-# New key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...c78wDF-n_e3BlPdyOLlEkK-U35GPYwLZYzWmptf4fbc
+# After rotating keys, test that the old exposed key no longer works
+# Old keys should fail authentication
 ```
 
 ---

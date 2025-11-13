@@ -1,4 +1,8 @@
 {
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
+  "framework": "create-react-app",
   "headers": [
     {
       "source": "/(.*)",
@@ -35,4 +39,3 @@
     }
   ]
 }
-

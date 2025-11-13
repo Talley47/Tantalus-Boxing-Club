@@ -33,7 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import backgroundImage from '../../AdobeStock_567110431.jpeg';
+// Use public folder for static assets - more reliable for Vercel builds
+const backgroundImage = '/AdobeStock_567110431.jpeg';
 import { WEIGHT_CLASS_ORDER } from '../../utils/weightClassUtils';
 import { COMMON_TIMEZONES, getUserTimezone } from '../../utils/timezones';
 

@@ -33,8 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-// Video removed - file exceeded GitHub's 100MB limit
-// import adobeStockVideo from '../../AdobeStock_429519159.mov';
+import backgroundImage from '../../AdobeStock_567110431.jpeg';
 import { WEIGHT_CLASS_ORDER } from '../../utils/weightClassUtils';
 import { COMMON_TIMEZONES, getUserTimezone } from '../../utils/timezones';
 
@@ -618,8 +617,7 @@ const RegisterPage = () => {
         padding: 0
       }}
     >
-      {/* Video Background - Removed (file exceeded GitHub's 100MB limit) */}
-      {/* Using gradient background instead */}
+      {/* Background Image */}
       <Box
         sx={{
           position: 'absolute',
@@ -627,7 +625,10 @@ const RegisterPage = () => {
           left: 0,
           width: '100vw',
           height: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           zIndex: -1,
         }}
       />

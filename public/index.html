@@ -28,6 +28,56 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <!-- Suppress browser extension errors immediately - before React loads -->
+    <script>
+      (function() {
+        // Suppress unhandled promise rejections from browser extensions
+        window.addEventListener('unhandledrejection', function(event) {
+          var errorMessage = (event.reason && (event.reason.message || event.reason.toString())) || '';
+          var errorString = JSON.stringify(event.reason) || '';
+          var errorStack = (event.reason && event.reason.stack) || '';
+          var allErrorText = errorMessage + ' ' + errorString + ' ' + errorStack;
+          
+          // Suppress browser extension errors
+          if (
+            errorMessage.indexOf('listener indicated an asynchronous response') !== -1 ||
+            errorMessage.indexOf('message channel closed before a response was received') !== -1 ||
+            errorMessage.indexOf('A listener indicated an asynchronous response') !== -1 ||
+            (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
+            errorMessage.indexOf('runtime.lastError') !== -1 ||
+            errorMessage.indexOf('Cannot create item with duplicate id') !== -1 ||
+            errorString.indexOf('listener indicated') !== -1 ||
+            errorString.indexOf('message channel closed') !== -1 ||
+            errorString.indexOf('runtime.lastError') !== -1 ||
+            errorString.indexOf('LastPass') !== -1 ||
+            allErrorText.indexOf('listener indicated an asynchronous response') !== -1 ||
+            allErrorText.indexOf('message channel closed before a response was received') !== -1
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            return false;
+          }
+        }, true);
+        
+        // Suppress window error events from browser extensions
+        window.addEventListener('error', function(event) {
+          var errorMessage = (event.message || (event.error && event.error.message)) || '';
+          if (
+            errorMessage.indexOf('listener indicated an asynchronous response') !== -1 ||
+            errorMessage.indexOf('message channel closed before a response was received') !== -1 ||
+            errorMessage.indexOf('A listener indicated an asynchronous response') !== -1 ||
+            (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
+            errorMessage.indexOf('runtime.lastError') !== -1 ||
+            errorMessage.indexOf('Cannot create item with duplicate id') !== -1
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+          }
+        }, true);
+      })();
+    </script>
     <div id="root"></div>
     <!--
       This HTML file is a template.

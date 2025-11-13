@@ -1243,10 +1243,18 @@ const Matchmaking: React.FC = () => {
           <Typography variant="h5" gutterBottom sx={{ mb: 2, color: 'white', fontWeight: 'bold' }}>
             Rematch System
           </Typography>
-          <Typography variant="body2" paragraph sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.9)' }}>
-            Request rematches with fighters you have already fought. Rematches are only available with fighters you have fought before. 
-            Check your fight records on your My Profile page to see who you can rematch with.
-          </Typography>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2" component="div">
+              <strong>Rematch Requirements:</strong>
+              <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                <li>Must have fought this fighter before</li>
+                <li>Same weight class and tier</li>
+                <li>Rank difference: ≤ 5 ranks</li>
+                <li>Points difference: ≤ 30 points</li>
+              </ul>
+              Only fighters meeting all requirements are shown below.
+            </Typography>
+          </Alert>
 
           {/* Show rematchable fighters */}
           {loading ? (
@@ -1461,7 +1469,18 @@ const Matchmaking: React.FC = () => {
                 alert('Rematch request sent successfully! The fighter will receive it on their My Profile page.');
               } catch (error: any) {
                 console.error('Error sending rematch request:', error);
-                alert('Failed to send rematch request: ' + (error.message || 'Unknown error'));
+                // Provide user-friendly error message
+                let errorMessage = 'Failed to send rematch request. ';
+                if (error.message?.includes('Rank difference too large')) {
+                  errorMessage += 'The rank difference is too large (max 5 ranks). This fighter is not currently eligible for a rematch.';
+                } else if (error.message?.includes('Points difference')) {
+                  errorMessage += 'The points difference is too large (max 30 points). This fighter is not currently eligible for a rematch.';
+                } else if (error.message?.includes('tier')) {
+                  errorMessage += 'Fighters must be in the same tier for rematches.';
+                } else {
+                  errorMessage += error.message || 'Unknown error';
+                }
+                alert(errorMessage);
               } finally {
                 setSendingRematch(false);
               }

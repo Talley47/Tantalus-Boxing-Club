@@ -536,7 +536,23 @@ class CalloutService {
       // Get rankings to add rank information
       const rankings = await getRankingsByWeightClass(fighter.weight_class, 1000);
       
-      return rematchableFighters.map(opponent => {
+      // Filter by fair match criteria (rank difference <= 5, points difference <= 30)
+      const eligibleRematchableFighters = rematchableFighters.filter(opponent => {
+        const callerRank = rankings.find(r => r.fighter_id === fighter.user_id);
+        const opponentRank = rankings.find(r => r.fighter_id === opponent.user_id);
+        
+        if (!callerRank || !opponentRank) {
+          return false; // Skip if not in rankings
+        }
+        
+        const rankDiff = Math.abs(callerRank.rank - opponentRank.rank);
+        const pointsDiff = Math.abs(fighter.points - opponent.points);
+        
+        // Must meet fair match criteria
+        return rankDiff <= 5 && pointsDiff <= 30;
+      });
+      
+      return eligibleRematchableFighters.map(opponent => {
         const opponentRank = rankings.find(r => r.fighter_id === opponent.user_id);
         return {
           ...opponent,

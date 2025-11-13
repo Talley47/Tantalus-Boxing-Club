@@ -33,7 +33,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import adobeStockVideo from '../../AdobeStock_429519159.mov';
+// Video removed - file exceeded GitHub's 100MB limit
+// import adobeStockVideo from '../../AdobeStock_429519159.mov';
 import { WEIGHT_CLASS_ORDER } from '../../utils/weightClassUtils';
 import { COMMON_TIMEZONES, getUserTimezone } from '../../utils/timezones';
 
@@ -617,26 +618,19 @@ const RegisterPage = () => {
         padding: 0
       }}
     >
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
+      {/* Video Background - Removed (file exceeded GitHub's 100MB limit) */}
+      {/* Using gradient background instead */}
+      <Box
+        sx={{
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          objectFit: 'cover',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           zIndex: -1,
-          margin: 0,
-          padding: 0
         }}
-      >
-        <source src={adobeStockVideo} type="video/mp4" />
-      </video>
+      />
       
       {/* Overlay */}
       <Box

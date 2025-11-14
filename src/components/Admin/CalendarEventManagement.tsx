@@ -45,6 +45,33 @@ import {
 import { CalendarService, CalendarEvent, CreateEventRequest } from '../../services/calendarService';
 import { supabase, TABLES } from '../../services/supabase';
 
+// Custom Error classes for storage upload errors
+class RLSError extends Error {
+  isRLSError = true;
+  uploadError?: any;
+  altUploadError?: any;
+  
+  constructor(message: string, uploadError?: any, altUploadError?: any) {
+    super(message);
+    this.name = 'RLSError';
+    this.uploadError = uploadError;
+    this.altUploadError = altUploadError;
+  }
+}
+
+class BucketNotFoundError extends Error {
+  isBucketNotFound = true;
+  uploadError?: any;
+  altUploadError?: any;
+  
+  constructor(message: string, uploadError?: any, altUploadError?: any) {
+    super(message);
+    this.name = 'BucketNotFoundError';
+    this.uploadError = uploadError;
+    this.altUploadError = altUploadError;
+  }
+}
+
 interface FighterOption {
   id: string;
   name: string;
@@ -236,11 +263,10 @@ const CalendarEventManagement: React.FC = () => {
             
             if (isRLSError) {
               // RLS error - throw to show dialog
-              throw { 
-                isRLSError: true,
-                message: 'Storage bucket RLS policy error. Please run create-event-posters-storage-bucket.sql in Supabase SQL Editor.',
-                uploadError: eventPostersError
-              };
+              throw new RLSError(
+                'Storage bucket RLS policy error. Please run create-event-posters-storage-bucket.sql in Supabase SQL Editor.',
+                eventPostersError
+              );
             }
             
             if (!isBucketNotFound) {
@@ -270,21 +296,19 @@ const CalendarEventManagement: React.FC = () => {
                 (mediaAssetsError as any)?.status === 400;
               
               if (isRLSError2) {
-                throw { 
-                  isRLSError: true,
-                  message: 'Storage bucket RLS policy error. Please run create-event-posters-storage-bucket.sql in Supabase SQL Editor.',
-                  uploadError: eventPostersError,
-                  altUploadError: mediaAssetsError
-                };
+                throw new RLSError(
+                  'Storage bucket RLS policy error. Please run create-event-posters-storage-bucket.sql in Supabase SQL Editor.',
+                  eventPostersError,
+                  mediaAssetsError
+                );
               }
               
               if (isBucketNotFound2) {
-                throw { 
-                  isBucketNotFound: true,
-                  message: 'Storage bucket not found',
-                  uploadError: eventPostersError,
-                  altUploadError: mediaAssetsError
-                };
+                throw new BucketNotFoundError(
+                  'Storage bucket not found',
+                  eventPostersError,
+                  mediaAssetsError
+                );
               }
               
               throw new Error(`Failed to upload image: ${mediaAssetsError.message}`);

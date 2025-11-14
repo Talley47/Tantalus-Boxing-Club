@@ -37,6 +37,7 @@ import { WEIGHT_CLASS_ORDER } from '../../utils/weightClassUtils';
 import { COMMON_TIMEZONES, getUserTimezone } from '../../utils/timezones';
 
 // Use public folder for static assets - more reliable for Vercel builds
+// Image file is located in public/AdobeStock_567110431.jpeg
 const backgroundImage = '/AdobeStock_567110431.jpeg';
 
 const RegisterPage = () => {

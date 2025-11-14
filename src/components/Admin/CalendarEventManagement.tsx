@@ -46,6 +46,7 @@ import { CalendarService, CalendarEvent, CreateEventRequest } from '../../servic
 import { supabase, TABLES } from '../../services/supabase';
 
 // Custom Error classes for storage upload errors
+// These extend Error to satisfy ESLint no-throw-literal rule
 class RLSError extends Error {
   isRLSError = true;
   uploadError?: any;

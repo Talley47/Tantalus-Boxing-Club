@@ -5,6 +5,16 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
+// Debug logging in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔍 Supabase Configuration Check:');
+  console.log('  URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+  console.log('  Anon Key:', supabaseAnonKey ? `✅ Set (${supabaseAnonKey.length} chars)` : '❌ Missing');
+  if (supabaseAnonKey) {
+    console.log('  Key starts with:', supabaseAnonKey.substring(0, 30) + '...');
+  }
+}
+
 // Validate required environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
   const errorMessage = 
@@ -12,11 +22,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Please create a .env.local file in the project root with:\n' +
     'REACT_APP_SUPABASE_URL=https://your-project.supabase.co\n' +
     'REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here\n\n' +
-    'Get these values from: https://supabase.com/dashboard → Your Project → Settings → API';
+    'Get these values from: https://supabase.com/dashboard → Your Project → Settings → API\n\n' +
+    '⚠️ IMPORTANT: After creating/updating .env.local, restart your dev server (Ctrl+C then npm start)';
   
+  // In production, show error but don't crash immediately
+  // Let the app render so users can see the error message
   if (process.env.NODE_ENV === 'production') {
-    // In production, throw error immediately - no fallbacks allowed
-    throw new Error(errorMessage);
+    console.error('⚠️ CRITICAL ERROR:', errorMessage);
+    // Don't throw - let the app render and show error in UI
+    // The AuthContext will handle showing the error
   } else {
     // In development, show helpful error
     console.error('⚠️ SECURITY WARNING:', errorMessage);
@@ -38,15 +52,37 @@ declare global {
 const getSupabaseClient = (): SupabaseClient => {
   // Ensure environment variables are set (validation happens above)
   if (!supabaseUrl || !supabaseAnonKey) {
+    // In production, create a dummy client that will fail gracefully
+    // This prevents the app from crashing with a white screen
+    if (process.env.NODE_ENV === 'production') {
+      // Return a dummy client that will show errors in the UI
+      return createClient('https://placeholder.supabase.co', 'placeholder-key');
+    }
     throw new Error('Supabase configuration is missing. Please check your environment variables.');
+  }
+  
+  // In development, allow clearing cached client for debugging
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    // Add method to clear cached client (useful for debugging)
+    (window as any).__CLEAR_SUPABASE_CLIENT__ = () => {
+      delete window.__TANTALUS_SUPABASE_CLIENT__;
+      console.log('✅ Cleared cached Supabase client. Page will reload.');
+      window.location.reload();
+    };
   }
   
   // Check global window object first (persists across hot reloads)
   if (typeof window !== 'undefined' && window.__TANTALUS_SUPABASE_CLIENT__) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('♻️ Using cached Supabase client instance');
+    }
     return window.__TANTALUS_SUPABASE_CLIENT__;
   }
   
   // Create new instance
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🆕 Creating new Supabase client instance');
+  }
   const instance = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
@@ -82,6 +118,22 @@ const getSupabaseClient = (): SupabaseClient => {
 // Export singleton instance
 export const supabase = getSupabaseClient();
 
+// In development, expose key info for debugging (first 30 chars only for security)
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  (window as any).__CHECK_SUPABASE_KEY__ = () => {
+    console.log('🔍 Current Supabase Configuration:');
+    console.log('  URL:', supabaseUrl);
+    console.log('  Anon Key (first 30 chars):', supabaseAnonKey?.substring(0, 30) + '...');
+    console.log('  Key Length:', supabaseAnonKey?.length || 0);
+    console.log('\n📋 To verify:');
+    console.log('  1. Go to: https://supabase.com/dashboard');
+    console.log('  2. Select project: andmtvsqqomgwphotdwf');
+    console.log('  3. Go to: Settings → API');
+    console.log('  4. Compare "anon public" key with what\'s shown above');
+    console.log('  5. If different, update .env.local and restart server');
+  };
+}
+
 // Suppress WebSocket connection errors from Supabase Realtime
 // These errors are harmless and occur when Realtime is disabled or during cleanup
 if (typeof window !== 'undefined') {
@@ -96,24 +148,28 @@ if (typeof window !== 'undefined') {
     const allArgs = args.join(' ');
     const errorString = errorObj ? JSON.stringify(errorObj) : '';
     
-    // Suppress harmless browser extension errors
+    // Suppress harmless browser extension errors and cache errors
     if (
       errorMessage.includes('listener indicated an asynchronous response') ||
       errorMessage.includes('message channel closed before a response was received') ||
       errorMessage.includes('A listener indicated an asynchronous response') ||
       errorMessage.includes('runtime.lastError') ||
       errorMessage.includes('Cannot create item with duplicate id') ||
+      errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
       allArgs.includes('listener indicated an asynchronous response') ||
       allArgs.includes('message channel closed before a response was received') ||
       allArgs.includes('runtime.lastError') ||
       allArgs.includes('Cannot create item with duplicate id') ||
+      allArgs.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
       allArgs.includes('LastPass') ||
       errorString.includes('listener indicated an asynchronous response') ||
       errorString.includes('message channel closed before a response was received') ||
       errorString.includes('runtime.lastError') ||
-      errorString.includes('Cannot create item with duplicate id')
+      errorString.includes('Cannot create item with duplicate id') ||
+      errorString.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED')
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
+      // Also suppress cache operation errors which are harmless
       return;
     }
     

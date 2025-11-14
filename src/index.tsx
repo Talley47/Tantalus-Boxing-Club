@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import ErrorBoundary from './components/Shared/ErrorBoundary';
 
 // Suppress browser extension errors EARLY - before any other code runs
 // These errors are harmless and come from browser extensions (e.g., LastPass, Grammarly)
@@ -66,7 +67,9 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );
 

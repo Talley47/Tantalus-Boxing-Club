@@ -259,7 +259,13 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress harmless browser extension errors and cache errors (use lowercase for consistency)
+    // Also check for errors from /login and /matchmaking routes
     const lowerErrorMessage = errorMessage.toLowerCase();
+    const isFromRoute = errorStack?.toLowerCase().includes('/login') || 
+                        errorStack?.toLowerCase().includes('/matchmaking') ||
+                        allArgs.toLowerCase().includes('/login') ||
+                        allArgs.toLowerCase().includes('/matchmaking');
+    
     if (
       lowerErrorMessage.includes('listener indicated an asynchronous response') ||
       lowerErrorMessage.includes('message channel closed before a response was received') ||
@@ -276,6 +282,10 @@ if (typeof window !== 'undefined') {
       // Suppress cache errors for audio files (harmless browser cache warnings)
       (lowerErrorMessage.includes('boxing-bell') && lowerErrorMessage.includes('cache')) ||
       (lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
+      // Suppress errors from /login and /matchmaking routes if they're browser extension errors
+      (isFromRoute && (lowerErrorMessage.includes('listener') || 
+                       lowerErrorMessage.includes('message channel') || 
+                       lowerErrorMessage.includes('asynchronous response'))) ||
       combinedErrorText.includes('listener indicated an asynchronous response') ||
       combinedErrorText.includes('message channel closed before a response was received') ||
       combinedErrorText.includes('by returning true, but the message channel closed') ||
@@ -436,9 +446,15 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress browser extension errors (multiple variations) - case-insensitive
+    // Also check for errors from /login and /matchmaking routes
     const lowerErrorMsg = errorMessage.toLowerCase();
     const lowerErrorString = errorString.toLowerCase();
     const lowerErrorStack = errorStack.toLowerCase();
+    const isFromRoute = lowerErrorStack.includes('/login') || 
+                        lowerErrorStack.includes('/matchmaking') ||
+                        lowerErrorString.includes('/login') ||
+                        lowerErrorString.includes('/matchmaking');
+    
     if (
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
@@ -451,6 +467,10 @@ if (typeof window !== 'undefined') {
       lowerErrorMsg.includes('cannot find menu item') ||
       lowerErrorMsg.includes('no tab with id') ||
       lowerErrorMsg.includes('background-redux') ||
+      // Suppress errors from /login and /matchmaking routes if they're browser extension errors
+      (isFromRoute && (lowerErrorMsg.includes('listener') || 
+                       lowerErrorMsg.includes('message channel') || 
+                       lowerErrorMsg.includes('asynchronous response'))) ||
       lowerErrorString.includes('listener indicated') ||
       lowerErrorString.includes('message channel closed') ||
       lowerErrorString.includes('by returning true') ||

@@ -495,7 +495,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Filter out undefined values and ensure platform is valid if provided
       const cleanUpdates: any = {};
       // Columns that don't exist in fighter_profiles table - exclude from updates
-      const excludedColumns = ['platform_id']; // platform_id doesn't exist, but platform and timezone do
+      const excludedColumns = ['platform_id', 'id', 'user_id', 'created_at', 'updated_at', 'last_active']; // Exclude read-only fields
       
       // Required fields that must have default values if null/undefined
       const requiredNumericFields = ['height_feet', 'height_inches', 'weight', 'reach'];
@@ -504,7 +504,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const value = (updates as any)[key];
         // Skip excluded columns
         if (excludedColumns.includes(key)) {
-          return; // Skip platform_id - this column doesn't exist
+          return; // Skip read-only or non-existent columns
         }
         
         // For required numeric fields, ensure they have a default value (0) if null/undefined
@@ -525,11 +525,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               console.warn(`Invalid platform value: ${platformValue}, defaulting to PC`);
               cleanUpdates[key] = 'PC';
             }
+          } else if (key === 'stance' && value) {
+            // Normalize stance to lowercase to match database constraint
+            const stanceValue = (value as string).toLowerCase();
+            if (['orthodox', 'southpaw', 'switch'].includes(stanceValue)) {
+              cleanUpdates[key] = stanceValue;
+            } else {
+              console.warn(`Invalid stance value: ${stanceValue}, defaulting to orthodox`);
+              cleanUpdates[key] = 'orthodox';
+            }
+          } else if (key === 'birthday' && value) {
+            // Ensure birthday is in correct format (YYYY-MM-DD)
+            if (typeof value === 'string') {
+              // If it's already in YYYY-MM-DD format, use it
+              if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                cleanUpdates[key] = value;
+              } else {
+                // Try to parse and format
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                  cleanUpdates[key] = date.toISOString().split('T')[0];
+                } else {
+                  console.warn(`Invalid birthday format: ${value}, skipping`);
+                }
+              }
+            } else {
+              cleanUpdates[key] = value;
+            }
           } else {
             cleanUpdates[key] = value;
           }
         }
       });
+
+      // Ensure we have at least one field to update
+      if (Object.keys(cleanUpdates).length === 0) {
+        console.warn('No valid fields to update');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('fighter_profiles')
@@ -539,14 +572,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .single();
 
       if (error) {
-        console.error('Supabase update error:', error);
-        console.error('Update payload:', cleanUpdates);
-        throw error;
+        // Log detailed error information for debugging
+        console.error('Supabase update error:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          updatePayload: cleanUpdates,
+          fighterProfileId: fighterProfile.id,
+          userId: fighterProfile.user_id
+        });
+        
+        // Provide more user-friendly error messages
+        if (error.code === '23505') {
+          throw new Error('A fighter profile with this information already exists. Please check your input.');
+        } else if (error.code === '23503') {
+          throw new Error('Invalid reference. Please refresh the page and try again.');
+        } else if (error.code === '23502') {
+          throw new Error('Missing required field. Please fill in all required fields.');
+        } else if (error.code === '42501') {
+          throw new Error('Permission denied. Please ensure you are logged in and have permission to update your profile.');
+        } else if (error.message?.includes('violates check constraint')) {
+          throw new Error('Invalid value provided. Please check your input and try again.');
+        } else {
+          throw new Error(error.message || 'Failed to update fighter profile. Please try again.');
+        }
       }
 
       setFighterProfile(data);
-    } catch (error) {
-      console.error('Error updating fighter profile:', error);
+    } catch (error: any) {
+      // Only log unexpected errors (not user-friendly messages we created)
+      if (!error.message || error.message.includes('Please')) {
+        console.error('Error updating fighter profile:', error);
+      }
       throw error;
     }
   };

@@ -151,6 +151,7 @@ if (typeof window !== 'undefined') {
     const errorName = event.error?.name || '';
     const errorTarget = event.target as HTMLElement;
     const errorSrc = (errorTarget as HTMLImageElement | HTMLScriptElement | HTMLAudioElement)?.src || '';
+    const errorStack = event.error?.stack || '';
     
     // Suppress cache errors for audio files (harmless browser cache warnings)
     if (
@@ -162,6 +163,19 @@ if (typeof window !== 'undefined') {
       event.preventDefault();
       event.stopPropagation();
       return false;
+    }
+    
+    // Suppress 400 errors from resources (likely from browser extensions or network issues)
+    if (
+      errorMessage.includes('400') ||
+      (errorSrc && errorMessage.includes('Failed to load resource') && errorMessage.includes('400'))
+    ) {
+      // Only suppress if it's not from our own API endpoints
+      if (!errorSrc.includes('supabase.co') && !errorSrc.includes('tantalus')) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
     }
     
     // Suppress 403 errors on logout endpoint (regardless of scope parameter)
@@ -181,7 +195,9 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('ReferenceError: $') ||
       (errorName === 'ReferenceError' && errorMessage.includes('$')) ||
       errorFilename.includes('content-script') ||
-      errorFilename.includes('ch-content-script')
+      errorFilename.includes('ch-content-script') ||
+      errorStack.includes('content-script') ||
+      errorStack.includes('ch-content-script')
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -189,8 +205,13 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress browser extension errors (including background-redux-new.js and chrome-extension:// URLs)
+    // Also check for errors from /login and /matchmaking routes (these are often browser extension errors)
     const lowerErrorMsg = errorMessage.toLowerCase();
     const lowerFilename = errorFilename.toLowerCase();
+    const lowerStack = errorStack.toLowerCase();
+    const isFromRoute = errorFilename.includes('/login') || errorFilename.includes('/matchmaking') || 
+                        errorStack.includes('/login') || errorStack.includes('/matchmaking');
+    
     if (
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
@@ -209,6 +230,14 @@ if (typeof window !== 'undefined') {
       lowerFilename.includes('content-script') ||
       lowerFilename.includes('ch-content-script') ||
       lowerFilename.includes('lastpass') ||
+      lowerStack.includes('background-redux') ||
+      lowerStack.includes('background-redux-new.js') ||
+      lowerStack.includes('chrome-extension://') ||
+      lowerStack.includes('content-script') ||
+      lowerStack.includes('ch-content-script') ||
+      lowerStack.includes('lastpass') ||
+      (isFromRoute && (lowerErrorMsg.includes('listener') || lowerErrorMsg.includes('message channel') || 
+                       lowerErrorMsg.includes('asynchronous response'))) ||
       (event.filename && (event.filename.toLowerCase().includes('background-redux') || 
                           event.filename.toLowerCase().includes('background-redux-new.js') ||
                           event.filename.toLowerCase().includes('chrome-extension://') ||

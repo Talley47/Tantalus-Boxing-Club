@@ -200,7 +200,7 @@ if (typeof window !== 'undefined') {
       combinedErrorText.includes('has no field "title"') ||
       (errorObjMessage?.includes('record "new" has no field "title"') ||
        errorObjMessage?.includes('has no field "title"')) ||
-      (error?.code === '42703' && combinedErrorText.includes('title'));
+      ((errorObj as any)?.code === '42703' && combinedErrorText.includes('title'));
     
     if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError) {
       // Don't log - these are expected/user-friendly or known issues that need SQL fixes

@@ -55,7 +55,14 @@ const LoginPage: React.FC = () => {
       await signIn(email.trim(), password);
       navigate('/');
     } catch (err: any) {
-      console.error('Login error:', err);
+      // Don't log "Invalid login credentials" as an error - it's expected and user-friendly
+      const isExpectedError = 
+        err?.message?.toLowerCase().includes('invalid login credentials') ||
+        err?.message?.toLowerCase().includes('invalid credentials');
+      
+      if (!isExpectedError) {
+        console.error('Login error:', err);
+      }
       
       // Provide more helpful error messages
       if (err.message?.includes('Invalid login credentials') || err.message?.includes('Invalid credentials')) {

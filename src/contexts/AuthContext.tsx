@@ -245,8 +245,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             // Convert registration data to database format
             // Registration sends height_feet and height_inches directly (already in imperial)
-            const heightFeet = userData.height_feet ? parseInt(String(userData.height_feet)) : null;
-            const heightInches = userData.height_inches ? parseInt(String(userData.height_inches)) : null;
+            const heightFeet = userData.height_feet != null ? parseInt(String(userData.height_feet)) : null;
+            // height_inches can be 0, so use nullish coalescing instead of || to preserve 0
+            const heightInches = userData.height_inches != null ? parseInt(String(userData.height_inches)) : 0;
             // Registration sends reach in cm, convert to inches
             const reach = userData.reach ? Math.round(parseFloat(String(userData.reach)) / 2.54) : null;
             // Registration sends weight in kg, convert to lbs
@@ -259,8 +260,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               birthday: userData.birthday || null,
               hometown: userData.hometown || null,
               stance: userData.stance ? userData.stance.toLowerCase() : 'orthodox',
-              height_feet: heightFeet || null,
-              height_inches: heightInches || null,
+              height_feet: heightFeet ?? null,
+              height_inches: heightInches ?? 0, // Default to 0 if null (required field)
               reach: reach || null,
               weight: weight || null,
               weight_class: userData.weightClass || userData.weight_class || 'Middleweight',
@@ -345,7 +346,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        console.error('Sign in error:', error);
+        // Don't log "Invalid login credentials" as an error - it's expected and user-friendly
+        // Only log unexpected errors
+        const isExpectedError = 
+          error.message?.toLowerCase().includes('invalid login credentials') ||
+          error.message?.toLowerCase().includes('invalid credentials') ||
+          error.message?.toLowerCase().includes('email not confirmed');
+        
+        if (!isExpectedError) {
+          console.error('Sign in error:', error);
+        }
+        
         // Create a more user-friendly error message
         const errorMessage = error.message || 'Invalid login credentials';
         const friendlyError = new Error(errorMessage);
@@ -360,7 +371,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // The onAuthStateChange listener will handle setting user and loading states
       // No return value needed
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      // Don't log "Invalid login credentials" as an error - it's expected and user-friendly
+      const isExpectedError = 
+        error?.message?.toLowerCase().includes('invalid login credentials') ||
+        error?.message?.toLowerCase().includes('invalid credentials') ||
+        error?.originalError?.message?.toLowerCase().includes('invalid login credentials') ||
+        error?.originalError?.message?.toLowerCase().includes('invalid credentials');
+      
+      if (!isExpectedError) {
+        console.error('Sign in error:', error);
+      }
+      
       // Re-throw with better error message if it's a Supabase error
       if (error.originalError) {
         throw error; // Already has friendly message

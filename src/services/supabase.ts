@@ -186,8 +186,15 @@ if (typeof window !== 'undefined') {
       (errorObjMessage?.toLowerCase().includes('user already registered') ||
        errorObjMessage?.toLowerCase().includes('already registered'));
     
-    if (isUserAlreadyRegistered) {
-      // Don't log - this is expected and user-friendly, shown in UI
+    // Suppress "Invalid login credentials" errors - these are expected and user-friendly
+    const isInvalidCredentials = 
+      combinedErrorText.includes('invalid login credentials') ||
+      combinedErrorText.includes('invalid credentials') ||
+      (errorObjMessage?.toLowerCase().includes('invalid login credentials') ||
+       errorObjMessage?.toLowerCase().includes('invalid credentials'));
+    
+    if (isUserAlreadyRegistered || isInvalidCredentials) {
+      // Don't log - these are expected and user-friendly, shown in UI
       return;
     }
     

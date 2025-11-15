@@ -246,7 +246,9 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('message channel closed before a response was received') ||
       lowerErrorMessage.includes('by returning true, but the message channel closed') ||
       lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item with duplicate id') ||
+      lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('err_cache_operation_not_supported') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
@@ -259,12 +261,15 @@ if (typeof window !== 'undefined') {
       combinedErrorText.includes('message channel closed before a response was received') ||
       combinedErrorText.includes('by returning true, but the message channel closed') ||
       combinedErrorText.includes('runtime.lasterror') ||
+      combinedErrorText.includes('unchecked runtime.lasterror') ||
       combinedErrorText.includes('cannot create item with duplicate id') ||
+      combinedErrorText.includes('cannot find menu item') ||
       combinedErrorText.includes('err_cache_operation_not_supported') ||
       combinedErrorText.includes('lastpass') ||
       combinedErrorText.includes('no tab with id') ||
       combinedErrorText.includes('background-redux') ||
       combinedErrorText.includes('background-redux-new.js') ||
+      combinedErrorText.includes('chrome-extension://') ||
       combinedErrorText.includes('$ is not defined') ||
       combinedErrorText.includes('referenceerror: $') ||
       combinedErrorText.includes('content-script') ||
@@ -422,14 +427,18 @@ if (typeof window !== 'undefined') {
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
       lowerErrorMsg.includes('runtime.lasterror') ||
+      lowerErrorMsg.includes('unchecked runtime.lasterror') ||
       lowerErrorMsg.includes('cannot create item with duplicate id') ||
+      lowerErrorMsg.includes('cannot find menu item') ||
       lowerErrorMsg.includes('no tab with id') ||
       lowerErrorMsg.includes('background-redux') ||
       lowerErrorString.includes('listener indicated') ||
       lowerErrorString.includes('message channel closed') ||
       lowerErrorString.includes('by returning true') ||
       lowerErrorString.includes('runtime.lasterror') ||
+      lowerErrorString.includes('unchecked runtime.lasterror') ||
       lowerErrorString.includes('cannot create item with duplicate id') ||
+      lowerErrorString.includes('cannot find menu item') ||
       lowerErrorString.includes('lastpass') ||
       lowerErrorString.includes('no tab with id') ||
       lowerErrorString.includes('background-redux') ||
@@ -438,6 +447,10 @@ if (typeof window !== 'undefined') {
       lowerErrorStack.includes('listener indicated') ||
       lowerErrorStack.includes('message channel') ||
       lowerErrorStack.includes('by returning true') ||
+      lowerErrorStack.includes('runtime.lasterror') ||
+      lowerErrorStack.includes('unchecked runtime.lasterror') ||
+      lowerErrorStack.includes('cannot create item') ||
+      lowerErrorStack.includes('cannot find menu item') ||
       lowerErrorStack.includes('background-redux') ||
       lowerErrorStack.includes('background-redux-new.js') ||
       lowerErrorStack.includes('chrome-extension://') ||
@@ -447,11 +460,14 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('message channel closed before a response was received') ||
       allErrorText.includes('by returning true, but the message channel closed') ||
       allErrorText.includes('runtime.lasterror') ||
+      allErrorText.includes('unchecked runtime.lasterror') ||
       allErrorText.includes('cannot create item with duplicate id') ||
+      allErrorText.includes('cannot find menu item') ||
       allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
       allErrorText.includes('background-redux-new.js') ||
       allErrorText.includes('chrome-extension://') ||
+      allErrorText.includes('lastpass') ||
       allErrorText.includes('$ is not defined') ||
       allErrorText.includes('referenceerror: $')
     ) {

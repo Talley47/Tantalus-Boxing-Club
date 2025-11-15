@@ -22,7 +22,9 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('message channel') ||
       lowerErrorMessage.includes('by returning true') ||
       lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
+      lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
       lowerErrorMessage.includes('$ is not defined') ||
@@ -32,11 +34,15 @@ if (typeof window !== 'undefined') {
       allArgs.includes('message channel') ||
       allArgs.includes('by returning true') ||
       allArgs.includes('runtime.lasterror') ||
+      allArgs.includes('unchecked runtime.lasterror') ||
+      allArgs.includes('cannot create item') ||
+      allArgs.includes('cannot find menu item') ||
       allArgs.includes('no tab with id') ||
       allArgs.includes('background-redux') ||
       allArgs.includes('chrome-extension://') ||
       allArgs.includes('content-script') ||
-      allArgs.includes('ch-content-script');
+      allArgs.includes('ch-content-script') ||
+      allArgs.includes('lastpass');
     
     // Don't log browser extension errors
     if (isBrowserExtensionError) {
@@ -72,7 +78,9 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('message channel') ||
       lowerErrorMessage.includes('by returning true') ||
       lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
+      lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
       lowerErrorString.includes('listener indicated') ||
@@ -80,6 +88,9 @@ if (typeof window !== 'undefined') {
       lowerErrorString.includes('message channel') ||
       lowerErrorString.includes('by returning true') ||
       lowerErrorString.includes('runtime.lasterror') ||
+      lowerErrorString.includes('unchecked runtime.lasterror') ||
+      lowerErrorString.includes('cannot create item') ||
+      lowerErrorString.includes('cannot find menu item') ||
       lowerErrorString.includes('lastpass') ||
       lowerErrorString.includes('no tab with id') ||
       lowerErrorString.includes('background-redux') ||
@@ -88,6 +99,10 @@ if (typeof window !== 'undefined') {
       lowerErrorStack.includes('listener indicated') ||
       lowerErrorStack.includes('message channel') ||
       lowerErrorStack.includes('by returning true') ||
+      lowerErrorStack.includes('runtime.lasterror') ||
+      lowerErrorStack.includes('unchecked runtime.lasterror') ||
+      lowerErrorStack.includes('cannot create item') ||
+      lowerErrorStack.includes('cannot find menu item') ||
       lowerErrorStack.includes('background-redux') ||
       lowerErrorStack.includes('background-redux-new.js') ||
       lowerErrorStack.includes('chrome-extension://') ||
@@ -97,10 +112,15 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('asynchronous response') ||
       allErrorText.includes('message channel') ||
       allErrorText.includes('by returning true') ||
+      allErrorText.includes('runtime.lasterror') ||
+      allErrorText.includes('unchecked runtime.lasterror') ||
+      allErrorText.includes('cannot create item') ||
+      allErrorText.includes('cannot find menu item') ||
       allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
       allErrorText.includes('background-redux-new.js') ||
-      allErrorText.includes('chrome-extension://');
+      allErrorText.includes('chrome-extension://') ||
+      allErrorText.includes('lastpass');
     
     if (isBrowserExtensionError) {
       event.preventDefault();
@@ -164,7 +184,9 @@ if (typeof window !== 'undefined') {
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
       lowerErrorMsg.includes('runtime.lasterror') ||
+      lowerErrorMsg.includes('unchecked runtime.lasterror') ||
       lowerErrorMsg.includes('cannot create item with duplicate id') ||
+      lowerErrorMsg.includes('cannot find menu item') ||
       lowerErrorMsg.includes('no tab with id') ||
       lowerErrorMsg.includes('background-redux') ||
       lowerFilename.includes('background-redux') ||
@@ -172,11 +194,13 @@ if (typeof window !== 'undefined') {
       lowerFilename.includes('chrome-extension://') ||
       lowerFilename.includes('content-script') ||
       lowerFilename.includes('ch-content-script') ||
+      lowerFilename.includes('lastpass') ||
       (event.filename && (event.filename.toLowerCase().includes('background-redux') || 
                           event.filename.toLowerCase().includes('background-redux-new.js') ||
                           event.filename.toLowerCase().includes('chrome-extension://') ||
                           event.filename.toLowerCase().includes('content-script') ||
-                          event.filename.toLowerCase().includes('ch-content-script')))
+                          event.filename.toLowerCase().includes('ch-content-script') ||
+                          event.filename.toLowerCase().includes('lastpass')))
     ) {
       event.preventDefault();
       event.stopPropagation();

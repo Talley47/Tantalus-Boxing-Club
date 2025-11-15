@@ -218,7 +218,10 @@ if (typeof window !== 'undefined') {
       (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('logout') || errorMessage.toLowerCase().includes('signout'))) ||
       // Also catch network-level 403 errors on logout endpoint (regardless of scope parameter)
       (combinedErrorText.includes('403') && (combinedErrorText.includes('/auth/v1/logout') || combinedErrorText.includes('logout?scope'))) ||
-      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('/auth/v1/logout') || errorMessage.toLowerCase().includes('logout?scope')));
+      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('/auth/v1/logout') || errorMessage.toLowerCase().includes('logout?scope'))) ||
+      // Catch 403 errors from helpers.ts or fetch.ts (network-level errors)
+      (combinedErrorText.includes('403') && (combinedErrorText.includes('forbidden') || combinedErrorText.includes('helpers.ts') || combinedErrorText.includes('fetch.ts'))) ||
+      (errorStack?.toLowerCase().includes('/auth/v1/logout') && (combinedErrorText.includes('403') || errorMessage.toLowerCase().includes('403')));
     
     const hasGoTrueAdminApi = 
       combinedErrorText.includes('gotrueadminapi') && (combinedErrorText.includes('signout') || combinedErrorText.includes('logout'));

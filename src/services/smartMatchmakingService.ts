@@ -23,7 +23,7 @@ export interface FairMatchCriteria {
 }
 
 class SmartMatchmakingService {
-  // Automatically match fighters based on rankings, weight class, tier, and points
+  // Automatically match fighters based on rankings, weight class, tier, points, demotion status, and timezone
   // 
   // ⚠️ STRICT MATCHING REQUIREMENTS - FIGHTERS WILL NOT BE MATCHED IF ANY REQUIREMENT IS NOT MET:
   // 
@@ -31,12 +31,15 @@ class SmartMatchmakingService {
   // 2. ✅ Same tier (REQUIRED) - Fighters with different tiers will NEVER be matched
   // 3. ✅ Rankings within max_rank_difference (default: 3) - Rank difference > 3 will REJECT the match
   // 4. ✅ Points within max_points_difference (default: 30) - Points difference > 30 will REJECT the match
+  // 5. ✅ Compatible timezones (REQUIRED) - Fighters with incompatible timezones (>4 hours difference) will NEVER be matched
+  // 6. ✅ Demotion status - Recently demoted fighters (within 30 days) are preferred to match with each other
   // 
   // The algorithm:
   // - Groups fighters by weight class first
   // - Then groups by tier within each weight class
   // - Only compares fighters within the same weight class AND tier
-  // - Validates rankings and points differences before matching
+  // - Validates rankings, points, timezone compatibility, and demotion status before matching
+  // - Uses fighter's actual timezone from their profile physical information section
   // - Performs final validation before creating scheduled fights
   async autoMatchFighters(
     criteria?: Partial<FairMatchCriteria>
@@ -47,7 +50,7 @@ class SmartMatchmakingService {
       same_tier_required: criteria?.same_tier_required ?? true, // REQUIRED by default
       same_weight_class_required: criteria?.same_weight_class_required ?? true, // REQUIRED by default
       avoid_recent_opponents_count: criteria?.avoid_recent_opponents_count || 5, // Avoid repeat within last X matches
-      require_timezone_overlap: criteria?.require_timezone_overlap ?? false, // Preferred but not required by default
+      require_timezone_overlap: criteria?.require_timezone_overlap ?? true, // REQUIRED by default - fighters must have compatible timezones
       require_availability_window: criteria?.require_availability_window ?? false, // Preferred but not required by default
       points_gap_consent_threshold: criteria?.points_gap_consent_threshold || 50, // >50 pts gap requires consent
     };
@@ -128,16 +131,35 @@ class SmartMatchmakingService {
               const hasRecentFight = await this.hasRecentFight(fighter1.user_id, fighter2.user_id, matchCriteria.avoid_recent_opponents_count);
               if (hasRecentFight) continue;
 
-              // Check timezone overlap (if required)
+              // REQUIRED: Check timezone overlap - fighters must have compatible timezones
               if (matchCriteria.require_timezone_overlap) {
                 const timezoneCompatible = this.checkTimezoneOverlap(fighter1.timezone, fighter2.timezone);
                 if (!timezoneCompatible) {
                   continue; // Skip if timezone overlap is required but not present
                 }
+              } else {
+                // Even if not explicitly required, prefer timezone compatibility
+                const timezoneCompatible = this.checkTimezoneOverlap(fighter1.timezone, fighter2.timezone);
+                if (!timezoneCompatible) {
+                  continue; // Skip fighters with incompatible timezones
+                }
+              }
+              
+              // Check if either fighter was recently demoted (prefer matching demoted fighters together)
+              const fighter1RecentlyDemoted = await this.wasRecentlyDemoted(fighter1.user_id);
+              const fighter2RecentlyDemoted = await this.wasRecentlyDemoted(fighter2.user_id);
+              
+              // If one fighter was demoted and the other wasn't, prefer matching demoted fighters together
+              // This helps demoted fighters get fair matches at their new tier
+              if (fighter1RecentlyDemoted && !fighter2RecentlyDemoted) {
+                continue; // Prefer matching demoted fighters with other demoted fighters
+              }
+              if (fighter2RecentlyDemoted && !fighter1RecentlyDemoted) {
+                continue; // Prefer matching demoted fighters with other demoted fighters
               }
 
-              // Calculate match score
-              const matchResult = this.calculateFairMatchScore(
+              // Calculate match score (now async to check demotion status)
+              const matchResult = await this.calculateFairMatchScore(
                 fighter1,
                 fighter2,
                 rankings,
@@ -172,11 +194,11 @@ class SmartMatchmakingService {
               }
               
               try {
-                // Use default timezone and platform (columns don't exist in current schema)
-                const fighterTimezone = 'UTC';
-                const fighterPlatform = 'PC';
+                // Use fighter's actual timezone from profile (prefer fighter1's timezone, fallback to fighter2's, then UTC)
+                const fighterTimezone = fighter1.timezone || bestMatch.timezone || 'UTC';
+                const fighterPlatform = (fighter1 as any).platform || (bestMatch as any).platform || 'PC';
                 
-                console.log(`[Smart Matchmaking] Creating match: ${fighter1.name} (${fighter1.weight_class}, ${fighter1.tier}) vs ${bestMatch.name} (${bestMatch.weight_class}, ${bestMatch.tier}) - Score: ${bestScore}%`);
+                console.log(`[Smart Matchmaking] Creating match: ${fighter1.name} (${fighter1.weight_class}, ${fighter1.tier}, TZ: ${fighterTimezone}) vs ${bestMatch.name} (${bestMatch.weight_class}, ${bestMatch.tier}, TZ: ${bestMatch.timezone || 'UTC'}) - Score: ${bestScore}%`);
                 
                 const scheduledFight = await schedulingService.scheduleFight({
                   fighter1_id: fighter1.id,
@@ -185,19 +207,25 @@ class SmartMatchmakingService {
                   scheduled_date: this.getNextAvailableDate(fighterTimezone).toISOString(),
                   timezone: fighterTimezone,
                   platform: fighterPlatform,
-                  connection_notes: 'Auto-matched via Smart Matchmaking. Must be completed within 1 week.',
+                  connection_notes: 'Auto-matched via Smart Matchmaking based on Rankings, Tier, Weight Class, Points, Demotion status, and Timezone. Must be completed within 1 week.',
                   house_rules: 'Standard boxing rules apply. Fight must be completed within 7 days of scheduling.'
+                }, {
+                  isAutoMatched: true,
+                  matchType: 'auto_mandatory',
+                  matchScore: bestScore
                 });
 
-                // Update scheduled_fight to mark as auto-matched
-                await supabase
-                  .from('scheduled_fights')
-                  .update({
-                    match_type: 'auto_mandatory',
-                    auto_matched_at: new Date().toISOString(),
-                    match_score: bestScore
-                  })
-                  .eq('id', scheduledFight.id);
+                // The match_type and match_score are already set by the function, but update if needed
+                if (scheduledFight.id) {
+                  await supabase
+                    .from('scheduled_fights')
+                    .update({
+                      match_type: 'auto_mandatory',
+                      auto_matched_at: new Date().toISOString(),
+                      match_score: bestScore
+                    })
+                    .eq('id', scheduledFight.id);
+                }
 
                 matches.push({
                   fight_id: scheduledFight.id,
@@ -233,15 +261,17 @@ class SmartMatchmakingService {
   // 2. ✅ Same tier (REQUIRED) - Fighters with different tiers will NEVER be matched  
   // 3. ✅ Rankings within max_rank_difference (default: 3) - Rank difference > 3 will REJECT the match
   // 4. ✅ Points within max_points_difference (default: 30) - Points difference > 30 will REJECT the match
+  // 5. ✅ Timezone compatibility (REQUIRED) - Fighters with incompatible timezones will NEVER be matched
+  // 6. ✅ Demotion status - Recently demoted fighters are preferred to match with each other
   // 
   // If ANY of these requirements are not met, the function returns isFair: false and score: 0
   // Only fighters meeting ALL requirements will be considered for matching
-  private calculateFairMatchScore(
+  private async calculateFairMatchScore(
     fighter1: any,
     fighter2: any,
     rankings: any[],
     criteria: FairMatchCriteria
-  ): { isFair: boolean; score: number; reasons: string[] } {
+  ): Promise<{ isFair: boolean; score: number; reasons: string[] }> {
     const reasons: string[] = [];
     let score = 100;
 
@@ -341,6 +371,34 @@ class SmartMatchmakingService {
       reasons.push(`✓ Same points: ${fighter1.points}`);
     }
 
+    // STRICT CHECK #5: Timezone compatibility (REQUIRED)
+    if (criteria.require_timezone_overlap) {
+      const timezoneCompatible = this.checkTimezoneOverlap(fighter1.timezone, fighter2.timezone);
+      if (!timezoneCompatible) {
+        console.warn(`[Smart Matchmaking] REJECTED: Incompatible timezones - ${fighter1.name} (${fighter1.timezone || 'not set'}) vs ${fighter2.name} (${fighter2.timezone || 'not set'})`);
+        return { 
+          isFair: false, 
+          score: 0, 
+          reasons: [`REQUIRED: Compatible timezones. ${fighter1.timezone || 'not set'} vs ${fighter2.timezone || 'not set'}. Fighters with incompatible timezones will NEVER be matched.`] 
+        };
+      }
+      score += 10; // Bonus for timezone compatibility
+      reasons.push(`✓ Compatible timezones: ${fighter1.timezone || 'UTC'} & ${fighter2.timezone || 'UTC'}`);
+    }
+
+    // BONUS: Check if both fighters were recently demoted (prefer matching demoted fighters together)
+    const fighter1RecentlyDemoted = await this.wasRecentlyDemoted(fighter1.user_id);
+    const fighter2RecentlyDemoted = await this.wasRecentlyDemoted(fighter2.user_id);
+    
+    if (fighter1RecentlyDemoted && fighter2RecentlyDemoted) {
+      score += 15; // Bonus for matching recently demoted fighters together
+      reasons.push(`✓ Both fighters recently demoted - fair match at new tier`);
+    } else if (fighter1RecentlyDemoted || fighter2RecentlyDemoted) {
+      // One fighter demoted, one not - slight penalty but still allow if other criteria met
+      score -= 5;
+      reasons.push(`⚠️ One fighter recently demoted - may affect match fairness`);
+    }
+
     // Ensure score is within bounds
     score = Math.max(0, Math.min(100, score));
 
@@ -355,6 +413,50 @@ class SmartMatchmakingService {
       score: Math.round(score),
       reasons
     };
+  }
+  
+  // Check if a fighter was recently demoted (within last 30 days)
+  private async wasRecentlyDemoted(fighterUserId: string): Promise<boolean> {
+    try {
+      // Get fighter profile ID
+      const { data: fighter, error: fighterError } = await supabase
+        .from('fighter_profiles')
+        .select('id')
+        .eq('user_id', fighterUserId)
+        .single();
+
+      if (fighterError || !fighter) {
+        return false;
+      }
+
+      // Check tier_history for recent demotion (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: tierHistory, error: historyError } = await supabase
+        .from('tier_history')
+        .select('from_tier, to_tier, created_at')
+        .eq('fighter_id', fighter.id)
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (historyError || !tierHistory || tierHistory.length === 0) {
+        return false;
+      }
+
+      // Check if the most recent tier change was a demotion (to_tier is lower than from_tier)
+      const tierOrder = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite'];
+      const recentChange = tierHistory[0];
+      const fromIndex = tierOrder.indexOf(recentChange.from_tier);
+      const toIndex = tierOrder.indexOf(recentChange.to_tier);
+
+      // If toIndex < fromIndex, it's a demotion
+      return toIndex < fromIndex;
+    } catch (error) {
+      console.error('Error checking demotion status:', error);
+      return false;
+    }
   }
 
   // Check if two fighters already have a scheduled fight
@@ -722,7 +824,7 @@ class SmartMatchmakingService {
         points_gap_consent_threshold: 50,
       };
 
-      const matchResult = this.calculateFairMatchScore(fighter1, fighter2, rankings, matchCriteria);
+      const matchResult = await this.calculateFairMatchScore(fighter1, fighter2, rankings, matchCriteria);
       
       // Create scheduled fight
       const scheduledDate = options?.scheduled_date 

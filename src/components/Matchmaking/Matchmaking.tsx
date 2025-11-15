@@ -685,44 +685,58 @@ const Matchmaking: React.FC = () => {
             Automatically find fair opponents based on Rankings, Weight Class, and Tier System. Mandatory fights will appear in your My Profile section.
           </Typography>
 
-          {/* HIDDEN: Auto-Match All Fighters Button (Admin/System) */}
-          {/* <Card sx={{ mb: 3, bgcolor: 'warning.dark', color: 'warning.contrastText' }}>
+          {/* HIDDEN: Mix and Match - Auto-Match All Fighters */}
+          {/* <Card sx={{ mb: 3, bgcolor: 'rgba(25, 118, 210, 0.15)', border: '2px solid rgba(25, 118, 210, 0.3)', backdropFilter: 'blur(10px)' }}>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
                 <Box flex={1}>
-                  <Typography variant="h6" gutterBottom>
-                    Automatic Smart Matchmaking
+                  <Typography variant="h6" gutterBottom sx={{ color: 'white', fontWeight: 'bold' }}>
+                    🎯 Mix and Match Fighters
                   </Typography>
-                  <Typography variant="body2" paragraph>
-                    The system will automatically match all fighters based on rankings, weight class, tier, and points. 
-                    Matched fighters will receive mandatory fights in their My Profile section. Fights must be completed within 1 week.
+                  <Typography variant="body2" paragraph sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                    Automatically match all fighters based on:
+                    <br />• Rankings (within 3 positions)
+                    <br />• Weight Class (must match)
+                    <br />• Tier (must match)
+                    <br />• Points (within 30 points)
+                    <br />• Demotion Status (recently demoted fighters matched together)
+                    <br />• Timezone (compatible timezones from fighter profiles)
+                    <br />
+                    <br />
+                    <strong>Matched fighters will receive mandatory fights in their My Profile section.</strong> Fights must be completed within 1 week.
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                     <strong>Weekly Reset:</strong> Old mandatory fights (older than 1 week) will be cancelled and new matches will be created.
                   </Typography>
                 </Box>
                 <Box display="flex" flexDirection="column" gap={1}>
                   <Button
                     variant="contained"
-                    color="secondary"
+                    color="primary"
                     size="large"
-                    startIcon={autoMatchingAll ? <CircularProgress size={20} /> : <AutoAwesome />}
+                    startIcon={autoMatchingAll ? <CircularProgress size={20} color="inherit" /> : <AutoAwesome />}
                     onClick={async () => {
                       if (!fighterProfile) return;
                       try {
                         setAutoMatchingAll(true);
                         const matches = await smartMatchmakingService.autoMatchFighters();
-                        alert(`Successfully created ${matches.length} automatic matches! Check your My Profile for mandatory fights.`);
+                        alert(`✅ Successfully created ${matches.length} automatic matches!\n\nCheck your My Profile for mandatory fights.`);
                       } catch (error: any) {
                         console.error('Error auto-matching fighters:', error);
-                        alert('Failed to auto-match fighters: ' + (error.message || 'Unknown error'));
+                        alert('❌ Failed to auto-match fighters: ' + (error.message || 'Unknown error'));
                       } finally {
                         setAutoMatchingAll(false);
                       }
                     }}
                     disabled={autoMatchingAll}
+                    sx={{ 
+                      minWidth: 200,
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
+                      py: 1.5
+                    }}
                   >
-                    {autoMatchingAll ? 'Matching Fighters...' : 'Run Auto-Matchmaking'}
+                    {autoMatchingAll ? 'Mixing & Matching...' : '🎯 Mix and Match Fighters'}
                   </Button>
                   <Button
                     variant="outlined"
@@ -731,6 +745,7 @@ const Matchmaking: React.FC = () => {
                     startIcon={resettingWeekly ? <CircularProgress size={16} /> : <Refresh />}
                     onClick={() => setWeeklyResetDialogOpen(true)}
                     disabled={autoMatchingAll || resettingWeekly}
+                    sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.5)' }}
                   >
                     Weekly Reset
                   </Button>

@@ -42,8 +42,131 @@ export interface ScheduleStats {
 
 class SchedulingService {
   // Schedule a new fight
-  async scheduleFight(request: ScheduleFightRequest): Promise<ScheduledFight> {
-    // Insert the scheduled fight without the join
+  async scheduleFight(request: ScheduleFightRequest, options?: { isAutoMatched?: boolean; matchType?: string; matchScore?: number }): Promise<ScheduledFight> {
+    // If this is an auto-matched fight, use the database function to bypass RLS
+    if (options?.isAutoMatched || options?.matchType === 'auto_mandatory') {
+      const { data: fightId, error: functionError } = await supabase
+        .rpc('create_auto_matched_fight', {
+          p_fighter1_id: request.fighter1_id,
+          p_fighter2_id: request.fighter2_id,
+          p_weight_class: request.weight_class,
+          p_scheduled_date: request.scheduled_date,
+          p_timezone: request.timezone,
+          p_platform: request.platform,
+          p_connection_notes: request.connection_notes || '',
+          p_house_rules: request.house_rules || '',
+          p_match_type: options?.matchType || 'auto_mandatory',
+          p_match_score: options?.matchScore || null
+        });
+
+      if (functionError) {
+        console.error('Error calling create_auto_matched_fight:', functionError);
+        // If function doesn't exist or fails, try regular insert (may fail due to RLS)
+        // This will show a clear error message to the user
+        throw new Error(`Failed to create auto-matched fight. Please run the SQL script: database/fix-auto-matchmaking-rls.sql. Error: ${functionError.message}`);
+      }
+
+      // Fetch the created fight
+      const { data: fightData, error: fetchError } = await supabase
+        .from('scheduled_fights')
+        .select('*')
+        .eq('id', fightId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      
+      // Use fightData for the rest of the function
+      const fightDataResult = fightData;
+      
+      // Fetch fighter profiles separately
+      const { data: fighterProfiles, error: profilesError } = await supabase
+        .from('fighter_profiles')
+        .select('id, user_id, name, handle, tier, points, weight_class, wins, losses, draws')
+        .in('id', [request.fighter1_id, request.fighter2_id]);
+
+      if (profilesError) {
+        console.error('Error fetching fighter profiles:', profilesError);
+      }
+
+      // Create a map for quick lookup
+      const fighterMap = new Map((fighterProfiles || []).map(f => [f.id, f]));
+      const fighter1Profile = fighterMap.get(request.fighter1_id);
+      const fighter2Profile = fighterMap.get(request.fighter2_id);
+
+      // Map to ScheduledFight format
+      const scheduledFight: ScheduledFight = {
+        id: fightDataResult.id,
+        fighter1_id: fighter1Profile?.user_id || request.fighter1_id,
+        fighter2_id: fighter2Profile?.user_id || request.fighter2_id,
+        fighter1: fighter1Profile ? {
+          id: fighter1Profile.user_id,
+          user_id: fighter1Profile.user_id,
+          name: fighter1Profile.name || 'Unknown Fighter',
+          handle: fighter1Profile.handle || 'unknown',
+          platform: 'PC' as const,
+          platform_id: '',
+          timezone: fightDataResult.timezone || 'UTC',
+          weight: 0,
+          reach: 0,
+          stance: 'orthodox' as const,
+          nationality: '',
+          fighting_style: '',
+          hometown: '',
+          wins: fighter1Profile.wins || 0,
+          losses: fighter1Profile.losses || 0,
+          draws: fighter1Profile.draws || 0,
+          knockouts: 0,
+          points: fighter1Profile.points || 0,
+          tier: (fighter1Profile.tier || 'Amateur') as any,
+          weight_class: fighter1Profile.weight_class || 'Unknown',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString()
+        } as FighterProfile : undefined,
+        fighter2: fighter2Profile ? {
+          id: fighter2Profile.user_id,
+          user_id: fighter2Profile.user_id,
+          name: fighter2Profile.name || 'Unknown Fighter',
+          handle: fighter2Profile.handle || 'unknown',
+          platform: 'PC' as const,
+          platform_id: '',
+          timezone: fightDataResult.timezone || 'UTC',
+          weight: 0,
+          reach: 0,
+          stance: 'orthodox' as const,
+          nationality: '',
+          fighting_style: '',
+          hometown: '',
+          wins: fighter2Profile.wins || 0,
+          losses: fighter2Profile.losses || 0,
+          draws: fighter2Profile.draws || 0,
+          knockouts: 0,
+          points: fighter2Profile.points || 0,
+          tier: (fighter2Profile.tier || 'Amateur') as any,
+          weight_class: fighter2Profile.weight_class || 'Unknown',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString()
+        } as FighterProfile : undefined,
+        scheduled_date: fightDataResult.scheduled_date,
+        timezone: fightDataResult.timezone || 'UTC',
+        platform: fightDataResult.platform || 'PC',
+        connection_notes: fightDataResult.connection_notes,
+        house_rules: fightDataResult.house_rules,
+        weight_class: fightDataResult.weight_class || 'Unknown',
+        status: (fightDataResult.status || 'Scheduled') as 'Scheduled' | 'Completed' | 'Cancelled' | 'Disputed',
+        match_type: (fightDataResult as any).match_type,
+        match_score: (fightDataResult as any).match_score,
+        created_at: fightDataResult.created_at || new Date().toISOString()
+      };
+
+      // Create notifications for both fighters
+      await this.createFightScheduledNotifications(scheduledFight);
+
+      return scheduledFight;
+    }
+
+    // Regular insert for manual fights (existing behavior)
     const { data: fightData, error } = await supabase
       .from('scheduled_fights')
       .insert({

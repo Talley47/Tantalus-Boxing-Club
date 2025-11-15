@@ -397,42 +397,49 @@ if (typeof window !== 'undefined') {
       return false;
     }
     
-    // Suppress browser extension errors (multiple variations)
+    // Suppress browser extension errors (multiple variations) - case-insensitive
+    const lowerErrorMsg = errorMessage.toLowerCase();
+    const lowerErrorString = errorString.toLowerCase();
+    const lowerErrorStack = errorStack.toLowerCase();
     if (
-      errorMessage.includes('listener indicated an asynchronous response') ||
-      errorMessage.includes('message channel closed before a response was received') ||
-      errorMessage.includes('A listener indicated an asynchronous response') ||
-      errorMessage.includes('by returning true, but the message channel closed') ||
-      (errorMessage.includes('asynchronous response') && errorMessage.includes('message channel')) ||
-      errorMessage.includes('runtime.lastError') ||
-      errorMessage.includes('Cannot create item with duplicate id') ||
-      errorMessage.includes('No tab with id') ||
-      errorMessage.includes('background-redux') ||
-      errorString.includes('listener indicated') ||
-      errorString.includes('message channel closed') ||
-      errorString.includes('by returning true') ||
-      errorString.includes('runtime.lastError') ||
-      errorString.includes('Cannot create item with duplicate id') ||
-      errorString.includes('LastPass') ||
-      errorString.includes('No tab with id') ||
-      errorString.includes('background-redux') ||
-      errorStack.includes('listener indicated') ||
-      errorStack.includes('message channel') ||
-      errorStack.includes('by returning true') ||
-      errorStack.includes('background-redux') ||
-      errorStack.includes('background-redux-new.js') ||
-      errorStack.includes('content-script') ||
-      errorStack.includes('ch-content-script') ||
+      lowerErrorMsg.includes('listener indicated an asynchronous response') ||
+      lowerErrorMsg.includes('message channel closed before a response was received') ||
+      lowerErrorMsg.includes('a listener indicated an asynchronous response') ||
+      lowerErrorMsg.includes('by returning true, but the message channel closed') ||
+      (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
+      lowerErrorMsg.includes('runtime.lasterror') ||
+      lowerErrorMsg.includes('cannot create item with duplicate id') ||
+      lowerErrorMsg.includes('no tab with id') ||
+      lowerErrorMsg.includes('background-redux') ||
+      lowerErrorString.includes('listener indicated') ||
+      lowerErrorString.includes('message channel closed') ||
+      lowerErrorString.includes('by returning true') ||
+      lowerErrorString.includes('runtime.lasterror') ||
+      lowerErrorString.includes('cannot create item with duplicate id') ||
+      lowerErrorString.includes('lastpass') ||
+      lowerErrorString.includes('no tab with id') ||
+      lowerErrorString.includes('background-redux') ||
+      lowerErrorString.includes('background-redux-new.js') ||
+      lowerErrorString.includes('chrome-extension://') ||
+      lowerErrorStack.includes('listener indicated') ||
+      lowerErrorStack.includes('message channel') ||
+      lowerErrorStack.includes('by returning true') ||
+      lowerErrorStack.includes('background-redux') ||
+      lowerErrorStack.includes('background-redux-new.js') ||
+      lowerErrorStack.includes('chrome-extension://') ||
+      lowerErrorStack.includes('content-script') ||
+      lowerErrorStack.includes('ch-content-script') ||
       allErrorText.includes('listener indicated an asynchronous response') ||
       allErrorText.includes('message channel closed before a response was received') ||
       allErrorText.includes('by returning true, but the message channel closed') ||
-      allErrorText.includes('runtime.lastError') ||
-      allErrorText.includes('Cannot create item with duplicate id') ||
-      allErrorText.includes('No tab with id') ||
+      allErrorText.includes('runtime.lasterror') ||
+      allErrorText.includes('cannot create item with duplicate id') ||
+      allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
       allErrorText.includes('background-redux-new.js') ||
+      allErrorText.includes('chrome-extension://') ||
       allErrorText.includes('$ is not defined') ||
-      allErrorText.includes('ReferenceError: $')
+      allErrorText.includes('referenceerror: $')
     ) {
       event.preventDefault();
       event.stopPropagation();

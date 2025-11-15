@@ -47,8 +47,18 @@ const Navigation: React.FC = () => {
     try {
       await signOut();
       navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
+    } catch (error: any) {
+      // Don't log session missing errors - they're harmless (user already logged out)
+      const isSessionMissing = 
+        error?.message?.includes('Auth session missing') || 
+        error?.name === 'AuthSessionMissingError' ||
+        error?.message?.includes('session missing') ||
+        error?.toString()?.includes('Auth session missing') ||
+        error?.toString()?.includes('AuthSessionMissingError');
+      
+      if (!isSessionMissing) {
+        console.error('Error signing out:', error);
+      }
     }
   };
 

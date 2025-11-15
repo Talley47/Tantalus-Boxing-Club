@@ -177,6 +177,20 @@ if (typeof window !== 'undefined') {
     
     const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${errorStack} ${allArgs} ${errorString}`.toLowerCase();
     
+    // Suppress "User already registered" errors - these are expected and user-friendly
+    // They're shown to users in the UI, no need to log them multiple times
+    const isUserAlreadyRegistered = 
+      combinedErrorText.includes('user already registered') ||
+      combinedErrorText.includes('already registered') ||
+      (combinedErrorText.includes('422') && combinedErrorText.includes('signup')) ||
+      (errorObjMessage?.toLowerCase().includes('user already registered') ||
+       errorObjMessage?.toLowerCase().includes('already registered'));
+    
+    if (isUserAlreadyRegistered) {
+      // Don't log - this is expected and user-friendly, shown in UI
+      return;
+    }
+    
     // Early return for Auth session missing errors - check this first for performance
     // Suppress ALL AuthSessionMissingError errors (they're harmless - user already logged out)
     // Also suppress 403 errors from /auth/v1/logout (regardless of scope=global or scope=local)

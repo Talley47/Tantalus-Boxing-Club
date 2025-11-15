@@ -195,7 +195,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (error) {
-        console.error('Supabase auth error:', error);
+        // Don't log "User already registered" as an error - it's expected and user-friendly
+        // Only log unexpected errors
+        const isExpectedError = 
+          error.message?.toLowerCase().includes('already registered') ||
+          error.message?.toLowerCase().includes('user already registered') ||
+          error.message?.toLowerCase().includes('email already registered');
+        
+        if (!isExpectedError) {
+          console.error('Supabase auth error:', error);
+        }
+        
         // Create a more user-friendly error message
         const friendlyError = new Error(error.message);
         (friendlyError as any).status = error.status;

@@ -288,11 +288,20 @@ const RegisterPage = () => {
       const successMessage = encodeURIComponent('Account created successfully! Please check your email to verify your account, then login.');
       navigate(`/login?message=${successMessage}`);
     } catch (err: any) {
-      console.error('Registration error:', err);
-      
       // Check for specific error codes and messages
       const errorMessage = err.message || '';
       const errorCode = err.status || err.code || '';
+      
+      // Don't log expected errors like "User already registered" - they're user-friendly
+      const isExpectedError = 
+        errorMessage.toLowerCase().includes('already registered') ||
+        errorMessage.toLowerCase().includes('user already registered') ||
+        errorMessage.toLowerCase().includes('email already registered') ||
+        (errorCode === '422' && errorMessage.toLowerCase().includes('already'));
+      
+      if (!isExpectedError) {
+        console.error('Registration error:', err);
+      }
       
       if (errorMessage.includes('Invalid API key') || errorCode === '401') {
         setError('Supabase configuration error. Please check your environment variables.');

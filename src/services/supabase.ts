@@ -144,9 +144,23 @@ if (typeof window !== 'undefined') {
   console.error = (...args: any[]) => {
     // Filter out specific WebSocket connection errors from Supabase Realtime
     const errorMessage = args[0]?.toString() || '';
-    const errorObj = args[0];
+    const errorObj = args.find(arg => arg && typeof arg === 'object' && (arg.name || arg.message)) || args[0];
     const allArgs = args.join(' ');
     const errorString = errorObj ? JSON.stringify(errorObj) : '';
+    
+    // Check error object properties for Auth session missing errors
+    // Check all arguments for error objects (console.error can be called with multiple args)
+    let errorName = '';
+    let errorObjMessage = '';
+    for (const arg of args) {
+      if (arg && typeof arg === 'object') {
+        if (arg.name) errorName = arg.name;
+        if (arg.message) errorObjMessage = arg.message;
+        if (errorName && errorObjMessage) break; // Found both, no need to continue
+      }
+    }
+    
+    const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${allArgs} ${errorString}`;
     
     // Suppress harmless browser extension errors and cache errors
     if (
@@ -185,15 +199,22 @@ if (typeof window !== 'undefined') {
       errorString.includes('background-redux') ||
       errorString.includes('$ is not defined') ||
       errorString.includes('ReferenceError: $') ||
+      // Auth session missing errors (check all variations and all arguments)
       errorMessage.includes('Auth session missing') ||
       errorMessage.includes('AuthSessionMissingError') ||
       errorMessage.includes('session missing') ||
+      errorName === 'AuthSessionMissingError' ||
+      errorObjMessage.includes('Auth session missing') ||
+      errorObjMessage.includes('AuthSessionMissingError') ||
+      errorObjMessage.includes('session missing') ||
       allArgs.includes('Auth session missing') ||
       allArgs.includes('AuthSessionMissingError') ||
       allArgs.includes('Sign out error') ||
       allArgs.includes('Error signing out') ||
       errorString.includes('Auth session missing') ||
-      errorString.includes('AuthSessionMissingError')
+      errorString.includes('AuthSessionMissingError') ||
+      combinedErrorText.includes('Auth session missing') ||
+      combinedErrorText.includes('AuthSessionMissingError')
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
       // Also suppress cache operation errors which are harmless

@@ -381,14 +381,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Successfully signed out
       setUser(null);
     } catch (error: any) {
-      // Only log non-session-missing errors
-      if (!error.message?.includes('Auth session missing') && 
-          error.name !== 'AuthSessionMissingError' &&
-          !error.message?.includes('session missing')) {
+      // Check if this is a session missing error
+      const isSessionMissing = 
+        error?.message?.includes('Auth session missing') || 
+        error?.name === 'AuthSessionMissingError' ||
+        error?.message?.includes('session missing') ||
+        error?.toString()?.includes('Auth session missing') ||
+        error?.toString()?.includes('AuthSessionMissingError');
+      
+      // Don't log session missing errors - they're harmless (user already logged out)
+      // Only log actual errors (not session missing)
+      if (!isSessionMissing) {
         console.error('Sign out error:', error);
-      } else {
-        // Session already missing - just clear local state
-        console.log('Sign out: Session already missing (user already logged out)');
       }
       // Clear local state even if there was an error (user is effectively logged out)
       setUser(null);

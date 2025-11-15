@@ -352,12 +352,32 @@ if (typeof window !== 'undefined') {
   console.warn = (...args: any[]) => {
     // Filter out Realtime subscription CHANNEL_ERROR warnings
     const warningMessage = args[0]?.toString() || '';
-    const allArgs = args.join(' ');
+    const allArgs = args.join(' ').toLowerCase();
+    const lowerWarningMessage = warningMessage.toLowerCase();
+    
+    // Suppress performance violation warnings (harmless browser DevTools warnings)
+    // Check for various formats: [Violation], handler took, scheduler warnings
+    if (
+      lowerWarningMessage.includes('[violation]') ||
+      allArgs.includes('[violation]') ||
+      lowerWarningMessage.includes("'message' handler took") ||
+      lowerWarningMessage.includes("'settimeout' handler took") ||
+      lowerWarningMessage.includes("'setTimeout' handler took") ||
+      (lowerWarningMessage.includes("handler took") && lowerWarningMessage.includes('ms')) ||
+      allArgs.includes("handler took") ||
+      allArgs.includes("scheduler.development.js") ||
+      allArgs.includes("refreshutils.js") ||
+      // Catch any warning that mentions violation and handler
+      (allArgs.includes('violation') && allArgs.includes('handler'))
+    ) {
+      // Silently ignore performance violation warnings - they're just DevTools warnings
+      return;
+    }
     
     // Suppress CHANNEL_ERROR warnings from Realtime subscriptions
     if (
-      (warningMessage.includes('Realtime subscription error') && allArgs.includes('CHANNEL_ERROR')) ||
-      (allArgs.includes('CHANNEL_ERROR') && allArgs.includes('Realtime'))
+      (lowerWarningMessage.includes('realtime subscription error') && allArgs.includes('channel_error')) ||
+      (allArgs.includes('channel_error') && allArgs.includes('realtime'))
     ) {
       // Silently ignore CHANNEL_ERROR warnings - they're expected when Realtime is disabled
       return;
@@ -366,8 +386,8 @@ if (typeof window !== 'undefined') {
     // Suppress "Multiple GoTrueClient instances detected" warning
     // This is harmless and can occur during hot module reloading in development
     if (
-      allArgs.includes('Multiple GoTrueClient instances detected') ||
-      allArgs.includes('GoTrueClient') && allArgs.includes('instances detected')
+      allArgs.includes('multiple gotrueclient instances detected') ||
+      (allArgs.includes('gotrueclient') && allArgs.includes('instances detected'))
     ) {
       // Silently ignore - the singleton pattern handles this, but warning can appear during HMR
       return;
@@ -487,15 +507,28 @@ if (typeof window !== 'undefined') {
     const lowerErrorStack = errorStack.toLowerCase();
     const isFromRoute = lowerErrorStack.includes('/login') || 
                         lowerErrorStack.includes('/matchmaking') ||
+                        lowerErrorStack.includes('login:') ||
+                        lowerErrorStack.includes('matchmaking:') ||
                         lowerErrorString.includes('/login') ||
-                        lowerErrorString.includes('/matchmaking');
+                        lowerErrorString.includes('/matchmaking') ||
+                        lowerErrorString.includes('login:') ||
+                        lowerErrorString.includes('matchmaking:');
     
-    if (
+    // Check if this is a browser extension error - check both error message and allErrorText
+    const isBrowserExtensionError = 
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
       lowerErrorMsg.includes('a listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
+      // Also check allErrorText for the error message (catches errors in error string/stack)
+      allErrorText.includes('listener indicated an asynchronous response') ||
+      allErrorText.includes('message channel closed before a response was received') ||
+      allErrorText.includes('by returning true, but the message channel closed') ||
+      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel'));
+    
+    if (
+      isBrowserExtensionError ||
       lowerErrorMsg.includes('runtime.lasterror') ||
       lowerErrorMsg.includes('unchecked runtime.lasterror') ||
       lowerErrorMsg.includes('cannot create item with duplicate id') ||
@@ -507,11 +540,8 @@ if (typeof window !== 'undefined') {
       // Suppress errors from /login and /matchmaking routes if they're browser extension errors
       (isFromRoute && (lowerErrorMsg.includes('listener') || 
                        lowerErrorMsg.includes('message channel') || 
-                       lowerErrorMsg.includes('asynchronous response'))) ||
-      // Also check allErrorText for the error message (catches errors in error string/stack)
-      allErrorText.includes('listener indicated an asynchronous response') ||
-      allErrorText.includes('message channel closed before a response was received') ||
-      allErrorText.includes('by returning true, but the message channel closed') ||
+                       lowerErrorMsg.includes('asynchronous response') ||
+                       isBrowserExtensionError)) ||
       lowerErrorString.includes('listener indicated') ||
       lowerErrorString.includes('message channel closed') ||
       lowerErrorString.includes('by returning true') ||

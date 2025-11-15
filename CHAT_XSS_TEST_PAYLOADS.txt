@@ -1,0 +1,50 @@
+# XSS Test Payloads for Chat Component
+
+Copy and paste these one by one into the chat to test sanitization.
+
+## Test 1: Basic Script Tag
+<script>alert('XSS')</script>
+
+## Test 2: Image with onerror
+<img src=x onerror=alert('XSS')>
+
+## Test 3: JavaScript Protocol
+javascript:alert('XSS')
+
+## Test 4: SVG with onload
+<svg onload=alert('XSS')>
+
+## Test 5: Event Handler
+<div onclick=alert('XSS')>Click me</div>
+
+## Test 6: Mixed Content
+Hello <script>alert('XSS')</script> world!
+
+## Test 7: Iframe Injection
+<iframe src="javascript:alert('XSS')"></iframe>
+
+## Test 8: Style with Expression
+<div style="background:url('javascript:alert(\'XSS\')')">Test</div>
+
+## Test 9: Body onload
+<body onload=alert('XSS')>
+
+## Test 10: Input with onfocus
+<input onfocus=alert('XSS') autofocus>
+
+---
+
+## Expected Results:
+✅ All should appear as plain text
+✅ No alert boxes should appear
+✅ No scripts should execute
+✅ Browser console should be clean
+
+---
+
+## What to Check:
+1. Message displays as safe text (HTML tags visible as text)
+2. No alert boxes pop up
+3. Browser console (F12) shows no errors
+4. Message is stored in database (if you can check)
+

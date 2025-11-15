@@ -64,20 +64,31 @@ const NotificationBell: React.FC = () => {
 
     const tryLoadAudio = (index: number) => {
       if (index >= soundPaths.length) {
-        console.warn('Notification sound file not found. Please place "boxing-bell-signals-6115 (1).mp3" in the public folder.');
+        // Only warn if we've exhausted all paths
+        // Note: Cache errors (ERR_CACHE_OPERATION_NOT_SUPPORTED) are harmless
+        // and don't prevent the audio from working - they're just browser warnings
+        console.warn('Notification sound file not found after trying all paths. Please place "boxing-bell-signals-6115 (1).mp3" in the public folder. Note: Cache errors are harmless.');
         return;
       }
 
       const path = soundPaths[index];
       // URL encode the path to handle spaces and special characters
-      const encodedPath = encodeURI(path);
+      // Use encodeURIComponent for the filename part to properly handle spaces and parentheses
+      const encodedPath = path.startsWith('/') 
+        ? '/' + path.slice(1).split('/').map(segment => encodeURIComponent(segment)).join('/')
+        : encodeURIComponent(path);
       const audio = new Audio(encodedPath);
       audio.preload = 'auto';
       audio.volume = 0.8; // Set volume to 80%
       
       // Test if the file exists by trying to load it
+      // Use a timeout to detect if file actually loads despite cache errors
+      let errorOccurred = false;
+      let successOccurred = false;
+      
       const handleCanPlay = () => {
-        if (!isLoaded) {
+        if (!isLoaded && !errorOccurred) {
+          successOccurred = true;
           loadedAudio = audio;
           notificationSoundRef.current = audio;
           isLoaded = true;
@@ -91,7 +102,8 @@ const NotificationBell: React.FC = () => {
       };
       
       const handleLoadedData = () => {
-        if (!isLoaded) {
+        if (!isLoaded && !errorOccurred) {
+          successOccurred = true;
           loadedAudio = audio;
           notificationSoundRef.current = audio;
           isLoaded = true;
@@ -104,16 +116,35 @@ const NotificationBell: React.FC = () => {
         // These are harmless and don't prevent audio from working
         const error = e.target?.error;
         const errorMessage = error?.message || '';
+        const errorCode = error?.code;
+        const errorName = error?.name || '';
+        
+        // Mark that an error occurred, but check if it's just a cache error
+        errorOccurred = true;
         
         // Suppress cache-related errors - they're harmless
-        if (errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
+        // The file may still load successfully despite cache errors
+        // Wait a bit to see if success events fire despite the cache error
+        const isCacheError = errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
             errorMessage.includes('cache') ||
-            error?.code === 0) { // MEDIA_ERR_ABORTED or cache issues
-          // Cache errors are harmless - try next path silently
-          tryLoadAudio(index + 1);
+            errorMessage.includes('Cache') ||
+            errorCode === 0 || // MEDIA_ERR_ABORTED
+            errorCode === undefined || // Some browsers don't set error code for cache issues
+            errorName.includes('Cache');
+        
+        if (isCacheError) {
+          // For cache errors, wait a moment to see if the file actually loads
+          // Cache errors don't prevent the file from working
+          setTimeout(() => {
+            if (!successOccurred && !isLoaded) {
+              // If still not loaded after cache error, try next path
+              tryLoadAudio(index + 1);
+            }
+          }, 100);
           return;
         }
         
+        // For real errors (not cache), try next path immediately
         if (error && error.code === error.MEDIA_ERR_SRC_NOT_SUPPORTED) {
           // File doesn't exist or format not supported - try next path
           console.log(`Audio file not found at ${path}, trying next...`);

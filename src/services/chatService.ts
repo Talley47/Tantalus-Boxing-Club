@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { notificationService } from './notificationService';
+import { sanitizeText } from '../utils/securityUtils';
 
 const TABLES = {
   CHAT_MESSAGES: 'chat_messages',
@@ -236,15 +237,22 @@ class ChatService {
   }
 
   // Send a chat message
+  // SECURITY: Sanitizes message content before storing in database
   async sendMessage(message: string, userId: string, attachmentUrl?: string, attachmentType?: 'image' | 'video' | 'file'): Promise<ChatMessage> {
     try {
       if (!message || !message.trim()) {
         throw new Error('Message cannot be empty');
       }
 
+      // SECURITY: Sanitize message content to prevent XSS and injection attacks
+      const sanitizedMessage = sanitizeText(message.trim());
+      if (!sanitizedMessage) {
+        throw new Error('Invalid message content');
+      }
+
       const insertData: any = {
         user_id: userId,
-        message: message.trim(),
+        message: sanitizedMessage,
       };
 
       if (attachmentUrl) {
@@ -276,10 +284,11 @@ class ChatService {
       };
 
       // Check for @mentions and send notifications
-      const mentions = this.extractMentions(message.trim());
+      // SECURITY: Use sanitized message for mentions (already sanitized above)
+      const mentions = this.extractMentions(sanitizedMessage);
       if (mentions.length > 0 && profile) {
         // Don't await - let it run in background to avoid blocking message send
-        this.notifyMentionedFighters(mentions, profile.name || 'Unknown Fighter', data.id, message.trim())
+        this.notifyMentionedFighters(mentions, profile.name || 'Unknown Fighter', data.id, sanitizedMessage)
           .catch(error => console.error('Background mention notification error:', error));
       }
 
@@ -310,15 +319,22 @@ class ChatService {
   }
 
   // Update a message (users can always update their own messages)
+  // SECURITY: Sanitizes message content before updating in database
   async updateMessage(messageId: string, userId: string, newMessage: string): Promise<ChatMessage> {
     try {
       if (!newMessage || !newMessage.trim()) {
         throw new Error('Message cannot be empty');
       }
 
+      // SECURITY: Sanitize message content to prevent XSS and injection attacks
+      const sanitizedMessage = sanitizeText(newMessage.trim());
+      if (!sanitizedMessage) {
+        throw new Error('Invalid message content');
+      }
+
       const { data, error } = await supabase
         .from(TABLES.CHAT_MESSAGES)
-        .update({ message: newMessage.trim() })
+        .update({ message: sanitizedMessage })
         .eq('id', messageId)
         .eq('user_id', userId)
         .select('*')

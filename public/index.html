@@ -76,7 +76,22 @@
           var errorMessage = (event.reason && (event.reason.message || event.reason.toString())) || '';
           var errorString = JSON.stringify(event.reason) || '';
           var errorStack = (event.reason && event.reason.stack) || '';
-          var allErrorText = errorMessage + ' ' + errorString + ' ' + errorStack;
+          var errorName = (event.reason && event.reason.name) || '';
+          var allErrorText = errorMessage + ' ' + errorString + ' ' + errorStack + ' ' + errorName;
+          
+          // Suppress jQuery ($) not defined errors from browser extension content scripts
+          if (
+            errorMessage.indexOf('$ is not defined') !== -1 ||
+            errorMessage.indexOf('ReferenceError: $') !== -1 ||
+            errorName === 'ReferenceError' && (errorMessage.indexOf('$') !== -1 || errorString.indexOf('$') !== -1) ||
+            errorStack.indexOf('content-script') !== -1 ||
+            errorStack.indexOf('ch-content-script') !== -1
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            return false;
+          }
           
           // Suppress browser extension errors
           if (
@@ -96,11 +111,15 @@
             errorString.indexOf('LastPass') !== -1 ||
             errorString.indexOf('No tab with id') !== -1 ||
             errorString.indexOf('background-redux') !== -1 ||
+            errorStack.indexOf('content-script') !== -1 ||
+            errorStack.indexOf('ch-content-script') !== -1 ||
             allErrorText.indexOf('listener indicated an asynchronous response') !== -1 ||
             allErrorText.indexOf('message channel closed before a response was received') !== -1 ||
             allErrorText.indexOf('by returning true, but the message channel closed') !== -1 ||
             allErrorText.indexOf('No tab with id') !== -1 ||
-            allErrorText.indexOf('background-redux') !== -1
+            allErrorText.indexOf('background-redux') !== -1 ||
+            allErrorText.indexOf('$ is not defined') !== -1 ||
+            allErrorText.indexOf('ReferenceError: $') !== -1
           ) {
             event.preventDefault();
             event.stopPropagation();
@@ -112,6 +131,23 @@
         // Suppress window error events from browser extensions
         window.addEventListener('error', function(event) {
           var errorMessage = (event.message || (event.error && event.error.message)) || '';
+          var errorFilename = event.filename || '';
+          var errorName = (event.error && event.error.name) || '';
+          
+          // Suppress jQuery ($) not defined errors from browser extension content scripts
+          if (
+            errorMessage.indexOf('$ is not defined') !== -1 ||
+            errorMessage.indexOf('ReferenceError: $') !== -1 ||
+            errorName === 'ReferenceError' && errorMessage.indexOf('$') !== -1 ||
+            errorFilename.indexOf('content-script') !== -1 ||
+            errorFilename.indexOf('ch-content-script') !== -1
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+          }
+          
+          // Suppress browser extension errors
           if (
             errorMessage.indexOf('listener indicated an asynchronous response') !== -1 ||
             errorMessage.indexOf('message channel closed before a response was received') !== -1 ||
@@ -121,7 +157,9 @@
             errorMessage.indexOf('runtime.lastError') !== -1 ||
             errorMessage.indexOf('Cannot create item with duplicate id') !== -1 ||
             errorMessage.indexOf('No tab with id') !== -1 ||
-            errorMessage.indexOf('background-redux') !== -1
+            errorMessage.indexOf('background-redux') !== -1 ||
+            errorFilename.indexOf('content-script') !== -1 ||
+            errorFilename.indexOf('ch-content-script') !== -1
           ) {
             event.preventDefault();
             event.stopPropagation();

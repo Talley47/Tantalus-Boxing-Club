@@ -159,6 +159,8 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
       errorMessage.includes('No tab with id') ||
       errorMessage.includes('background-redux') ||
+      errorMessage.includes('$ is not defined') ||
+      errorMessage.includes('ReferenceError: $') ||
       allArgs.includes('listener indicated an asynchronous response') ||
       allArgs.includes('message channel closed before a response was received') ||
       allArgs.includes('by returning true, but the message channel closed') ||
@@ -169,6 +171,10 @@ if (typeof window !== 'undefined') {
       allArgs.includes('No tab with id') ||
       allArgs.includes('background-redux') ||
       allArgs.includes('background-redux-new.js') ||
+      allArgs.includes('$ is not defined') ||
+      allArgs.includes('ReferenceError: $') ||
+      allArgs.includes('content-script') ||
+      allArgs.includes('ch-content-script') ||
       errorString.includes('listener indicated an asynchronous response') ||
       errorString.includes('message channel closed before a response was received') ||
       errorString.includes('by returning true, but the message channel closed') ||
@@ -176,7 +182,9 @@ if (typeof window !== 'undefined') {
       errorString.includes('Cannot create item with duplicate id') ||
       errorString.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
       errorString.includes('No tab with id') ||
-      errorString.includes('background-redux')
+      errorString.includes('background-redux') ||
+      errorString.includes('$ is not defined') ||
+      errorString.includes('ReferenceError: $')
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
       // Also suppress cache operation errors which are harmless
@@ -228,6 +236,22 @@ if (typeof window !== 'undefined') {
   // Also catch unhandled errors that might be logged by the browser
   window.addEventListener('error', (event) => {
     const errorMessage = event.message || event.error?.message || '';
+    const errorFilename = event.filename || '';
+    const errorName = event.error?.name || '';
+    
+    // Suppress jQuery ($) not defined errors from browser extension content scripts
+    if (
+      errorMessage.includes('$ is not defined') ||
+      errorMessage.includes('ReferenceError: $') ||
+      (errorName === 'ReferenceError' && errorMessage.includes('$')) ||
+      errorFilename.includes('content-script') ||
+      errorFilename.includes('ch-content-script')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+    
     // Suppress browser extension errors (multiple variations)
     if (
       errorMessage.includes('listener indicated an asynchronous response') ||
@@ -239,7 +263,9 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('Cannot create item with duplicate id') ||
       errorMessage.includes('No tab with id') ||
       errorMessage.includes('background-redux') ||
-      (event.filename && event.filename.includes('background-redux'))
+      (event.filename && (event.filename.includes('background-redux') ||
+                          event.filename.includes('content-script') ||
+                          event.filename.includes('ch-content-script')))
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -266,6 +292,20 @@ if (typeof window !== 'undefined') {
     const errorName = event.reason?.name || '';
     const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`;
     
+    // Suppress jQuery ($) not defined errors from browser extension content scripts
+    if (
+      errorMessage.includes('$ is not defined') ||
+      errorMessage.includes('ReferenceError: $') ||
+      (errorName === 'ReferenceError' && (errorMessage.includes('$') || errorString.includes('$'))) ||
+      errorStack.includes('content-script') ||
+      errorStack.includes('ch-content-script')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+    
     // Suppress browser extension errors (multiple variations)
     if (
       errorMessage.includes('listener indicated an asynchronous response') ||
@@ -290,6 +330,8 @@ if (typeof window !== 'undefined') {
       errorStack.includes('by returning true') ||
       errorStack.includes('background-redux') ||
       errorStack.includes('background-redux-new.js') ||
+      errorStack.includes('content-script') ||
+      errorStack.includes('ch-content-script') ||
       allErrorText.includes('listener indicated an asynchronous response') ||
       allErrorText.includes('message channel closed before a response was received') ||
       allErrorText.includes('by returning true, but the message channel closed') ||
@@ -297,7 +339,9 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('Cannot create item with duplicate id') ||
       allErrorText.includes('No tab with id') ||
       allErrorText.includes('background-redux') ||
-      allErrorText.includes('background-redux-new.js')
+      allErrorText.includes('background-redux-new.js') ||
+      allErrorText.includes('$ is not defined') ||
+      allErrorText.includes('ReferenceError: $')
     ) {
       event.preventDefault();
       event.stopPropagation();

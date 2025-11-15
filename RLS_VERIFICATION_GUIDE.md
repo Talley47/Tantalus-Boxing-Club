@@ -1,43 +1,97 @@
-# 🔍 RLS VERIFICATION GUIDE
+# 🔒 RLS Verification Step-by-Step Guide
 
-## Step-by-Step Instructions
-
-### **Step 1: Access Supabase SQL Editor**
-
-1. Go to: https://supabase.com/dashboard
-2. Select your project
-3. Click **SQL Editor** in the left sidebar
-4. Click **New Query**
+Complete guide to verify Row Level Security (RLS) in your Supabase database.
 
 ---
 
-### **Step 2: Run RLS Verification Script**
-
-1. Open the file: `database/verify-rls-security.sql`
-2. Copy the **entire contents** of the file
-3. Paste into Supabase SQL Editor
-4. Click **Run** (or press Ctrl+Enter)
+## ⏱️ **TIME ESTIMATE: 30 minutes**
 
 ---
 
-### **Step 3: Review Results**
+## 📋 **STEP 1: Access Supabase SQL Editor (2 minutes)**
 
-The script will show you:
+1. **Go to Supabase Dashboard**:
+   - Visit: https://supabase.com/dashboard
+   - Sign in to your account
 
-#### **Check 1: Tables WITHOUT RLS** ⚠️
-- **Expected**: Should return **0 rows**
-- **If you see tables**: Those tables need RLS enabled (CRITICAL!)
+2. **Select Your Project**:
+   - Find and click: **`andmtvsqqomgwphotdwf`**
 
-#### **Check 2: All Tables with RLS Status** ✅
-- Look for: `✅ RLS Enabled` for all tables
-- **Policy Count**: Should be > 0 for critical tables
+3. **Open SQL Editor**:
+   - Click **SQL Editor** in the left sidebar
+   - Click **New Query** button (top right)
 
-#### **Check 3: All RLS Policies** 📋
+---
+
+## 📋 **STEP 2: Run Verification Script (5 minutes)**
+
+1. **Open the Verification Script**:
+   - File: `database/COMPLETE_RLS_VERIFICATION.sql`
+   - Open it in your code editor
+
+2. **Copy the Entire Script**:
+   - Select all (Ctrl+A)
+   - Copy (Ctrl+C)
+
+3. **Paste into Supabase SQL Editor**:
+   - Paste the script into the SQL Editor
+   - Click **Run** button (or press `Ctrl+Enter`)
+
+4. **Wait for Results**:
+   - The script will run multiple queries
+   - Results will appear in tabs below
+
+---
+
+## 📋 **STEP 3: Review Results (10 minutes)**
+
+### **Section 1: Tables WITHOUT RLS** 🔴
+
+**What to Look For**:
+- **Expected**: Should show **0 rows**
+- **If you see tables**: Those tables need RLS enabled immediately!
+
+**Action if Tables Found**:
+```sql
+-- For each table shown, run:
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+```
+
+---
+
+### **Section 2: All Tables with RLS Status** ✅
+
+**What to Look For**:
+- All tables should show: `✅ RLS Enabled`
+- Policy count should be > 0 for critical tables
+
+**Action if Issues Found**:
+- Tables with `❌ RLS Disabled`: Enable RLS (see Section 1)
+- Tables with `⚠️ RLS enabled but NO POLICIES`: Add policies (see Section 5)
+
+---
+
+### **Section 3: All RLS Policies** 📋
+
+**What to Look For**:
 - Lists all policies on all tables
-- Verify critical tables have policies
+- Verify critical tables have policies for:
+  - SELECT (read)
+  - INSERT (create)
+  - UPDATE (modify)
+  - DELETE (remove)
 
-#### **Check 4: Critical Tables Status** 🔒
-- Shows security status for important tables:
+**Action if Missing Policies**:
+- Review existing schema files for policy examples
+- Create missing policies
+
+---
+
+### **Section 4: Critical Tables Status** 🔴
+
+**What to Look For**:
+- All critical tables should show: `✅ Protected`
+- Critical tables include:
   - `fighter_profiles`
   - `fight_records`
   - `chat_messages`
@@ -47,64 +101,232 @@ The script will show you:
   - `disputes`
   - `scheduled_fights`
   - `matchmaking_requests`
+  - `profiles`
+  - `users`
+  - `media_assets`
 
-#### **Summary Report** 📊
-- Shows total tables, tables with RLS, and total policies
-- **Green checkmark** = All good ✅
-- **Warning** = Issues found ⚠️
+**Action if Unprotected**:
+- Enable RLS immediately
+- Create appropriate policies
 
 ---
 
-### **Step 4: Fix Any Issues**
+### **Section 5: Tables with RLS but NO POLICIES** ⚠️
 
-**If any tables show "RLS NOT ENABLED":**
+**What to Look For**:
+- **Expected**: Should show **0 rows**
+- **If you see tables**: These tables are completely locked!
 
-1. Note which tables need RLS
-2. For each table, run:
+**Action if Tables Found**:
+- These tables have RLS enabled but no policies
+- No one can access them (including admins)
+- Create policies immediately:
+
+```sql
+-- Example: Basic policy for viewing own data
+CREATE POLICY "Users can view own data" ON table_name
+    FOR SELECT
+    USING (auth.uid() = user_id);
+```
+
+---
+
+### **Section 6: Policy Coverage Analysis** 📊
+
+**What to Look For**:
+- Each table should have policies for:
+  - SELECT (if users need to read)
+  - INSERT (if users need to create)
+  - UPDATE (if users need to modify)
+  - DELETE (if users need to delete)
+
+**Action if Missing Coverage**:
+- Add policies for missing operations
+
+---
+
+### **Section 7: Summary Report** 📊
+
+**What to Look For**:
+- Check the NOTICE messages at the bottom
+- Should see:
+  - ✅ All tables have RLS enabled!
+  - ✅ All critical tables are protected!
+  - ✅ X RLS policies are configured.
+
+**If You See Warnings**:
+- Follow the instructions in the warnings
+- Fix issues and re-run script
+
+---
+
+## 📋 **STEP 4: Fix Any Issues (10 minutes)**
+
+### **If Tables Don't Have RLS**:
+
+1. **Enable RLS**:
    ```sql
    ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
    ```
-3. Then create appropriate policies (see existing schema files for examples)
 
-**If critical tables show "NOT PROTECTED":**
-- These tables MUST have RLS enabled
-- Check existing database schema files for policy examples
+2. **Create Policies**:
+   - Review existing schema files for examples
+   - Create policies based on your requirements
+
+### **If Tables Have RLS but No Policies**:
+
+1. **Create Basic Policies**:
+   ```sql
+   -- Example: Users can view their own data
+   CREATE POLICY "Users can view own data" ON table_name
+       FOR SELECT
+       USING (auth.uid() = user_id);
+   
+   -- Example: Users can insert their own data
+   CREATE POLICY "Users can insert own data" ON table_name
+       FOR INSERT
+       WITH CHECK (auth.uid() = user_id);
+   
+   -- Example: Users can update their own data
+   CREATE POLICY "Users can update own data" ON table_name
+       FOR UPDATE
+       USING (auth.uid() = user_id);
+   ```
+
+2. **Review Existing Schema Files**:
+   - `database/schema.sql` - Has policy examples
+   - `database/fix-*-rls-*.sql` - Has specific policy fixes
 
 ---
 
-### **Step 5: Verify Critical Tables**
+## 📋 **STEP 5: Re-run Verification (3 minutes)**
 
-Make sure these tables have RLS enabled AND have policies:
+1. **Clear SQL Editor**:
+   - Delete previous query
+   - Paste verification script again
 
-- ✅ `fighter_profiles` - Users can only edit their own
-- ✅ `fight_records` - Users can only add their own records
-- ✅ `chat_messages` - Users can only edit/delete their own
-- ✅ `notifications` - Users can only see their own
-- ✅ `training_camp_invitations` - Proper access control
-- ✅ `callout_requests` - Users can only see their own
-- ✅ `disputes` - Users can only see disputes they're involved in
+2. **Run Again**:
+   - Click **Run**
+   - Review all sections
+
+3. **Verify All Green**:
+   - All sections should show green checkmarks
+   - No warnings in summary
 
 ---
 
 ## ✅ **SUCCESS CRITERIA**
 
-You're good to go if:
-- ✅ Check 1 returns **0 rows** (no tables without RLS)
-- ✅ All critical tables show **✅ Protected**
-- ✅ Summary shows **"All tables have RLS enabled!"**
-- ✅ Policy count > 0 for critical tables
+You're done when:
+
+- ✅ Section 1: **0 rows** (no unprotected tables)
+- ✅ Section 2: All tables show `✅ RLS Enabled`
+- ✅ Section 4: All critical tables show `✅ Protected`
+- ✅ Section 5: **0 rows** (no locked tables)
+- ✅ Section 7: Summary shows all green checkmarks
+- ✅ No warnings in the summary report
 
 ---
 
-## 🆘 **NEED HELP?**
+## 🚨 **COMMON ISSUES & FIXES**
 
-If you see issues:
-1. Take a screenshot of the results
-2. Note which tables are missing RLS
-3. Check existing database schema files for policy examples
-4. Or ask for help creating policies for specific tables
+### Issue 1: "Table is completely locked"
+
+**Symptom**: Table has RLS enabled but no policies
+
+**Fix**: Create policies (see Step 4)
 
 ---
 
-**Ready to test?** Run the script and share the results!
+### Issue 2: "Users can't access their own data"
 
+**Symptom**: RLS policies are too restrictive
+
+**Fix**: Review and adjust policies:
+
+```sql
+-- Check existing policies
+SELECT * FROM pg_policies WHERE tablename = 'table_name';
+
+-- Drop and recreate if needed
+DROP POLICY IF EXISTS "policy_name" ON table_name;
+CREATE POLICY "policy_name" ON table_name
+    FOR SELECT
+    USING (auth.uid() = user_id);
+```
+
+---
+
+### Issue 3: "Admins can't access data"
+
+**Symptom**: No admin policies
+
+**Fix**: Add admin policies:
+
+```sql
+-- Check if is_admin_user function exists
+SELECT proname FROM pg_proc WHERE proname = 'is_admin_user';
+
+-- Create admin policy
+CREATE POLICY "Admins can manage all data" ON table_name
+    FOR ALL
+    USING (is_admin_user())
+    WITH CHECK (is_admin_user());
+```
+
+---
+
+## 📚 **RESOURCES**
+
+- **Verification Script**: `database/COMPLETE_RLS_VERIFICATION.sql`
+- **Schema Files**: `database/schema.sql`
+- **Policy Examples**: `database/fix-*-rls-*.sql`
+- **Supabase RLS Docs**: https://supabase.com/docs/guides/auth/row-level-security
+
+---
+
+## 🎯 **QUICK REFERENCE**
+
+### Enable RLS:
+```sql
+ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+```
+
+### Create Basic Policy:
+```sql
+CREATE POLICY "policy_name" ON table_name
+    FOR SELECT
+    USING (auth.uid() = user_id);
+```
+
+### Check RLS Status:
+```sql
+SELECT tablename, rowsecurity 
+FROM pg_tables 
+WHERE schemaname = 'public';
+```
+
+### List Policies:
+```sql
+SELECT * FROM pg_policies 
+WHERE schemaname = 'public' 
+AND tablename = 'table_name';
+```
+
+---
+
+## ✅ **NEXT STEPS**
+
+After RLS verification:
+
+1. ✅ Run security tests (see `SECURITY_TEST_PLAN.md`)
+2. ✅ Test with different user accounts
+3. ✅ Verify authorization works correctly
+4. ✅ Document any issues found
+5. ✅ Fix issues and re-verify
+
+---
+
+**Estimated Total Time**: 30 minutes  
+**Difficulty**: Easy  
+**Priority**: 🔴 Critical

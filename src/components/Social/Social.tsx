@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition, useDeferredValue } from 'react';
 import {
   Box,
   Card,
@@ -32,6 +32,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { chatService, ChatMessage } from '../../services/chatService';
 import { supabase } from '../../services/supabase';
+import { sanitizeText, sanitizeHTML, sanitizeURL } from '../../utils/securityUtils';
 import boxingGymBg from '../../bxr-boxinggym-hd-4.jpg';
 
 const Social: React.FC = () => {
@@ -224,6 +225,13 @@ const Social: React.FC = () => {
   const handleSaveEdit = async (messageId: string) => {
     if (!editText.trim() || !user) return;
 
+    // SECURITY: Sanitize the edited message before saving
+    const sanitizedEditText = sanitizeText(editText.trim());
+    if (!sanitizedEditText) {
+      alert('Invalid message content. Please try again.');
+      return;
+    }
+
     // Store the original message to restore if update fails
     const messageToUpdate = messages.find(m => m.id === messageId);
     if (!messageToUpdate) return;
@@ -233,13 +241,14 @@ const Social: React.FC = () => {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId
-            ? { ...msg, message: editText.trim(), updated_at: new Date().toISOString() }
+            ? { ...msg, message: sanitizedEditText, updated_at: new Date().toISOString() }
             : msg
         )
       );
 
       // Update via service (will trigger real-time update)
-      await chatService.updateMessage(messageId, user.id, editText);
+      // SECURITY: Service will also sanitize, but we sanitize here too for defense in depth
+      await chatService.updateMessage(messageId, user.id, sanitizedEditText);
       
       // Exit edit mode immediately
       setEditingMessageId(null);
@@ -271,8 +280,12 @@ const Social: React.FC = () => {
   };
 
   // Detect URLs in text and make them clickable
+  // SECURITY: All text is sanitized before rendering to prevent XSS
   const renderMessageText = (text: string) => {
     if (!text) return null;
+    
+    // SECURITY: Sanitize the entire message first to prevent XSS
+    const sanitizedText = sanitizeText(text);
     
     // Improved URL regex that matches http/https URLs and also www. and plain domains
     const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/gi;
@@ -283,17 +296,28 @@ const Social: React.FC = () => {
     // Reset regex lastIndex
     urlPattern.lastIndex = 0;
     
-    while ((match = urlPattern.exec(text)) !== null) {
+    while ((match = urlPattern.exec(sanitizedText)) !== null) {
       // Add text before the URL
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
+        // SECURITY: Sanitize text segments before adding
+        const textSegment = sanitizedText.substring(lastIndex, match.index);
+        parts.push(textSegment);
       }
       
       // Add the URL as a clickable link
       const url = match[0];
-      let href = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        href = `https://${url}`;
+      // SECURITY: Sanitize URL to prevent javascript: and other dangerous protocols
+      const sanitizedUrl = sanitizeURL(url);
+      if (!sanitizedUrl) {
+        // If URL is invalid/dangerous, just show as plain text
+        parts.push(url);
+        lastIndex = match.index + match[0].length;
+        continue;
+      }
+      
+      let href = sanitizedUrl;
+      if (!sanitizedUrl.startsWith('http://') && !sanitizedUrl.startsWith('https://')) {
+        href = `https://${sanitizedUrl}`;
       }
       
       parts.push(
@@ -524,7 +548,16 @@ const Social: React.FC = () => {
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !attachmentPreview) || !user || sending) return;
 
-    const messageText = newMessage || (attachmentPreview ? '📎 Attachment' : '');
+    // SECURITY: Sanitize message before sending to prevent XSS
+    const rawMessageText = newMessage || (attachmentPreview ? '📎 Attachment' : '');
+    const sanitizedMessageText = sanitizeText(rawMessageText.trim());
+    
+    if (!sanitizedMessageText && !attachmentPreview) {
+      alert('Invalid message content. Please try again.');
+      return;
+    }
+
+    const messageText = sanitizedMessageText || (attachmentPreview ? '📎 Attachment' : '');
     const tempId = `temp-${Date.now()}`;
     
     // Optimistically add message immediately for instant feedback
@@ -543,12 +576,25 @@ const Social: React.FC = () => {
       } : undefined,
     };
 
-    // Add optimistic message immediately
-    setMessages((prev) => {
-      const updated = [...prev, optimisticMessage];
-      return updated.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+    // Add optimistic message immediately using startTransition
+    startTransition(() => {
+      setMessages((prev) => {
+        // Optimize: if message is newest, just append (no sort needed)
+        const lastMessage = prev[prev.length - 1];
+        const isNewest = !lastMessage || 
+          new Date(optimisticMessage.created_at).getTime() >= 
+          new Date(lastMessage.created_at).getTime();
+        
+        if (isNewest) {
+          return [...prev, optimisticMessage];
+        }
+        
+        // Only sort if not newest
+        const updated = [...prev, optimisticMessage];
+        return updated.sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
     });
     
     // Clear input immediately
@@ -570,14 +616,26 @@ const Social: React.FC = () => {
       );
       
       // Replace optimistic message with real message from server
-      setMessages((prev) => {
-        // Remove the temporary message
-        const filtered = prev.filter((m) => m.id !== tempId);
-        // Add the real message (real-time subscription will also add it, but this ensures it's there)
-        const updated = [...filtered, sentMessage];
-        return updated.sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+      startTransition(() => {
+        setMessages((prev) => {
+          // Remove the temporary message
+          const filtered = prev.filter((m) => m.id !== tempId);
+          // Add the real message (real-time subscription will also add it, but this ensures it's there)
+          // Optimize: check if it's newest before sorting
+          const lastMessage = filtered[filtered.length - 1];
+          const isNewest = !lastMessage || 
+            new Date(sentMessage.created_at).getTime() >= 
+            new Date(lastMessage.created_at).getTime();
+          
+          if (isNewest) {
+            return [...filtered, sentMessage];
+          }
+          
+          const updated = [...filtered, sentMessage];
+          return updated.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
       });
       
       // Scroll to bottom after real message is added
@@ -588,8 +646,8 @@ const Social: React.FC = () => {
       console.error('Error sending message:', error);
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      // Restore input on error
-      setNewMessage(messageText);
+      // Restore input on error (use original unsanitized text for user to see what they typed)
+      setNewMessage(newMessage);
       if (attachmentPreview) {
         setAttachmentPreview(attachmentPreview);
       }
@@ -616,14 +674,16 @@ const Social: React.FC = () => {
   };
 
   // Get display name for a message
+  // SECURITY: Sanitize display names to prevent XSS
   const getDisplayName = (message: ChatMessage) => {
+    let displayName = 'Unknown User';
     if (message.fighter_profile?.name) {
-      return message.fighter_profile.name;
+      displayName = message.fighter_profile.name;
+    } else if (message.user?.email) {
+      displayName = message.user.email.split('@')[0];
     }
-    if (message.user?.email) {
-      return message.user.email.split('@')[0];
-    }
-    return 'Unknown User';
+    // SECURITY: Sanitize display name before returning
+    return sanitizeText(displayName) || 'Unknown User';
   };
 
   // Load messages on mount
@@ -650,103 +710,126 @@ const Social: React.FC = () => {
   useEffect(() => {
     if (!user) return; // Don't subscribe if user is not logged in
 
-    const channel = supabase
-      .channel('chat_messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'chat_messages',
-        },
-        async (payload) => {
-          console.log('Chat message change:', payload.eventType);
-          
-          if (payload.eventType === 'INSERT') {
-            // New message added - fetch the full message with profile
-            const newMessage = payload.new as ChatMessage;
-            try {
-              // Fetch fighter profile for the new message
-              const { data: profile } = await supabase
-                .from('fighter_profiles')
-                .select('id, name, handle')
-                .eq('user_id', newMessage.user_id)
-                .maybeSingle();
+    // Debounce queue for batching rapid updates
+    let updateQueue: Array<{ type: string; payload: any }> = [];
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const DEBOUNCE_DELAY = 150; // Batch updates within 150ms to reduce handler time
 
-              const messageWithProfile: ChatMessage = {
-                ...newMessage,
-                fighter_profile: profile || undefined,
-              };
+    // Helper function to process individual updates
+    const processUpdate = async (eventType: string, payload: any) => {
+      if (eventType === 'INSERT') {
+        // New message added - fetch the full message with profile
+        const newMessage = payload.new as ChatMessage;
+        
+        try {
+          // Fetch fighter profile for the new message
+          const { data: profile } = await supabase
+            .from('fighter_profiles')
+            .select('id, name, handle')
+            .eq('user_id', newMessage.user_id)
+            .maybeSingle();
 
-              setMessages((prev) => {
-                // Check if message already exists (by real ID) to prevent duplicates
-                const existingIndex = prev.findIndex((m) => m.id === messageWithProfile.id);
-                if (existingIndex !== -1) {
-                  // Message already exists, update it (in case profile was missing)
-                  const updated = [...prev];
-                  updated[existingIndex] = messageWithProfile;
-                  return updated.sort((a, b) => 
+          const messageWithProfile: ChatMessage = {
+            ...newMessage,
+            fighter_profile: profile || undefined,
+          };
+
+          // Use startTransition for state updates to prevent blocking
+          startTransition(() => {
+            setMessages((prev) => {
+              // Check if message already exists (by real ID) to prevent duplicates
+              const existingIndex = prev.findIndex((m) => m.id === messageWithProfile.id);
+              if (existingIndex !== -1) {
+                // Message already exists, update it (in case profile was missing)
+                const updated = [...prev];
+                updated[existingIndex] = messageWithProfile;
+                // Use a more efficient sort - only if needed
+                const needsSort = updated.length > 1 && 
+                  new Date(updated[existingIndex].created_at).getTime() < 
+                  new Date(updated[existingIndex - 1]?.created_at || 0).getTime();
+                return needsSort 
+                  ? updated.sort((a, b) => 
+                      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                    )
+                  : updated;
+              }
+              
+              // Remove any temporary optimistic messages for the same user/content
+              // This handles the case where an optimistic message was added
+              const filtered = prev.filter((m) => 
+                !(m.id.startsWith('temp-') && 
+                  m.user_id === messageWithProfile.user_id &&
+                  m.message === messageWithProfile.message)
+              );
+              
+              // Add new message - if it's the newest, just append (no sort needed)
+              const lastMessage = filtered[filtered.length - 1];
+              const isNewest = !lastMessage || 
+                new Date(messageWithProfile.created_at).getTime() >= 
+                new Date(lastMessage.created_at).getTime();
+              
+              if (isNewest) {
+                return [...filtered, messageWithProfile];
+              }
+              
+              // Only sort if message is not newest
+              const updated = [...filtered, messageWithProfile];
+              return updated.sort((a, b) => 
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              );
+            });
+            
+            // Scroll to bottom after a brief delay to ensure DOM has updated
+            setTimeout(() => {
+              if (isAtBottom) {
+                scrollToBottom();
+              }
+            }, 100);
+          });
+        } catch (error) {
+          console.error('Error fetching profile for new message:', error);
+          // Still add the message without profile
+          startTransition(() => {
+            setMessages((prev) => {
+              const existingIndex = prev.findIndex((m) => m.id === newMessage.id);
+              if (existingIndex !== -1) {
+                // Message already exists, update it
+                const updated = [...prev];
+                updated[existingIndex] = newMessage;
+                return updated;
+              }
+              
+              // Remove any temporary optimistic messages
+              const filtered = prev.filter((m) => 
+                !(m.id.startsWith('temp-') && 
+                  m.user_id === newMessage.user_id &&
+                  m.message === newMessage.message)
+              );
+              
+              // Add new message - optimize by checking if it's newest
+              const lastMessage = filtered[filtered.length - 1];
+              const isNewest = !lastMessage || 
+                new Date(newMessage.created_at).getTime() >= 
+                new Date(lastMessage.created_at).getTime();
+              
+              return isNewest 
+                ? [...filtered, newMessage]
+                : [...filtered, newMessage].sort((a, b) => 
                     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
                   );
-                }
-                
-                // Remove any temporary optimistic messages for the same user/content
-                // This handles the case where an optimistic message was added
-                const filtered = prev.filter((m) => 
-                  !(m.id.startsWith('temp-') && 
-                    m.user_id === messageWithProfile.user_id &&
-                    m.message === messageWithProfile.message)
-                );
-                
-                // Add new message and sort by created_at to ensure correct order
-                const updated = [...filtered, messageWithProfile];
-                return updated.sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
-              });
-              
-              // Scroll to bottom after a brief delay to ensure DOM has updated
-              setTimeout(() => {
-                if (isAtBottom) {
-                  scrollToBottom();
-                }
-              }, 100);
-            } catch (error) {
-              console.error('Error fetching profile for new message:', error);
-              // Still add the message without profile
-              setMessages((prev) => {
-                const existingIndex = prev.findIndex((m) => m.id === newMessage.id);
-                if (existingIndex !== -1) {
-                  // Message already exists, update it
-                  const updated = [...prev];
-                  updated[existingIndex] = newMessage;
-                  return updated.sort((a, b) => 
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                  );
-                }
-                
-                // Remove any temporary optimistic messages
-                const filtered = prev.filter((m) => 
-                  !(m.id.startsWith('temp-') && 
-                    m.user_id === newMessage.user_id &&
-                    m.message === newMessage.message)
-                );
-                
-                const updated = [...filtered, newMessage];
-                return updated.sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
-              });
-              
-              setTimeout(() => {
-                if (isAtBottom) {
-                  scrollToBottom();
-                }
-              }, 100);
-            }
-          } else if (payload.eventType === 'UPDATE') {
+            });
+            
+            setTimeout(() => {
+              if (isAtBottom) {
+                scrollToBottom();
+              }
+            }, 100);
+          });
+        }
+      } else if (eventType === 'UPDATE') {
             // Message updated - fetch the full updated message with profile
             const updatedMessage = payload.new as ChatMessage;
+            
             try {
               // Fetch fighter profile for the updated message
               const { data: profile } = await supabase
@@ -760,61 +843,179 @@ const Social: React.FC = () => {
                 fighter_profile: profile || undefined,
               };
 
-              setMessages((prev) => {
-                const updated = prev.map((msg) =>
-                  msg.id === messageWithProfile.id ? messageWithProfile : msg
-                );
-                return updated.sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
-              });
+              // Use startTransition for state updates to prevent blocking
+              startTransition(() => {
+                setMessages((prev) => {
+                  return prev.map((msg) =>
+                    msg.id === messageWithProfile.id ? messageWithProfile : msg
+                  );
+                });
 
-              // If editing this message, exit edit mode
-              if (editingMessageIdRef.current === updatedMessage.id) {
-                setEditingMessageId(null);
-                setEditText('');
-              }
+                // If editing this message, exit edit mode
+                if (editingMessageIdRef.current === updatedMessage.id) {
+                  setEditingMessageId(null);
+                  setEditText('');
+                }
+              });
             } catch (error) {
               console.error('Error fetching profile for updated message:', error);
               // Still update the message without profile
-              setMessages((prev) => {
-                const updated = prev.map((msg) =>
-                  msg.id === updatedMessage.id ? updatedMessage : msg
-                );
-                return updated.sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
+              startTransition(() => {
+                setMessages((prev) => {
+                  return prev.map((msg) =>
+                    msg.id === updatedMessage.id ? updatedMessage : msg
+                  );
+                });
+
+                // If editing this message, exit edit mode
+                if (editingMessageIdRef.current === updatedMessage.id) {
+                  setEditingMessageId(null);
+                  setEditText('');
+                }
               });
+            }
+          } else if (eventType === 'DELETE') {
+            // Message deleted - remove it from the list
+            const deletedMessage = payload.old as ChatMessage;
+            startTransition(() => {
+              setMessages((prev) =>
+                prev.filter((msg) => msg.id !== deletedMessage.id)
+              );
 
               // If editing this message, exit edit mode
-              if (editingMessageIdRef.current === updatedMessage.id) {
+              if (editingMessageIdRef.current === deletedMessage.id) {
                 setEditingMessageId(null);
                 setEditText('');
               }
-            }
-          } else if (payload.eventType === 'DELETE') {
-            // Message deleted - remove it from the list
-            const deletedMessage = payload.old as ChatMessage;
-            setMessages((prev) =>
-              prev.filter((msg) => msg.id !== deletedMessage.id)
-            );
-
-            // If editing this message, exit edit mode
-            if (editingMessageIdRef.current === deletedMessage.id) {
-              setEditingMessageId(null);
-              setEditText('');
-            }
+            });
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to chat messages');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Error subscribing to chat messages');
-        }
-      });
+        };
+
+        // Process all queued updates in a single batch
+        const processUpdateQueue = () => {
+          if (updateQueue.length === 0) return;
+
+          // Process all queued updates
+          const updates = [...updateQueue];
+          updateQueue = [];
+          
+          // Defer processing to next event loop tick to avoid blocking
+          // This ensures the handler returns quickly
+          setTimeout(() => {
+            // Use startTransition to mark this as non-urgent
+            startTransition(() => {
+              // Process updates asynchronously to avoid blocking
+              (async () => {
+                // Batch profile fetches for INSERT operations
+                const insertUpdates = updates.filter(u => u.type === 'INSERT');
+                const otherUpdates = updates.filter(u => u.type !== 'INSERT');
+                
+                // Batch fetch profiles for all INSERT messages at once
+                if (insertUpdates.length > 0) {
+                  const userIds = new Set(insertUpdates.map(u => u.payload.new?.user_id).filter(Boolean));
+                  const profileMap = new Map<string, any>();
+                  
+                  // Fetch all profiles in parallel
+                  if (userIds.size > 0) {
+                    const { data: profiles } = await supabase
+                      .from('fighter_profiles')
+                      .select('id, name, handle, user_id')
+                      .in('user_id', Array.from(userIds));
+                    
+                    if (profiles) {
+                      profiles.forEach(profile => {
+                        profileMap.set(profile.user_id, profile);
+                      });
+                    }
+                  }
+                  
+                  // Process INSERT updates with cached profiles
+                  for (const update of insertUpdates) {
+                    const newMessage = update.payload.new as ChatMessage;
+                    const profile = profileMap.get(newMessage.user_id);
+                    
+                    const messageWithProfile: ChatMessage = {
+                      ...newMessage,
+                      fighter_profile: profile || undefined,
+                    };
+                    
+                    startTransition(() => {
+                      setMessages((prev) => {
+                        const existingIndex = prev.findIndex((m) => m.id === messageWithProfile.id);
+                        if (existingIndex !== -1) {
+                          const updated = [...prev];
+                          updated[existingIndex] = messageWithProfile;
+                          return updated;
+                        }
+                        
+                        const filtered = prev.filter((m) => 
+                          !(m.id.startsWith('temp-') && 
+                            m.user_id === messageWithProfile.user_id &&
+                            m.message === messageWithProfile.message)
+                        );
+                        
+                        const lastMessage = filtered[filtered.length - 1];
+                        const isNewest = !lastMessage || 
+                          new Date(messageWithProfile.created_at).getTime() >= 
+                          new Date(lastMessage.created_at).getTime();
+                        
+                        if (isNewest) {
+                          return [...filtered, messageWithProfile];
+                        }
+                        
+                        const updated = [...filtered, messageWithProfile];
+                        return updated.sort((a, b) => 
+                          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                        );
+                      });
+                      
+                      setTimeout(() => {
+                        if (isAtBottom) {
+                          scrollToBottom();
+                        }
+                      }, 50);
+                    });
+                  }
+                }
+                
+                // Process other updates (UPDATE, DELETE) normally
+                for (const update of otherUpdates) {
+                  await processUpdate(update.type, update.payload);
+                }
+              })();
+            });
+          }, 0);
+        };
+
+        const channel = supabase
+          .channel('chat_messages_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'chat_messages',
+            },
+            (payload) => {
+              // Queue the update instead of processing immediately
+              // This batches rapid updates and reduces performance warnings
+              // Use requestAnimationFrame to ensure handler returns immediately
+              requestAnimationFrame(() => {
+                updateQueue.push({ type: payload.eventType, payload });
+                
+                // Clear existing timer and set a new one
+                if (debounceTimer) {
+                  clearTimeout(debounceTimer);
+                }
+                
+                // Process queue after debounce delay
+                debounceTimer = setTimeout(() => {
+                  processUpdateQueue();
+                }, DEBOUNCE_DELAY);
+              });
+            }
+          )
+          .subscribe();
 
     return () => {
       console.log('Unsubscribing from chat messages');
@@ -826,7 +1027,10 @@ const Social: React.FC = () => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      // Defer to avoid blocking the keypress handler
+      setTimeout(() => {
+        handleSendMessage();
+      }, 0);
     }
   };
 

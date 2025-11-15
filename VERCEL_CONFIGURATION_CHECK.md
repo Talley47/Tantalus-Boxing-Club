@@ -97,3 +97,4 @@ Your `vercel.json` and `package.json` are properly configured. The errors you're
 
 The errors you're seeing are **not** configuration errors - they're runtime errors that will be fixed once you set the environment variables and redeploy.
 
+

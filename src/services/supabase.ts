@@ -179,7 +179,8 @@ if (typeof window !== 'undefined') {
     
     // Early return for Auth session missing errors - check this first for performance
     // Suppress ALL AuthSessionMissingError errors (they're harmless - user already logged out)
-    // Also suppress 403 errors from /auth/v1/logout?scope=global (expected when session is missing)
+    // Also suppress 403 errors from /auth/v1/logout (regardless of scope=global or scope=local)
+    // These occur when session is already missing/expired - expected behavior
     // Use case-insensitive matching to catch all variations
     const hasAuthSessionError = 
       errorName === 'AuthSessionMissingError' ||
@@ -200,7 +201,10 @@ if (typeof window !== 'undefined') {
     
     const hasLogout403 = 
       (combinedErrorText.includes('403') && (combinedErrorText.includes('logout') || combinedErrorText.includes('signout'))) ||
-      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('logout') || errorMessage.toLowerCase().includes('signout')));
+      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('logout') || errorMessage.toLowerCase().includes('signout'))) ||
+      // Also catch network-level 403 errors on logout endpoint (regardless of scope parameter)
+      (combinedErrorText.includes('403') && (combinedErrorText.includes('/auth/v1/logout') || combinedErrorText.includes('logout?scope'))) ||
+      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('/auth/v1/logout') || errorMessage.toLowerCase().includes('logout?scope')));
     
     const hasGoTrueAdminApi = 
       combinedErrorText.includes('gotrueadminapi') && (combinedErrorText.includes('signout') || combinedErrorText.includes('logout'));
@@ -234,6 +238,9 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('background-redux') ||
       lowerErrorMessage.includes('$ is not defined') ||
       lowerErrorMessage.includes('referenceerror: $') ||
+      // Suppress cache errors for audio files (harmless browser cache warnings)
+      (lowerErrorMessage.includes('boxing-bell') && lowerErrorMessage.includes('cache')) ||
+      (lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
       combinedErrorText.includes('listener indicated an asynchronous response') ||
       combinedErrorText.includes('message channel closed before a response was received') ||
       combinedErrorText.includes('by returning true, but the message channel closed') ||
@@ -247,10 +254,14 @@ if (typeof window !== 'undefined') {
       combinedErrorText.includes('$ is not defined') ||
       combinedErrorText.includes('referenceerror: $') ||
       combinedErrorText.includes('content-script') ||
-      combinedErrorText.includes('ch-content-script')
+      combinedErrorText.includes('ch-content-script') ||
+      // Suppress cache errors for audio files (harmless browser cache warnings)
+      (combinedErrorText.includes('boxing-bell') && combinedErrorText.includes('cache')) ||
+      (combinedErrorText.includes('failed to load resource') && combinedErrorText.includes('cache')) ||
+      (combinedErrorText.includes('boxing-bell') && combinedErrorText.includes('err_cache'))
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
-      // Also suppress cache operation errors which are harmless
+      // Also suppress cache operation errors which are harmless (including audio file cache errors)
       return;
     }
     

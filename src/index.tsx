@@ -92,11 +92,36 @@ if (typeof window !== 'undefined') {
     }
   }, true); // Use capture phase to catch early
 
-  // Also suppress window error events from browser extensions
+  // Also suppress window error events from browser extensions and network errors
   window.addEventListener('error', (event) => {
     const errorMessage = event.message || event.error?.message || '';
     const errorFilename = event.filename || '';
     const errorName = event.error?.name || '';
+    const errorTarget = event.target as HTMLElement;
+    const errorSrc = (errorTarget as HTMLImageElement | HTMLScriptElement | HTMLAudioElement)?.src || '';
+    
+    // Suppress cache errors for audio files (harmless browser cache warnings)
+    if (
+      (errorFilename.includes('boxing-bell') || errorSrc.includes('boxing-bell')) &&
+      (errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
+       errorMessage.includes('Failed to load resource') ||
+       errorMessage.includes('cache'))
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+    
+    // Suppress 403 errors on logout endpoint (regardless of scope parameter)
+    // These occur when session is already missing/expired - expected behavior
+    if (
+      (errorFilename.includes('/auth/v1/logout') || errorSrc.includes('/auth/v1/logout')) &&
+      (errorMessage.includes('403') || errorMessage.includes('Failed to load resource'))
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
     
     // Suppress jQuery ($) not defined errors from browser extension content scripts
     if (

@@ -30,6 +30,7 @@ if (typeof window !== 'undefined') {
     const lowerErrorMessage = errorMessage.toLowerCase();
     
     // Check if this is a browser extension error (check chrome-extension:// URLs)
+    // Also catch "Unchecked runtime.lastError" errors from LastPass and other extensions
     const isBrowserExtensionError = 
       lowerErrorMessage.includes('listener indicated') ||
       lowerErrorMessage.includes('asynchronous response') ||
@@ -37,7 +38,11 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('by returning true') ||
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
+      lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
+      (lowerErrorMessage.includes('unchecked runtime') && lowerErrorMessage.includes('cannot create item')) ||
+      (lowerErrorMessage.includes('runtime.last') && lowerErrorMessage.includes('cannot create item')) ||
       lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
@@ -49,7 +54,11 @@ if (typeof window !== 'undefined') {
       allArgs.includes('by returning true') ||
       allArgs.includes('runtime.lasterror') ||
       allArgs.includes('unchecked runtime.lasterror') ||
+      allArgs.includes('runtime.lasterror') ||
+      allArgs.includes('unchecked runtime.lasterror') ||
       allArgs.includes('cannot create item') ||
+      (allArgs.includes('unchecked runtime') && allArgs.includes('cannot create item')) ||
+      (allArgs.includes('runtime.last') && allArgs.includes('cannot create item')) ||
       allArgs.includes('cannot find menu item') ||
       allArgs.includes('no tab with id') ||
       allArgs.includes('background-redux') ||
@@ -220,6 +229,8 @@ if (typeof window !== 'undefined') {
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
       lowerErrorMsg.includes('runtime.lasterror') ||
       lowerErrorMsg.includes('unchecked runtime.lasterror') ||
+      (lowerErrorMsg.includes('unchecked runtime') && lowerErrorMsg.includes('cannot create item')) ||
+      (lowerErrorMsg.includes('runtime.last') && lowerErrorMsg.includes('cannot create item')) ||
       lowerErrorMsg.includes('cannot create item with duplicate id') ||
       lowerErrorMsg.includes('cannot find menu item') ||
       lowerErrorMsg.includes('no tab with id') ||

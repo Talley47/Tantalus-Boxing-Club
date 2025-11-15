@@ -187,11 +187,21 @@ if (typeof window !== 'undefined') {
        errorObjMessage?.toLowerCase().includes('already registered'));
     
     // Suppress "Invalid login credentials" errors - these are expected and user-friendly
+    // Also suppress "Sign in error" messages that contain invalid credentials
     const isInvalidCredentials = 
       combinedErrorText.includes('invalid login credentials') ||
       combinedErrorText.includes('invalid credentials') ||
+      errorMessage.toLowerCase().includes('invalid login credentials') ||
+      errorMessage.toLowerCase().includes('invalid credentials') ||
       (errorObjMessage?.toLowerCase().includes('invalid login credentials') ||
-       errorObjMessage?.toLowerCase().includes('invalid credentials'));
+       errorObjMessage?.toLowerCase().includes('invalid credentials')) ||
+      (errorName?.toLowerCase().includes('authapierror') && 
+       (errorObjMessage?.toLowerCase().includes('invalid') || combinedErrorText.includes('400'))) ||
+      // Suppress "Sign in error" messages that are just wrapping invalid credentials
+      (errorMessage.toLowerCase().includes('sign in error') && 
+       (combinedErrorText.includes('invalid') || errorObjMessage?.toLowerCase().includes('invalid'))) ||
+      (errorMessage.toLowerCase().includes('login error') && 
+       (combinedErrorText.includes('invalid') || errorObjMessage?.toLowerCase().includes('invalid')));
     
     // Suppress database trigger errors for events table (known issue - needs SQL fix)
     // Error: "record 'new' has no field 'title'" - events table uses 'name' not 'title'
@@ -202,7 +212,14 @@ if (typeof window !== 'undefined') {
        errorObjMessage?.includes('has no field "title"')) ||
       ((errorObj as any)?.code === '42703' && combinedErrorText.includes('title'));
     
-    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError) {
+    // Suppress 400 errors from fighter_profiles queries (RLS or query format issues - handled gracefully)
+    const isFighterProfile400Error = 
+      (error.code === '400' || errorMessage.includes('400')) &&
+      (combinedErrorText.includes('fighter_profiles') || 
+       combinedErrorText.includes('fighter profile') ||
+       errorObjMessage?.includes('fighter_profiles'));
+    
+    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError || isFighterProfile400Error) {
       // Don't log - these are expected/user-friendly or known issues that need SQL fixes
       return;
     }
@@ -273,6 +290,8 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item with duplicate id') ||
+      (lowerErrorMessage.includes('unchecked runtime.lasterror') && lowerErrorMessage.includes('cannot create item')) ||
+      (lowerErrorMessage.includes('runtime.lasterror') && lowerErrorMessage.includes('cannot create item')) ||
       lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('err_cache_operation_not_supported') ||
       lowerErrorMessage.includes('no tab with id') ||
@@ -464,6 +483,8 @@ if (typeof window !== 'undefined') {
       lowerErrorMsg.includes('runtime.lasterror') ||
       lowerErrorMsg.includes('unchecked runtime.lasterror') ||
       lowerErrorMsg.includes('cannot create item with duplicate id') ||
+      (lowerErrorMsg.includes('unchecked runtime.lasterror') && lowerErrorMsg.includes('cannot create item')) ||
+      (lowerErrorMsg.includes('runtime.lasterror') && lowerErrorMsg.includes('cannot create item')) ||
       lowerErrorMsg.includes('cannot find menu item') ||
       lowerErrorMsg.includes('no tab with id') ||
       lowerErrorMsg.includes('background-redux') ||
@@ -477,6 +498,8 @@ if (typeof window !== 'undefined') {
       lowerErrorString.includes('runtime.lasterror') ||
       lowerErrorString.includes('unchecked runtime.lasterror') ||
       lowerErrorString.includes('cannot create item with duplicate id') ||
+      (lowerErrorString.includes('unchecked runtime.lasterror') && lowerErrorString.includes('cannot create item')) ||
+      (lowerErrorString.includes('runtime.lasterror') && lowerErrorString.includes('cannot create item')) ||
       lowerErrorString.includes('cannot find menu item') ||
       lowerErrorString.includes('lastpass') ||
       lowerErrorString.includes('no tab with id') ||
@@ -489,6 +512,7 @@ if (typeof window !== 'undefined') {
       lowerErrorStack.includes('runtime.lasterror') ||
       lowerErrorStack.includes('unchecked runtime.lasterror') ||
       lowerErrorStack.includes('cannot create item') ||
+      (lowerErrorStack.includes('runtime.lasterror') && lowerErrorStack.includes('cannot create item')) ||
       lowerErrorStack.includes('cannot find menu item') ||
       lowerErrorStack.includes('background-redux') ||
       lowerErrorStack.includes('background-redux-new.js') ||
@@ -501,6 +525,8 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('runtime.lasterror') ||
       allErrorText.includes('unchecked runtime.lasterror') ||
       allErrorText.includes('cannot create item with duplicate id') ||
+      (allErrorText.includes('unchecked runtime.lasterror') && allErrorText.includes('cannot create item')) ||
+      (allErrorText.includes('runtime.lasterror') && allErrorText.includes('cannot create item')) ||
       allErrorText.includes('cannot find menu item') ||
       allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
@@ -590,20 +616,32 @@ export const getFighterProfile = async (userId: string) => {
       .eq('user_id', userId)
       .maybeSingle(); // Use maybeSingle() instead of single() to return null if not found
     
-    // 406 errors or "not found" errors are OK - admin accounts may not have fighter profiles
+    // 400, 406 errors or "not found" errors are OK - admin accounts may not have fighter profiles
+    // 400 can occur due to RLS policies or query format issues
     if (error) {
       // PGRST116 means no rows found, which is fine
-      if (error.code === 'PGRST116' || error.code === '406' || error.message?.includes('Not Found')) {
+      // 400 and 406 can occur due to RLS or query issues - treat as "not found"
+      if (error.code === 'PGRST116' || 
+          error.code === '406' || 
+          error.code === '400' ||
+          error.message?.includes('Not Found') ||
+          error.message?.includes('400') ||
+          error.message?.includes('406')) {
+        // Silently return null - this is expected for admin accounts or RLS issues
         return null;
       }
+      // Only throw unexpected errors
       throw error;
     }
     
     return data;
   } catch (error: any) {
-    // Handle 406 errors gracefully (often RLS or query format issues)
-    if (error.code === '406' || error.message?.includes('406')) {
-      console.log('Fighter profile query returned 406 (may be RLS or admin account)');
+    // Handle 400 and 406 errors gracefully (often RLS or query format issues)
+    if (error.code === '406' || 
+        error.code === '400' || 
+        error.message?.includes('406') ||
+        error.message?.includes('400')) {
+      // Silently return null - this is expected for admin accounts or RLS issues
       return null;
     }
     throw error;

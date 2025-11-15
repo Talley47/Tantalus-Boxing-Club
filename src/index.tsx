@@ -8,6 +8,20 @@ import ErrorBoundary from './components/Shared/ErrorBoundary';
 // Suppress browser extension errors EARLY - before any other code runs
 // These errors are harmless and come from browser extensions (e.g., LastPass, Grammarly)
 if (typeof window !== 'undefined') {
+  // Add a helpful message explaining browser extension errors (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    // Use setTimeout to ensure this runs after browser extension errors are logged
+    setTimeout(() => {
+      console.log(
+        '%cℹ️ Browser Extension Errors',
+        'color: #2196F3; font-weight: bold; font-size: 12px;'
+      );
+      console.log(
+        '%cIf you see errors like "No tab with id", "Unchecked runtime.lastError", or "Cannot find menu item" in the console, these are harmless browser extension errors (LastPass, Redux DevTools, etc.) and can be safely ignored. They do not affect the app\'s functionality.',
+        'color: #666; font-size: 11px; line-height: 1.4;'
+      );
+    }, 1000);
+  }
   // Also suppress at console level to prevent console logging
   const originalConsoleError = console.error;
   console.error = (...args: any[]) => {

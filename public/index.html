@@ -13,7 +13,7 @@
     <!-- Note: This allows Vercel Live feedback script in development -->
     <!-- In production, CSP is set via vercel.json headers -->
     <!-- Note: frame-ancestors is ignored in meta tags, so it's removed -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vercel.live; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://vercel.live https://*.vercel-insights.com; script-src-elem 'self' 'unsafe-inline' https://*.supabase.co https://vercel.live https://*.vercel-insights.com; script-src-attr 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vercel.live https://*.vercel-insights.com; frame-src 'self' https://vercel.live; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -58,7 +58,10 @@
             message.indexOf('Add Payment Card') !== -1 ||
             message.indexOf('Add other item') !== -1 ||
             message.indexOf('Save all entered data') !== -1 ||
-            message.indexOf('Generate Secure Password') !== -1
+            message.indexOf('Generate Secure Password') !== -1 ||
+            message.indexOf('No tab with id') !== -1 ||
+            message.indexOf('background-redux-new.js') !== -1 ||
+            message.indexOf('background-redux') !== -1
           ) {
             // Silently ignore browser extension warnings
             return;
@@ -84,14 +87,20 @@
             (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
             errorMessage.indexOf('runtime.lastError') !== -1 ||
             errorMessage.indexOf('Cannot create item with duplicate id') !== -1 ||
+            errorMessage.indexOf('No tab with id') !== -1 ||
+            errorMessage.indexOf('background-redux') !== -1 ||
             errorString.indexOf('listener indicated') !== -1 ||
             errorString.indexOf('message channel closed') !== -1 ||
             errorString.indexOf('by returning true') !== -1 ||
             errorString.indexOf('runtime.lastError') !== -1 ||
             errorString.indexOf('LastPass') !== -1 ||
+            errorString.indexOf('No tab with id') !== -1 ||
+            errorString.indexOf('background-redux') !== -1 ||
             allErrorText.indexOf('listener indicated an asynchronous response') !== -1 ||
             allErrorText.indexOf('message channel closed before a response was received') !== -1 ||
-            allErrorText.indexOf('by returning true, but the message channel closed') !== -1
+            allErrorText.indexOf('by returning true, but the message channel closed') !== -1 ||
+            allErrorText.indexOf('No tab with id') !== -1 ||
+            allErrorText.indexOf('background-redux') !== -1
           ) {
             event.preventDefault();
             event.stopPropagation();
@@ -110,7 +119,9 @@
             errorMessage.indexOf('by returning true, but the message channel closed') !== -1 ||
             (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
             errorMessage.indexOf('runtime.lastError') !== -1 ||
-            errorMessage.indexOf('Cannot create item with duplicate id') !== -1
+            errorMessage.indexOf('Cannot create item with duplicate id') !== -1 ||
+            errorMessage.indexOf('No tab with id') !== -1 ||
+            errorMessage.indexOf('background-redux') !== -1
           ) {
             event.preventDefault();
             event.stopPropagation();

@@ -165,7 +165,8 @@ if (typeof window !== 'undefined') {
     // Early return for Auth session missing errors - check this first for performance
     // Suppress ALL AuthSessionMissingError errors (they're harmless - user already logged out)
     // Also suppress 403 errors from /auth/v1/logout?scope=global (expected when session is missing)
-    if (
+    // Also suppress any "Sign out error" or "Error signing out" messages with AuthSessionMissingError
+    const hasAuthSessionError = 
       allArgs.includes('AuthSessionMissingError') || 
       allArgs.includes('Auth session missing') ||
       errorName === 'AuthSessionMissingError' ||
@@ -174,16 +175,35 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('AuthSessionMissingError') ||
       errorMessage.includes('Auth session missing') ||
       combinedErrorText.includes('AuthSessionMissingError') ||
-      combinedErrorText.includes('Auth session missing') ||
-      // Also suppress 403 errors from logout endpoint (expected when session is missing)
+      combinedErrorText.includes('Auth session missing');
+    
+    const hasSignOutError = 
+      allArgs.includes('Sign out error') ||
+      allArgs.includes('Error signing out') ||
+      allArgs.includes('sign out error') ||
+      allArgs.includes('error signing out') ||
+      errorMessage.includes('Sign out error') ||
+      errorMessage.includes('Error signing out');
+    
+    const hasLogout403 = 
       (allArgs.includes('403') && (allArgs.includes('logout') || allArgs.includes('signOut') || allArgs.includes('sign out'))) ||
-      (errorMessage.includes('403') && (errorMessage.includes('logout') || errorMessage.includes('signOut'))) ||
-      // Suppress errors from GoTrueAdminApi.ts during sign out (these are expected)
-      (allArgs.includes('GoTrueAdminApi') && (allArgs.includes('signOut') || allArgs.includes('logout')))
+      (errorMessage.includes('403') && (errorMessage.includes('logout') || errorMessage.includes('signOut')));
+    
+    const hasGoTrueAdminApi = 
+      allArgs.includes('GoTrueAdminApi') && (allArgs.includes('signOut') || allArgs.includes('logout'));
+    
+    if (
+      hasAuthSessionError ||
+      (hasSignOutError && hasAuthSessionError) ||
+      hasLogout403 ||
+      hasGoTrueAdminApi ||
+      // Also suppress any error that mentions both sign out and session missing (catch-all)
+      (hasSignOutError && (allArgs.includes('session') || errorMessage.includes('session')))
     ) {
       // Suppress all AuthSessionMissingError - they're harmless (user already logged out)
       // This includes sign out errors, which are expected when session is missing
       // Also suppress 403 errors from logout endpoint when session is missing
+      // Also suppress any "Sign out error" messages (from old code) that include session errors
       return;
     }
     

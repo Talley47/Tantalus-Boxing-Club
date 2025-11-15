@@ -184,22 +184,24 @@ const LoginPage: React.FC = () => {
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
-            
-            <Box textAlign="center">
-              <Link
-                component="button"
-                type="button"
-                variant="body2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigate('/register');
-                }}
-                sx={{ textDecoration: 'none', cursor: 'pointer' }}
-              >
-                Don't have an account? Sign Up
-              </Link>
-            </Box>
+          </Box>
+          
+          <Box textAlign="center" sx={{ mt: 2 }}>
+            <Button
+              type="button"
+              variant="text"
+              onClick={() => navigate('/register')}
+              sx={{ 
+                textTransform: 'none',
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              Don't have an account? Sign Up
+            </Button>
           </Box>
         </Paper>
         </Box>

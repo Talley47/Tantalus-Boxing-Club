@@ -214,7 +214,7 @@ if (typeof window !== 'undefined') {
     
     // Suppress 400 errors from fighter_profiles queries (RLS or query format issues - handled gracefully)
     const isFighterProfile400Error = 
-      (error.code === '400' || errorMessage.includes('400')) &&
+      ((errorObj as any)?.code === '400' || errorMessage.includes('400')) &&
       (combinedErrorText.includes('fighter_profiles') || 
        combinedErrorText.includes('fighter profile') ||
        errorObjMessage?.includes('fighter_profiles'));

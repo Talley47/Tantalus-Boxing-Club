@@ -163,11 +163,18 @@ if (typeof window !== 'undefined') {
     const errorStack = event.error?.stack || '';
     
     // Suppress cache errors for audio files (harmless browser cache warnings)
+    // Handle URL-encoded filenames (e.g., boxing-bell-signals-6115%20(1).mp3)
+    const decodedFilename = decodeURIComponent(errorFilename);
+    const decodedSrc = decodeURIComponent(errorSrc);
     if (
-      (errorFilename.includes('boxing-bell') || errorSrc.includes('boxing-bell')) &&
+      (errorFilename.includes('boxing-bell') || 
+       errorSrc.includes('boxing-bell') ||
+       decodedFilename.includes('boxing-bell') ||
+       decodedSrc.includes('boxing-bell')) &&
       (errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
        errorMessage.includes('Failed to load resource') ||
-       errorMessage.includes('cache'))
+       errorMessage.includes('cache') ||
+       errorMessage.includes('net::ERR_CACHE'))
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -277,4 +284,5 @@ root.render(
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
 reportWebVitals();

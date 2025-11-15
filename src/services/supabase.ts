@@ -299,8 +299,11 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('$ is not defined') ||
       lowerErrorMessage.includes('referenceerror: $') ||
       // Suppress cache errors for audio files (harmless browser cache warnings)
-      (lowerErrorMessage.includes('boxing-bell') && lowerErrorMessage.includes('cache')) ||
-      (lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
+      // Handle URL-encoded filenames and network cache errors
+      (lowerErrorMessage.includes('boxing-bell') && (lowerErrorMessage.includes('cache') || lowerErrorMessage.includes('err_cache'))) ||
+      (lowerErrorMessage.includes('failed to load resource') && (lowerErrorMessage.includes('cache') || lowerErrorMessage.includes('boxing-bell'))) ||
+      (lowerErrorMessage.includes('net::err_cache') && lowerErrorMessage.includes('boxing-bell')) ||
+      lowerErrorMessage.includes('err_cache_operation_not_supported') ||
       // Suppress errors from /login and /matchmaking routes if they're browser extension errors
       (isFromRoute && (lowerErrorMessage.includes('listener') || 
                        lowerErrorMessage.includes('message channel') || 
@@ -431,7 +434,20 @@ if (typeof window !== 'undefined') {
     const errorString = JSON.stringify(event.reason) || '';
     const errorStack = event.reason?.stack || '';
     const errorName = event.reason?.name || '';
-    const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`;
+    const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`.toLowerCase();
+    
+    // Suppress cache errors for audio files (harmless browser cache warnings)
+    if (
+      allErrorText.includes('boxing-bell') && 
+      (allErrorText.includes('cache') || 
+       allErrorText.includes('err_cache') ||
+       allErrorText.includes('net::err_cache'))
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
     
     // Suppress jQuery ($) not defined errors from browser extension content scripts
     if (
@@ -492,6 +508,10 @@ if (typeof window !== 'undefined') {
       (isFromRoute && (lowerErrorMsg.includes('listener') || 
                        lowerErrorMsg.includes('message channel') || 
                        lowerErrorMsg.includes('asynchronous response'))) ||
+      // Also check allErrorText for the error message (catches errors in error string/stack)
+      allErrorText.includes('listener indicated an asynchronous response') ||
+      allErrorText.includes('message channel closed before a response was received') ||
+      allErrorText.includes('by returning true, but the message channel closed') ||
       lowerErrorString.includes('listener indicated') ||
       lowerErrorString.includes('message channel closed') ||
       lowerErrorString.includes('by returning true') ||

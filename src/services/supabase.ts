@@ -144,61 +144,75 @@ if (typeof window !== 'undefined') {
   console.error = (...args: any[]) => {
     // Filter out specific WebSocket connection errors from Supabase Realtime
     const errorMessage = args[0]?.toString() || '';
-    const errorObj = args.find(arg => arg && typeof arg === 'object' && (arg.name || arg.message)) || args[0];
-    const allArgs = args.join(' ');
-    const errorString = errorObj ? JSON.stringify(errorObj) : '';
+    const errorObj = args.find(arg => arg && typeof arg === 'object' && (arg.name || arg.message || arg.stack)) || args[0];
     
-    // Check error object properties for Auth session missing errors
-    // Check all arguments for error objects (console.error can be called with multiple args)
+    // Build a comprehensive string from all arguments, handling Error objects properly
+    let allArgs = '';
     let errorName = '';
     let errorObjMessage = '';
+    let errorStack = '';
+    
     for (const arg of args) {
       if (arg && typeof arg === 'object') {
         if (arg.name) errorName = arg.name;
         if (arg.message) errorObjMessage = arg.message;
-        if (errorName && errorObjMessage) break; // Found both, no need to continue
+        if (arg.stack) errorStack = arg.stack;
+        // Add string representation of error object
+        allArgs += ` ${arg.toString()}`;
+        if (arg.message) allArgs += ` ${arg.message}`;
+        if (arg.name) allArgs += ` ${arg.name}`;
+      } else {
+        allArgs += ` ${String(arg)}`;
       }
     }
     
-    const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${allArgs} ${errorString}`;
+    // Also try to stringify the error object for additional checking
+    let errorString = '';
+    try {
+      errorString = errorObj ? JSON.stringify(errorObj) : '';
+    } catch (e) {
+      // If stringify fails, use toString
+      errorString = errorObj ? errorObj.toString() : '';
+    }
+    
+    const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${errorStack} ${allArgs} ${errorString}`.toLowerCase();
     
     // Early return for Auth session missing errors - check this first for performance
     // Suppress ALL AuthSessionMissingError errors (they're harmless - user already logged out)
     // Also suppress 403 errors from /auth/v1/logout?scope=global (expected when session is missing)
-    // Also suppress any "Sign out error" or "Error signing out" messages with AuthSessionMissingError
+    // Use case-insensitive matching to catch all variations
     const hasAuthSessionError = 
-      allArgs.includes('AuthSessionMissingError') || 
-      allArgs.includes('Auth session missing') ||
       errorName === 'AuthSessionMissingError' ||
-      errorObjMessage.includes('Auth session missing') ||
-      errorObjMessage.includes('AuthSessionMissingError') ||
-      errorMessage.includes('AuthSessionMissingError') ||
-      errorMessage.includes('Auth session missing') ||
-      combinedErrorText.includes('AuthSessionMissingError') ||
-      combinedErrorText.includes('Auth session missing');
+      errorName?.toLowerCase() === 'authsessionmissingerror' ||
+      errorObjMessage?.toLowerCase().includes('auth session missing') ||
+      errorObjMessage?.toLowerCase().includes('authsessionmissingerror') ||
+      errorStack?.toLowerCase().includes('authsessionmissingerror') ||
+      errorStack?.toLowerCase().includes('auth session missing') ||
+      combinedErrorText.includes('authsessionmissingerror') ||
+      combinedErrorText.includes('auth session missing');
     
     const hasSignOutError = 
-      allArgs.includes('Sign out error') ||
-      allArgs.includes('Error signing out') ||
-      allArgs.includes('sign out error') ||
-      allArgs.includes('error signing out') ||
-      errorMessage.includes('Sign out error') ||
-      errorMessage.includes('Error signing out');
+      combinedErrorText.includes('sign out error') ||
+      combinedErrorText.includes('error signing out') ||
+      combinedErrorText.includes('signing out') ||
+      errorMessage.toLowerCase().includes('sign out error') ||
+      errorMessage.toLowerCase().includes('error signing out');
     
     const hasLogout403 = 
-      (allArgs.includes('403') && (allArgs.includes('logout') || allArgs.includes('signOut') || allArgs.includes('sign out'))) ||
-      (errorMessage.includes('403') && (errorMessage.includes('logout') || errorMessage.includes('signOut')));
+      (combinedErrorText.includes('403') && (combinedErrorText.includes('logout') || combinedErrorText.includes('signout'))) ||
+      (errorMessage.toLowerCase().includes('403') && (errorMessage.toLowerCase().includes('logout') || errorMessage.toLowerCase().includes('signout')));
     
     const hasGoTrueAdminApi = 
-      allArgs.includes('GoTrueAdminApi') && (allArgs.includes('signOut') || allArgs.includes('logout'));
+      combinedErrorText.includes('gotrueadminapi') && (combinedErrorText.includes('signout') || combinedErrorText.includes('logout'));
     
+    // Suppress if it's an auth session error, or sign out related with session error, or 403 on logout
     if (
       hasAuthSessionError ||
       (hasSignOutError && hasAuthSessionError) ||
       hasLogout403 ||
       hasGoTrueAdminApi ||
-      // Also suppress any error that mentions both sign out and session missing (catch-all)
-      (hasSignOutError && (allArgs.includes('session') || errorMessage.includes('session')))
+      // Catch-all: if it mentions sign out and session (likely a session error during sign out)
+      (hasSignOutError && (combinedErrorText.includes('session') || errorStack?.toLowerCase().includes('session')))
     ) {
       // Suppress all AuthSessionMissingError - they're harmless (user already logged out)
       // This includes sign out errors, which are expected when session is missing
@@ -207,72 +221,36 @@ if (typeof window !== 'undefined') {
       return;
     }
     
-    // Suppress harmless browser extension errors and cache errors
+    // Suppress harmless browser extension errors and cache errors (use lowercase for consistency)
+    const lowerErrorMessage = errorMessage.toLowerCase();
     if (
-      errorMessage.includes('listener indicated an asynchronous response') ||
-      errorMessage.includes('message channel closed before a response was received') ||
-      errorMessage.includes('A listener indicated an asynchronous response') ||
-      errorMessage.includes('by returning true, but the message channel closed') ||
-      errorMessage.includes('runtime.lastError') ||
-      errorMessage.includes('Cannot create item with duplicate id') ||
-      errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
-      errorMessage.includes('No tab with id') ||
-      errorMessage.includes('background-redux') ||
-      errorMessage.includes('$ is not defined') ||
-      errorMessage.includes('ReferenceError: $') ||
-      allArgs.includes('listener indicated an asynchronous response') ||
-      allArgs.includes('message channel closed before a response was received') ||
-      allArgs.includes('by returning true, but the message channel closed') ||
-      allArgs.includes('runtime.lastError') ||
-      allArgs.includes('Cannot create item with duplicate id') ||
-      allArgs.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
-      allArgs.includes('LastPass') ||
-      allArgs.includes('No tab with id') ||
-      allArgs.includes('background-redux') ||
-      allArgs.includes('background-redux-new.js') ||
-      allArgs.includes('$ is not defined') ||
-      allArgs.includes('ReferenceError: $') ||
-      allArgs.includes('content-script') ||
-      allArgs.includes('ch-content-script') ||
-      errorString.includes('listener indicated an asynchronous response') ||
-      errorString.includes('message channel closed before a response was received') ||
-      errorString.includes('by returning true, but the message channel closed') ||
-      errorString.includes('runtime.lastError') ||
-      errorString.includes('Cannot create item with duplicate id') ||
-      errorString.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') ||
-      errorString.includes('No tab with id') ||
-      errorString.includes('background-redux') ||
-      errorString.includes('$ is not defined') ||
-      errorString.includes('ReferenceError: $') ||
-      // Auth session missing errors (check all variations and all arguments)
-      // Check if any argument contains session missing indicators
-      errorMessage.includes('Auth session missing') ||
-      errorMessage.includes('AuthSessionMissingError') ||
-      errorMessage.includes('session missing') ||
-      errorName === 'AuthSessionMissingError' ||
-      errorObjMessage.includes('Auth session missing') ||
-      errorObjMessage.includes('AuthSessionMissingError') ||
-      errorObjMessage.includes('session missing') ||
-      allArgs.includes('Auth session missing') ||
-      allArgs.includes('AuthSessionMissingError') ||
-      // If "Sign out error" or "Error signing out" appears with session missing indicators, suppress it
-      (allArgs.includes('Sign out error') && (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing') || allArgs.includes('session missing') || errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing'))) ||
-      (allArgs.includes('Error signing out') && (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing') || allArgs.includes('session missing') || errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing'))) ||
-      errorString.includes('Auth session missing') ||
-      errorString.includes('AuthSessionMissingError') ||
-      combinedErrorText.includes('Auth session missing') ||
-      combinedErrorText.includes('AuthSessionMissingError') ||
-      // Check all arguments individually for error objects with session missing
-      args.some((arg: any) => 
-        arg && typeof arg === 'object' && (
-          arg.name === 'AuthSessionMissingError' ||
-          (arg.message && (arg.message.includes('Auth session missing') || arg.message.includes('session missing')))
-        )
-      )
+      lowerErrorMessage.includes('listener indicated an asynchronous response') ||
+      lowerErrorMessage.includes('message channel closed before a response was received') ||
+      lowerErrorMessage.includes('by returning true, but the message channel closed') ||
+      lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('cannot create item with duplicate id') ||
+      lowerErrorMessage.includes('err_cache_operation_not_supported') ||
+      lowerErrorMessage.includes('no tab with id') ||
+      lowerErrorMessage.includes('background-redux') ||
+      lowerErrorMessage.includes('$ is not defined') ||
+      lowerErrorMessage.includes('referenceerror: $') ||
+      combinedErrorText.includes('listener indicated an asynchronous response') ||
+      combinedErrorText.includes('message channel closed before a response was received') ||
+      combinedErrorText.includes('by returning true, but the message channel closed') ||
+      combinedErrorText.includes('runtime.lasterror') ||
+      combinedErrorText.includes('cannot create item with duplicate id') ||
+      combinedErrorText.includes('err_cache_operation_not_supported') ||
+      combinedErrorText.includes('lastpass') ||
+      combinedErrorText.includes('no tab with id') ||
+      combinedErrorText.includes('background-redux') ||
+      combinedErrorText.includes('background-redux-new.js') ||
+      combinedErrorText.includes('$ is not defined') ||
+      combinedErrorText.includes('referenceerror: $') ||
+      combinedErrorText.includes('content-script') ||
+      combinedErrorText.includes('ch-content-script')
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
       // Also suppress cache operation errors which are harmless
-      // Also suppress Auth session missing errors (user already logged out)
       return;
     }
     

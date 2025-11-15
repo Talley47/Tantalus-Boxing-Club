@@ -367,7 +367,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (!session) {
         // No active session - user is already logged out
-        // Just clear local state and return (defensive UI - don't error)
+        // Clear localStorage directly as a fallback (defensive)
+        try {
+          localStorage.removeItem('tantalus-boxing-club-auth');
+        } catch (e) {
+          // Ignore localStorage errors (private browsing, etc.)
+        }
         setUser(null);
         setLoading(false);
         return;
@@ -376,22 +381,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // There's an active session - sign out with 'local' scope
       // 'local' just clears the cached session in this client (no refresh token needed)
       // 'global' would revoke all sessions but requires a valid refresh token
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      // IMPORTANT: Explicitly pass scope as 'local' to avoid 403 errors
+      const { error } = await supabase.auth.signOut({ scope: 'local' as const });
       
       if (error) {
-        // If session is already missing, that's fine - user is already logged out
+        // If session is already missing or 403 error, that's fine - user is already logged out
         // This can happen if session expired between check and signOut call
-        if (error.message?.includes('Auth session missing') || 
-            error.name === 'AuthSessionMissingError' ||
-            error.message?.includes('session missing')) {
+        const isSessionError = 
+          error.message?.includes('Auth session missing') || 
+          error.name === 'AuthSessionMissingError' ||
+          error.message?.includes('session missing') ||
+          error.message?.includes('403') ||
+          error.code === '403';
+        
+        if (isSessionError) {
           // Silently handle - user is already logged out
-          // Clear local state anyway
+          // Clear localStorage directly as fallback
+          try {
+            localStorage.removeItem('tantalus-boxing-club-auth');
+          } catch (e) {
+            // Ignore localStorage errors
+          }
           setUser(null);
           setLoading(false);
           return;
         }
         // For other errors, log but still clear local state (defensive)
         console.warn('Sign out error (clearing local state anyway):', error);
+        // Clear localStorage as fallback
+        try {
+          localStorage.removeItem('tantalus-boxing-club-auth');
+        } catch (e) {
+          // Ignore localStorage errors
+        }
         setUser(null);
         setLoading(false);
         return;
@@ -400,19 +422,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Successfully signed out
       setUser(null);
     } catch (error: any) {
-      // Check if this is a session missing error
-      const isSessionMissing = 
+      // Check if this is a session missing or 403 error
+      const isSessionError = 
         error?.message?.includes('Auth session missing') || 
         error?.name === 'AuthSessionMissingError' ||
         error?.message?.includes('session missing') ||
+        error?.message?.includes('403') ||
+        error?.code === '403' ||
         error?.toString()?.includes('Auth session missing') ||
         error?.toString()?.includes('AuthSessionMissingError');
       
-      // Don't log session missing errors - they're harmless (user already logged out)
+      // Don't log session missing/403 errors - they're harmless (user already logged out)
       // Only log actual errors (not session missing)
-      if (!isSessionMissing) {
+      if (!isSessionError) {
         console.warn('Sign out error (clearing local state anyway):', error);
       }
+      
+      // Clear localStorage as fallback to ensure session is removed
+      try {
+        localStorage.removeItem('tantalus-boxing-club-auth');
+      } catch (e) {
+        // Ignore localStorage errors (private browsing, etc.)
+      }
+      
       // Clear local state even if there was an error (user is effectively logged out)
       // This ensures the UI updates to logged-out state regardless of API errors
       setUser(null);

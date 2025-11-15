@@ -463,8 +463,25 @@ export const getCurrentUser = async () => {
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  // Check for session first to avoid 403 errors
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    // No session - user already logged out, nothing to do
+    return;
+  }
+  
+  // Use 'local' scope to avoid 403 errors when refresh token is missing
+  // 'local' just clears cached session in this client
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) {
+    // If it's a session missing error, that's fine - user is already logged out
+    if (error.message?.includes('Auth session missing') || 
+        error.name === 'AuthSessionMissingError') {
+      return; // Silently ignore - user is already logged out
+    }
+    throw error;
+  }
 };
 
 export const getFighterProfile = async (userId: string) => {

@@ -188,9 +188,14 @@ const LoginPage: React.FC = () => {
             <Box textAlign="center">
               <Link
                 component="button"
+                type="button"
                 variant="body2"
-                onClick={() => navigate('/register')}
-                sx={{ textDecoration: 'none' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate('/register');
+                }}
+                sx={{ textDecoration: 'none', cursor: 'pointer' }}
               >
                 Don't have an account? Sign Up
               </Link>

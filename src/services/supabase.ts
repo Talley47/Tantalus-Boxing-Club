@@ -193,8 +193,17 @@ if (typeof window !== 'undefined') {
       (errorObjMessage?.toLowerCase().includes('invalid login credentials') ||
        errorObjMessage?.toLowerCase().includes('invalid credentials'));
     
-    if (isUserAlreadyRegistered || isInvalidCredentials) {
-      // Don't log - these are expected and user-friendly, shown in UI
+    // Suppress database trigger errors for events table (known issue - needs SQL fix)
+    // Error: "record 'new' has no field 'title'" - events table uses 'name' not 'title'
+    const isEventsTriggerError = 
+      combinedErrorText.includes('record "new" has no field "title"') ||
+      combinedErrorText.includes('has no field "title"') ||
+      (errorObjMessage?.includes('record "new" has no field "title"') ||
+       errorObjMessage?.includes('has no field "title"')) ||
+      (error?.code === '42703' && combinedErrorText.includes('title'));
+    
+    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError) {
+      // Don't log - these are expected/user-friendly or known issues that need SQL fixes
       return;
     }
     

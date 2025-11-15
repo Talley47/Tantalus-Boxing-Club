@@ -162,6 +162,18 @@ if (typeof window !== 'undefined') {
     
     const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${allArgs} ${errorString}`;
     
+    // Early return for Auth session missing errors - check this first for performance
+    if (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing')) {
+      // If this is a sign out error with session missing, suppress it
+      if (allArgs.includes('Sign out error') || allArgs.includes('Error signing out')) {
+        return;
+      }
+      // Also suppress if error object has AuthSessionMissingError
+      if (errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing')) {
+        return;
+      }
+    }
+    
     // Suppress harmless browser extension errors and cache errors
     if (
       errorMessage.includes('listener indicated an asynchronous response') ||
@@ -200,6 +212,7 @@ if (typeof window !== 'undefined') {
       errorString.includes('$ is not defined') ||
       errorString.includes('ReferenceError: $') ||
       // Auth session missing errors (check all variations and all arguments)
+      // Check if any argument contains session missing indicators
       errorMessage.includes('Auth session missing') ||
       errorMessage.includes('AuthSessionMissingError') ||
       errorMessage.includes('session missing') ||
@@ -209,12 +222,20 @@ if (typeof window !== 'undefined') {
       errorObjMessage.includes('session missing') ||
       allArgs.includes('Auth session missing') ||
       allArgs.includes('AuthSessionMissingError') ||
-      allArgs.includes('Sign out error') ||
-      allArgs.includes('Error signing out') ||
+      // If "Sign out error" or "Error signing out" appears with session missing indicators, suppress it
+      (allArgs.includes('Sign out error') && (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing') || allArgs.includes('session missing') || errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing'))) ||
+      (allArgs.includes('Error signing out') && (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing') || allArgs.includes('session missing') || errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing'))) ||
       errorString.includes('Auth session missing') ||
       errorString.includes('AuthSessionMissingError') ||
       combinedErrorText.includes('Auth session missing') ||
-      combinedErrorText.includes('AuthSessionMissingError')
+      combinedErrorText.includes('AuthSessionMissingError') ||
+      // Check all arguments individually for error objects with session missing
+      args.some((arg: any) => 
+        arg && typeof arg === 'object' && (
+          arg.name === 'AuthSessionMissingError' ||
+          (arg.message && (arg.message.includes('Auth session missing') || arg.message.includes('session missing')))
+        )
+      )
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
       // Also suppress cache operation errors which are harmless

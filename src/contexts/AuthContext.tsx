@@ -362,22 +362,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signOut();
+      // Check if there's an active session before trying to sign out
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // No active session - user is already logged out
+        // Just clear local state and return (defensive UI - don't error)
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
+      // There's an active session - sign out with 'local' scope
+      // 'local' just clears the cached session in this client (no refresh token needed)
+      // 'global' would revoke all sessions but requires a valid refresh token
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
       if (error) {
         // If session is already missing, that's fine - user is already logged out
-        // This can happen if session expired or was already cleared
+        // This can happen if session expired between check and signOut call
         if (error.message?.includes('Auth session missing') || 
             error.name === 'AuthSessionMissingError' ||
             error.message?.includes('session missing')) {
           // Silently handle - user is already logged out
-          console.log('Sign out: Session already missing (user already logged out)');
           // Clear local state anyway
           setUser(null);
           setLoading(false);
           return;
         }
-        throw error;
+        // For other errors, log but still clear local state (defensive)
+        console.warn('Sign out error (clearing local state anyway):', error);
+        setUser(null);
+        setLoading(false);
+        return;
       }
+      
       // Successfully signed out
       setUser(null);
     } catch (error: any) {
@@ -392,9 +411,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Don't log session missing errors - they're harmless (user already logged out)
       // Only log actual errors (not session missing)
       if (!isSessionMissing) {
-        console.error('Sign out error:', error);
+        console.warn('Sign out error (clearing local state anyway):', error);
       }
       // Clear local state even if there was an error (user is effectively logged out)
+      // This ensures the UI updates to logged-out state regardless of API errors
       setUser(null);
     } finally {
       setLoading(false);

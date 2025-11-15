@@ -46,6 +46,8 @@ const Navigation: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      // Always redirect to login, even if signOut had issues
+      // The signOut function handles clearing local state defensively
       navigate('/login');
     } catch (error: any) {
       // Don't log session missing errors - they're harmless (user already logged out)
@@ -57,8 +59,10 @@ const Navigation: React.FC = () => {
         error?.toString()?.includes('AuthSessionMissingError');
       
       if (!isSessionMissing) {
-        console.error('Error signing out:', error);
+        console.warn('Sign out error (redirecting anyway):', error);
       }
+      // Always redirect to login regardless of errors (defensive UI)
+      navigate('/login');
     }
   };
 

@@ -163,15 +163,28 @@ if (typeof window !== 'undefined') {
     const combinedErrorText = `${errorMessage} ${errorName} ${errorObjMessage} ${allArgs} ${errorString}`;
     
     // Early return for Auth session missing errors - check this first for performance
-    if (allArgs.includes('AuthSessionMissingError') || allArgs.includes('Auth session missing')) {
-      // If this is a sign out error with session missing, suppress it
-      if (allArgs.includes('Sign out error') || allArgs.includes('Error signing out')) {
-        return;
-      }
-      // Also suppress if error object has AuthSessionMissingError
-      if (errorName === 'AuthSessionMissingError' || errorObjMessage.includes('Auth session missing')) {
-        return;
-      }
+    // Suppress ALL AuthSessionMissingError errors (they're harmless - user already logged out)
+    // Also suppress 403 errors from /auth/v1/logout?scope=global (expected when session is missing)
+    if (
+      allArgs.includes('AuthSessionMissingError') || 
+      allArgs.includes('Auth session missing') ||
+      errorName === 'AuthSessionMissingError' ||
+      errorObjMessage.includes('Auth session missing') ||
+      errorObjMessage.includes('AuthSessionMissingError') ||
+      errorMessage.includes('AuthSessionMissingError') ||
+      errorMessage.includes('Auth session missing') ||
+      combinedErrorText.includes('AuthSessionMissingError') ||
+      combinedErrorText.includes('Auth session missing') ||
+      // Also suppress 403 errors from logout endpoint (expected when session is missing)
+      (allArgs.includes('403') && (allArgs.includes('logout') || allArgs.includes('signOut') || allArgs.includes('sign out'))) ||
+      (errorMessage.includes('403') && (errorMessage.includes('logout') || errorMessage.includes('signOut'))) ||
+      // Suppress errors from GoTrueAdminApi.ts during sign out (these are expected)
+      (allArgs.includes('GoTrueAdminApi') && (allArgs.includes('signOut') || allArgs.includes('logout')))
+    ) {
+      // Suppress all AuthSessionMissingError - they're harmless (user already logged out)
+      // This includes sign out errors, which are expected when session is missing
+      // Also suppress 403 errors from logout endpoint when session is missing
+      return;
     }
     
     // Suppress harmless browser extension errors and cache errors

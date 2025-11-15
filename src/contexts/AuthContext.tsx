@@ -433,10 +433,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error?.toString()?.includes('AuthSessionMissingError');
       
       // Don't log session missing/403 errors - they're harmless (user already logged out)
-      // Only log actual errors (not session missing)
+      // These errors are expected when the session is already expired/missing
+      // The console.error override in supabase.ts will suppress these automatically
+      // Only log actual unexpected errors (not session missing)
       if (!isSessionError) {
+        // Use console.warn instead of console.error for non-critical errors
         console.warn('Sign out error (clearing local state anyway):', error);
       }
+      // Note: AuthSessionMissingError is automatically suppressed by console.error override
       
       // Clear localStorage as fallback to ensure session is removed
       try {

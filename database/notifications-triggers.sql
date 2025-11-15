@@ -331,10 +331,11 @@ BEGIN
     END IF;
     
     -- Create notification for all fighters
+    -- Use NEW.name (events table uses 'name' field, not 'title')
     PERFORM create_notification_for_all_fighters(
         v_event_type,
         'New ' || v_event_type || ' Created',
-        'A new ' || LOWER(v_event_type) || ' has been scheduled: ' || COALESCE(NEW.name, NEW.title, 'Event'),
+        'A new ' || LOWER(v_event_type) || ' has been scheduled: ' || COALESCE(NEW.name, 'Event'),
         '/scheduling'
     );
     

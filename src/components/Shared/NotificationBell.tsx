@@ -69,7 +69,9 @@ const NotificationBell: React.FC = () => {
       }
 
       const path = soundPaths[index];
-      const audio = new Audio(path);
+      // URL encode the path to handle spaces and special characters
+      const encodedPath = encodeURI(path);
+      const audio = new Audio(encodedPath);
       audio.preload = 'auto';
       audio.volume = 0.8; // Set volume to 80%
       
@@ -98,9 +100,28 @@ const NotificationBell: React.FC = () => {
       };
       
       const handleError = (e: any) => {
-        console.log(`Audio load failed for ${path}, trying next...`);
-        // Try next path
-        tryLoadAudio(index + 1);
+        // Suppress cache operation errors (ERR_CACHE_OPERATION_NOT_SUPPORTED)
+        // These are harmless and don't prevent audio from working
+        const error = e.target?.error;
+        const errorMessage = error?.message || '';
+        
+        // Suppress cache-related errors - they're harmless
+        if (errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
+            errorMessage.includes('cache') ||
+            error?.code === 0) { // MEDIA_ERR_ABORTED or cache issues
+          // Cache errors are harmless - try next path silently
+          tryLoadAudio(index + 1);
+          return;
+        }
+        
+        if (error && error.code === error.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+          // File doesn't exist or format not supported - try next path
+          console.log(`Audio file not found at ${path}, trying next...`);
+          tryLoadAudio(index + 1);
+        } else {
+          // Other errors - still try next path but don't log
+          tryLoadAudio(index + 1);
+        }
       };
       
       audio.addEventListener('canplaythrough', handleCanPlay, { once: true });

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Supabase API Key</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase API Key Verification</h1>
+    <div id="result"></div>
+    
+    <script>
+        // Get the key from .env.local - you'll need to paste it here
+        // Or better: open browser console and run this manually
+        
+        const SUPABASE_URL = 'https://andmtvsqqomgwphotdwf.supabase.co';
+        
+        // PASTE YOUR ANON KEY HERE (from .env.local):
+        const ANON_KEY = prompt('Paste your REACT_APP_SUPABASE_ANON_KEY from .env.local:');
+        
+        if (!ANON_KEY) {
+            document.getElementById('result').innerHTML = '<p style="color:red">No key provided</p>';
+        } else {
+            const supabase = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
+            
+            // Test the key
+            supabase.auth.getSession()
+                .then(({ data, error }) => {
+                    if (error) {
+                        if (error.message.includes('Invalid API key') || error.message.includes('JWT')) {
+                            document.getElementById('result').innerHTML = 
+                                '<p style="color:red">❌ INVALID API KEY</p>' +
+                                '<p>The key you provided is not valid. Please:</p>' +
+                                '<ol>' +
+                                '<li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>' +
+                                '<li>Select project: andmtvsqqomgwphotdwf</li>' +
+                                '<li>Go to Settings → API</li>' +
+                                '<li>Copy the current "anon public" key</li>' +
+                                '<li>Update .env.local with the new key</li>' +
+                                '<li>Restart your dev server</li>' +
+                                '</ol>';
+                        } else {
+                            document.getElementById('result').innerHTML = 
+                                '<p style="color:green">✅ API KEY IS VALID</p>' +
+                                '<p>Session check error (expected if not logged in): ' + error.message + '</p>' +
+                                '<p>The key works! If you\'re still getting errors, restart your dev server.</p>';
+                        }
+                    } else {
+                        document.getElementById('result').innerHTML = 
+                            '<p style="color:green">✅ API KEY IS VALID</p>' +
+                            '<p>Connection successful!</p>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color:red">❌ ERROR: ' + err.message + '</p>';
+                });
+        }
+    </script>
+</body>
+</html>
+

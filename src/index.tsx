@@ -21,18 +21,22 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('listener indicated an asynchronous response') ||
       errorMessage.includes('message channel closed before a response was received') ||
       errorMessage.includes('A listener indicated an asynchronous response') ||
+      errorMessage.includes('by returning true, but the message channel closed') ||
       (errorMessage.includes('asynchronous response') && errorMessage.includes('message channel')) ||
       errorMessage.includes('runtime.lastError') ||
       errorMessage.includes('Cannot create item with duplicate id') ||
       errorString.includes('listener indicated') ||
       errorString.includes('message channel closed') ||
+      errorString.includes('by returning true') ||
       errorString.includes('runtime.lastError') ||
       errorString.includes('Cannot create item with duplicate id') ||
       errorString.includes('LastPass') ||
       errorStack.includes('listener indicated') ||
       errorStack.includes('message channel') ||
+      errorStack.includes('by returning true') ||
       allErrorText.includes('listener indicated an asynchronous response') ||
       allErrorText.includes('message channel closed before a response was received') ||
+      allErrorText.includes('by returning true, but the message channel closed') ||
       allErrorText.includes('runtime.lastError') ||
       allErrorText.includes('Cannot create item with duplicate id')
     ) {
@@ -51,6 +55,7 @@ if (typeof window !== 'undefined') {
       errorMessage.includes('listener indicated an asynchronous response') ||
       errorMessage.includes('message channel closed before a response was received') ||
       errorMessage.includes('A listener indicated an asynchronous response') ||
+      errorMessage.includes('by returning true, but the message channel closed') ||
       (errorMessage.includes('asynchronous response') && errorMessage.includes('message channel')) ||
       errorMessage.includes('runtime.lastError') ||
       errorMessage.includes('Cannot create item with duplicate id')

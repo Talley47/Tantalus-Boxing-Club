@@ -9,6 +9,11 @@
       name="description"
       content="Web site created using create-react-app"
     />
+    <!-- Content Security Policy for local development -->
+    <!-- Note: This allows Vercel Live feedback script in development -->
+    <!-- In production, CSP is set via vercel.json headers -->
+    <!-- Note: frame-ancestors is ignored in meta tags, so it's removed -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vercel.live; base-uri 'self'; form-action 'self';" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -31,6 +36,38 @@
     <!-- Suppress browser extension errors immediately - before React loads -->
     <script>
       (function() {
+        // Suppress console warnings for browser extension errors
+        var originalWarn = console.warn;
+        console.warn = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var message = args.join(' ');
+          
+          // Suppress "Unchecked runtime.lastError" warnings from browser extensions
+          if (
+            message.indexOf('Unchecked runtime.lastError') !== -1 ||
+            message.indexOf('runtime.lastError') !== -1 ||
+            message.indexOf('Cannot create item with duplicate id') !== -1 ||
+            message.indexOf('listener indicated an asynchronous response') !== -1 ||
+            message.indexOf('message channel closed') !== -1 ||
+            message.indexOf('by returning true') !== -1 ||
+            message.indexOf('LastPass') !== -1 ||
+            message.indexOf('separator') !== -1 ||
+            message.indexOf('Add Item') !== -1 ||
+            message.indexOf('Add Password') !== -1 ||
+            message.indexOf('Add Address') !== -1 ||
+            message.indexOf('Add Payment Card') !== -1 ||
+            message.indexOf('Add other item') !== -1 ||
+            message.indexOf('Save all entered data') !== -1 ||
+            message.indexOf('Generate Secure Password') !== -1
+          ) {
+            // Silently ignore browser extension warnings
+            return;
+          }
+          
+          // Log all other warnings normally
+          originalWarn.apply(console, args);
+        };
+        
         // Suppress unhandled promise rejections from browser extensions
         window.addEventListener('unhandledrejection', function(event) {
           var errorMessage = (event.reason && (event.reason.message || event.reason.toString())) || '';
@@ -43,15 +80,18 @@
             errorMessage.indexOf('listener indicated an asynchronous response') !== -1 ||
             errorMessage.indexOf('message channel closed before a response was received') !== -1 ||
             errorMessage.indexOf('A listener indicated an asynchronous response') !== -1 ||
+            errorMessage.indexOf('by returning true, but the message channel closed') !== -1 ||
             (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
             errorMessage.indexOf('runtime.lastError') !== -1 ||
             errorMessage.indexOf('Cannot create item with duplicate id') !== -1 ||
             errorString.indexOf('listener indicated') !== -1 ||
             errorString.indexOf('message channel closed') !== -1 ||
+            errorString.indexOf('by returning true') !== -1 ||
             errorString.indexOf('runtime.lastError') !== -1 ||
             errorString.indexOf('LastPass') !== -1 ||
             allErrorText.indexOf('listener indicated an asynchronous response') !== -1 ||
-            allErrorText.indexOf('message channel closed before a response was received') !== -1
+            allErrorText.indexOf('message channel closed before a response was received') !== -1 ||
+            allErrorText.indexOf('by returning true, but the message channel closed') !== -1
           ) {
             event.preventDefault();
             event.stopPropagation();
@@ -67,6 +107,7 @@
             errorMessage.indexOf('listener indicated an asynchronous response') !== -1 ||
             errorMessage.indexOf('message channel closed before a response was received') !== -1 ||
             errorMessage.indexOf('A listener indicated an asynchronous response') !== -1 ||
+            errorMessage.indexOf('by returning true, but the message channel closed') !== -1 ||
             (errorMessage.indexOf('asynchronous response') !== -1 && errorMessage.indexOf('message channel') !== -1) ||
             errorMessage.indexOf('runtime.lastError') !== -1 ||
             errorMessage.indexOf('Cannot create item with duplicate id') !== -1

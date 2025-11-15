@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Service Workers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: green;
+            margin-top: 20px;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 4px;
+        }
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Service Workers & Cache</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Open this page in the browser where you're seeing errors</li>
+                <li>Click the buttons below to clear service workers and cache</li>
+                <li>Then restart your dev server with <code>npm start</code></li>
+            </ol>
+        </div>
+
+        <button onclick="clearServiceWorkers()">1. Unregister Service Workers</button>
+        <button onclick="clearCache()">2. Clear Cache</button>
+        <button onclick="clearAll()">3. Clear Everything</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function clearServiceWorkers() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Clearing service workers...</p>';
+            
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                let cleared = 0;
+                
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    cleared++;
+                }
+                
+                if (cleared > 0) {
+                    resultDiv.innerHTML = `<div class="success">✅ Unregistered ${cleared} service worker(s)</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="info">ℹ️ No service workers found</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function clearCache() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Clearing cache...</p>';
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    resultDiv.innerHTML = `<div class="success">✅ Cleared ${cacheNames.length} cache(s)</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="info">ℹ️ Cache API not available</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function clearAll() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Clearing everything...</p>';
+            
+            try {
+                // Clear service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+                
+                // Clear cache
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                }
+                
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Cleared everything!<br>
+                        - Service workers: ${registrations.length}<br>
+                        - Caches: ${('caches' in window) ? (await caches.keys()).length : 0}<br>
+                        - Local storage: Cleared<br>
+                        - Session storage: Cleared<br><br>
+                        <strong>Now restart your dev server with: npm start</strong>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', async () => {
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    document.getElementById('result').innerHTML = `
+                        <div class="info">
+                            ⚠️ Found ${registrations.length} service worker(s) registered.<br>
+                            Click "Clear Everything" to remove them.
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                // Service workers not available
+            }
+        });
+    </script>
+</body>
+</html>
+

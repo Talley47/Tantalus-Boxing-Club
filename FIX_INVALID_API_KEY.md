@@ -125,3 +125,5 @@ The anon key should:
 
 **Status:** 🔴 **ACTION REQUIRED** - Update to NEW anon key from Supabase
 
+
+

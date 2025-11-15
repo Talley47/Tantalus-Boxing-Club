@@ -184,10 +184,20 @@ if (typeof window !== 'undefined') {
       errorString.includes('No tab with id') ||
       errorString.includes('background-redux') ||
       errorString.includes('$ is not defined') ||
-      errorString.includes('ReferenceError: $')
+      errorString.includes('ReferenceError: $') ||
+      errorMessage.includes('Auth session missing') ||
+      errorMessage.includes('AuthSessionMissingError') ||
+      errorMessage.includes('session missing') ||
+      allArgs.includes('Auth session missing') ||
+      allArgs.includes('AuthSessionMissingError') ||
+      allArgs.includes('Sign out error') ||
+      allArgs.includes('Error signing out') ||
+      errorString.includes('Auth session missing') ||
+      errorString.includes('AuthSessionMissingError')
     ) {
       // Silently ignore browser extension errors (e.g., Grammarly, LastPass) - they're harmless
       // Also suppress cache operation errors which are harmless
+      // Also suppress Auth session missing errors (user already logged out)
       return;
     }
     
@@ -299,6 +309,23 @@ if (typeof window !== 'undefined') {
       (errorName === 'ReferenceError' && (errorMessage.includes('$') || errorString.includes('$'))) ||
       errorStack.includes('content-script') ||
       errorStack.includes('ch-content-script')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+    
+    // Suppress Auth session missing errors (harmless - user already logged out)
+    if (
+      errorMessage.includes('Auth session missing') ||
+      errorMessage.includes('AuthSessionMissingError') ||
+      errorMessage.includes('session missing') ||
+      errorName === 'AuthSessionMissingError' ||
+      errorString.includes('Auth session missing') ||
+      errorString.includes('AuthSessionMissingError') ||
+      allErrorText.includes('Auth session missing') ||
+      allErrorText.includes('AuthSessionMissingError')
     ) {
       event.preventDefault();
       event.stopPropagation();

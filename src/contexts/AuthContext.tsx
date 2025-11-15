@@ -363,10 +363,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
+      if (error) {
+        // If session is already missing, that's fine - user is already logged out
+        // This can happen if session expired or was already cleared
+        if (error.message?.includes('Auth session missing') || 
+            error.name === 'AuthSessionMissingError' ||
+            error.message?.includes('session missing')) {
+          // Silently handle - user is already logged out
+          console.log('Sign out: Session already missing (user already logged out)');
+          // Clear local state anyway
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
+      // Successfully signed out
+      setUser(null);
+    } catch (error: any) {
+      // Only log non-session-missing errors
+      if (!error.message?.includes('Auth session missing') && 
+          error.name !== 'AuthSessionMissingError' &&
+          !error.message?.includes('session missing')) {
+        console.error('Sign out error:', error);
+      } else {
+        // Session already missing - just clear local state
+        console.log('Sign out: Session already missing (user already logged out)');
+      }
+      // Clear local state even if there was an error (user is effectively logged out)
+      setUser(null);
     } finally {
       setLoading(false);
     }

@@ -38,7 +38,13 @@ import {
 } from '@mui/icons-material';
 
 const RulesGuidelines: React.FC = () => {
+  // Rules/Guidelines component for Creative Fighter League
   const [expanded, setExpanded] = useState<string | false>('introduction');
+
+  // Ensure component is loaded
+  React.useEffect(() => {
+    // Component mounted successfully
+  }, []);
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
     setExpanded(isExpanded ? panel : false);

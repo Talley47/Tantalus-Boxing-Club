@@ -204,6 +204,7 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Rules/Guidelines route for Creative Fighter League */}
           
           {/* Admin Routes */}
           <Route

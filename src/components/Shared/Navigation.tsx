@@ -125,7 +125,14 @@ const Navigation: React.FC = () => {
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
-                navigate(item.path);
+                // If already on the same route, force a refresh by using replace
+                if (location.pathname === item.path) {
+                  // Force scroll to top and trigger a refresh
+                  window.scrollTo(0, 0);
+                  navigate(item.path, { replace: true });
+                } else {
+                  navigate(item.path);
+                }
                 setMobileOpen(false);
               }}
             >

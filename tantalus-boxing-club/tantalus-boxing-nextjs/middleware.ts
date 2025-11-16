@@ -63,13 +63,16 @@ export async function middleware(request: NextRequest) {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel.live https://*.vercel-insights.com https://*.supabase.co",
     "script-src-elem 'self' 'unsafe-inline' https://*.supabase.co https://vercel.live https://*.vercel.live https://*.vercel-insights.com",
+    "script-src-attr 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
     "media-src 'self' data: https: blob:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.upstash.io https://vercel.live https://*.vercel.live https://*.vercel-insights.com",
-    "frame-src 'self' https://vercel.live https://*.vercel.live",
+    "frame-src 'self' https://vercel.live https://*.vercel.live https://*.supabase.co",
     "frame-ancestors 'none'",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'"
   ].join('; ')

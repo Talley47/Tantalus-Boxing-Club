@@ -20,6 +20,7 @@ import AdminPanel from './components/Admin/AdminPanel';
 import Navigation from './components/Shared/Navigation';
 import LoadingSpinner from './components/Shared/LoadingSpinner';
 import Social from './components/Social/Social';
+import RulesGuidelines from './components/RulesGuidelines/RulesGuidelines';
 
 // Create theme
 const theme = createTheme({
@@ -192,6 +193,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Social />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rules"
+            element={
+              <ProtectedRoute>
+                <RulesGuidelines />
               </ProtectedRoute>
             }
           />

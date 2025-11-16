@@ -27,6 +27,7 @@ import {
   Menu,
   Notifications,
   Forum,
+  Gavel,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -75,6 +76,7 @@ const Navigation: React.FC = () => {
     { text: 'Tournaments', icon: <Sports />, path: '/tournaments' },
     { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
     { text: 'Social', icon: <Forum />, path: '/social' },
+    { text: 'Rules/Guidelines', icon: <Gavel />, path: '/rules' },
   ];
 
   if (isAdmin) {

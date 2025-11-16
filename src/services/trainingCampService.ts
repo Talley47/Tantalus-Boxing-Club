@@ -565,11 +565,19 @@ class TrainingCampService {
           hint: campsError.hint,
           code: campsError.code
         });
+        
+        // Check if this might be an RLS policy issue
+        if (campsError.code === '42501' || campsError.message?.includes('permission') || campsError.message?.includes('policy')) {
+          console.warn('⚠️ This might be an RLS policy issue. Ensure the "Anyone can view active training camps" policy exists.');
+          console.warn('⚠️ Run the SQL script: database/ensure-view-all-active-training-camps-rls.sql');
+        }
+        
         return [];
       }
 
       if (!camps || camps.length === 0) {
         console.log('ℹ️ No active training camps found in database');
+        console.log('ℹ️ If you expected to see training camps, verify the RLS policy "Anyone can view active training camps" exists.');
         return [];
       }
 

@@ -75,12 +75,15 @@ if (typeof window !== 'undefined') {
     
     // Suppress cache errors for audio files (harmless browser cache warnings)
     // These errors don't prevent the audio from working
+    // Handle URL-encoded filenames (e.g., boxing-bell-signals-6115%20(1).mp3)
     const isCacheError = 
-      (lowerErrorMessage.includes('err_cache_operation_not_supported') ||
-       lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
-      (allArgs.includes('err_cache_operation_not_supported') ||
-       (allArgs.includes('failed to load resource') && allArgs.includes('cache'))) ||
-      (allArgs.includes('boxing-bell') && (allArgs.includes('cache') || allArgs.includes('err_cache')));
+      lowerErrorMessage.includes('err_cache_operation_not_supported') ||
+      lowerErrorMessage.includes('net::err_cache') ||
+      (lowerErrorMessage.includes('failed to load resource') && (lowerErrorMessage.includes('cache') || lowerErrorMessage.includes('err_cache'))) ||
+      allArgs.includes('err_cache_operation_not_supported') ||
+      allArgs.includes('net::err_cache') ||
+      (allArgs.includes('failed to load resource') && (allArgs.includes('cache') || allArgs.includes('err_cache'))) ||
+      (allArgs.includes('boxing-bell') && (allArgs.includes('cache') || allArgs.includes('err_cache') || allArgs.includes('failed to load')));
     
     // Don't log browser extension errors or cache errors
     if (isBrowserExtensionError || isCacheError) {
@@ -136,6 +139,15 @@ if (typeof window !== 'undefined') {
     
     // More comprehensive check - catch any variation of browser extension errors
     // Check for partial matches to catch all variations (case-insensitive)
+    // Also check if error is from route paths (e.g., /rules, /login, etc.)
+    const isFromRoute = /^\/?\d*[a-z]+/.test(errorMessage) || 
+                        lowerErrorMessage.includes('/rules') ||
+                        lowerErrorMessage.includes('/login') ||
+                        lowerErrorMessage.includes('/matchmaking') ||
+                        lowerErrorString.includes('/rules') ||
+                        lowerErrorString.includes('/login') ||
+                        lowerErrorString.includes('/matchmaking');
+    
     const isBrowserExtensionError = 
       lowerErrorMessage.includes('$ is not defined') ||
       lowerErrorMessage.includes('referenceerror: $') ||
@@ -147,6 +159,7 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('asynchronous response') ||
       lowerErrorMessage.includes('message channel') ||
       lowerErrorMessage.includes('by returning true') ||
+      (lowerErrorMessage.includes('by returning true') && lowerErrorMessage.includes('message channel closed')) ||
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
@@ -159,6 +172,7 @@ if (typeof window !== 'undefined') {
       lowerErrorString.includes('asynchronous response') ||
       lowerErrorString.includes('message channel') ||
       lowerErrorString.includes('by returning true') ||
+      (lowerErrorString.includes('by returning true') && lowerErrorString.includes('message channel closed')) ||
       lowerErrorString.includes('runtime.lasterror') ||
       lowerErrorString.includes('unchecked runtime.lasterror') ||
       lowerErrorString.includes('cannot create item') ||
@@ -173,6 +187,7 @@ if (typeof window !== 'undefined') {
       lowerErrorStack.includes('listener indicated') ||
       lowerErrorStack.includes('message channel') ||
       lowerErrorStack.includes('by returning true') ||
+      (lowerErrorStack.includes('by returning true') && lowerErrorStack.includes('message channel closed')) ||
       lowerErrorStack.includes('runtime.lasterror') ||
       lowerErrorStack.includes('unchecked runtime.lasterror') ||
       lowerErrorStack.includes('cannot create item') ||
@@ -188,6 +203,7 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('asynchronous response') ||
       allErrorText.includes('message channel') ||
       allErrorText.includes('by returning true') ||
+      (allErrorText.includes('by returning true') && allErrorText.includes('message channel closed')) ||
       allErrorText.includes('runtime.lasterror') ||
       allErrorText.includes('unchecked runtime.lasterror') ||
       allErrorText.includes('cannot create item') ||
@@ -198,7 +214,9 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('background-redux') ||
       allErrorText.includes('background-redux-new.js') ||
       allErrorText.includes('chrome-extension://') ||
-      allErrorText.includes('lastpass');
+      allErrorText.includes('lastpass') ||
+      (isFromRoute && (lowerErrorMessage.includes('listener') || lowerErrorMessage.includes('message channel') || 
+                       lowerErrorMessage.includes('asynchronous response')));
     
     // Suppress cache errors for audio files (harmless browser cache warnings)
     const isCacheError = 
@@ -231,16 +249,21 @@ if (typeof window !== 'undefined') {
     // Handle URL-encoded filenames (e.g., boxing-bell-signals-6115%20(1).mp3)
     const decodedFilename = decodeURIComponent(errorFilename);
     const decodedSrc = decodeURIComponent(errorSrc);
-    if (
-      (errorFilename.includes('boxing-bell') || 
-       errorSrc.includes('boxing-bell') ||
-       decodedFilename.includes('boxing-bell') ||
-       decodedSrc.includes('boxing-bell')) &&
-      (errorMessage.includes('ERR_CACHE_OPERATION_NOT_SUPPORTED') || 
-       errorMessage.includes('Failed to load resource') ||
-       errorMessage.includes('cache') ||
-       errorMessage.includes('net::ERR_CACHE'))
-    ) {
+    const lowerErrorMsg = errorMessage.toLowerCase();
+    const lowerFilename = errorFilename.toLowerCase();
+    const lowerSrc = errorSrc.toLowerCase();
+    
+    // Check for cache operation errors (case-insensitive, handle URL encoding)
+    const isCacheError = 
+      lowerErrorMsg.includes('err_cache_operation_not_supported') ||
+      lowerErrorMsg.includes('net::err_cache') ||
+      (lowerErrorMsg.includes('failed to load resource') && lowerErrorMsg.includes('cache')) ||
+      (lowerFilename.includes('boxing-bell') && (lowerErrorMsg.includes('cache') || lowerErrorMsg.includes('err_cache') || lowerErrorMsg.includes('failed to load'))) ||
+      (lowerSrc.includes('boxing-bell') && (lowerErrorMsg.includes('cache') || lowerErrorMsg.includes('err_cache') || lowerErrorMsg.includes('failed to load'))) ||
+      (decodedFilename.toLowerCase().includes('boxing-bell') && (lowerErrorMsg.includes('cache') || lowerErrorMsg.includes('err_cache') || lowerErrorMsg.includes('failed to load'))) ||
+      (decodedSrc.toLowerCase().includes('boxing-bell') && (lowerErrorMsg.includes('cache') || lowerErrorMsg.includes('err_cache') || lowerErrorMsg.includes('failed to load')));
+    
+    if (isCacheError) {
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -293,18 +316,27 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress browser extension errors (including background-redux-new.js and chrome-extension:// URLs)
-    // Also check for errors from /login and /matchmaking routes (these are often browser extension errors)
+    // Also check for errors from routes (these are often browser extension errors)
     const lowerErrorMsg = errorMessage.toLowerCase();
     const lowerFilename = errorFilename.toLowerCase();
     const lowerStack = errorStack.toLowerCase();
-    const isFromRoute = errorFilename.includes('/login') || errorFilename.includes('/matchmaking') || 
-                        errorStack.includes('/login') || errorStack.includes('/matchmaking');
+    // Check if error is from any route (login, matchmaking, rules, rankings, etc.)
+    const isFromRoute = /^\/?\d*[a-z]+/.test(errorFilename) || 
+                        errorFilename.includes('/login') || 
+                        errorFilename.includes('/matchmaking') || 
+                        errorFilename.includes('/rules') ||
+                        errorFilename.includes('/rankings') ||
+                        errorStack.includes('/login') || 
+                        errorStack.includes('/matchmaking') ||
+                        errorStack.includes('/rules') ||
+                        errorStack.includes('/rankings');
     
     if (
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
       lowerErrorMsg.includes('a listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
+      lowerErrorMsg.includes('by returning true') && lowerErrorMsg.includes('message channel closed') ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
       lowerErrorMsg.includes('runtime.lasterror') ||
       lowerErrorMsg.includes('unchecked runtime.lasterror') ||

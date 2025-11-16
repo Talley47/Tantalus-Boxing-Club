@@ -54,6 +54,7 @@ import {
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase, TABLES } from '../../services/supabase';
 import { HomePageService, ScheduledFight } from '../../services/homePageService';
 import { useRealtime } from '../../contexts/RealtimeContext';
@@ -234,6 +235,7 @@ const normalizeWeightClass = (weightClass: string | undefined | null): string =>
 
 const FighterProfile: React.FC = () => {
   const { fighterProfile, updateFighterProfile, refreshFighterProfile, user } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -2572,8 +2574,8 @@ const FighterProfile: React.FC = () => {
                             size="small"
                             startIcon={<SportsMma />}
                             onClick={() => {
-                              // Navigate to tournaments page with this tournament selected
-                              window.location.href = '/tournaments';
+                              // Navigate to tournaments page
+                              navigate('/tournaments');
                             }}
                           >
                             View Details

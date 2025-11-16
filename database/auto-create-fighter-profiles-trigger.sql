@@ -4,6 +4,7 @@
 
 -- Create function to handle fighter profile creation after user signup
 -- This runs AFTER auth.users INSERT, so we can access user metadata
+-- This version dynamically checks which columns exist to support different schema versions
 CREATE OR REPLACE FUNCTION public.handle_new_fighter_profile_from_auth()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -15,8 +16,6 @@ DECLARE
     fighter_birthday DATE;
     fighter_hometown TEXT;
     fighter_stance TEXT;
-    fighter_platform TEXT;
-    fighter_timezone TEXT;
     fighter_height_feet INTEGER;
     fighter_height_inches INTEGER;
     fighter_reach INTEGER;
@@ -24,6 +23,12 @@ DECLARE
     fighter_weight_class TEXT;
     fighter_trainer TEXT;
     fighter_gym TEXT;
+    handle_value TEXT;
+    has_platform BOOLEAN := FALSE;
+    has_platform_id BOOLEAN := FALSE;
+    has_timezone BOOLEAN := FALSE;
+    fighter_platform TEXT;
+    fighter_timezone TEXT;
 BEGIN
     -- Only create fighter profile if user is a fighter (not admin)
     -- Check role from metadata
@@ -32,6 +37,17 @@ BEGIN
         (NEW.raw_user_meta_data->>'role')::TEXT,
         'fighter'
     ) = 'fighter' THEN
+        
+        -- Check which columns exist in the table
+        SELECT 
+            EXISTS(SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' AND table_name = 'fighter_profiles' AND column_name = 'platform'),
+            EXISTS(SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' AND table_name = 'fighter_profiles' AND column_name = 'platform_id'),
+            EXISTS(SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema = 'public' AND table_name = 'fighter_profiles' AND column_name = 'timezone')
+        INTO has_platform, has_platform_id, has_timezone;
+        
         -- Extract fighter name (priority: fighterName only - do NOT use account name)
         -- The fighter name should always be provided during registration
         -- Check multiple possible field names for fighter name
@@ -42,6 +58,10 @@ BEGIN
             NULLIF(TRIM(NEW.raw_user_meta_data->>'boxer_name'), ''),
             'Fighter'  -- Fallback only if fighterName is not provided (shouldn't happen)
         );
+        
+        -- Generate handle from fighter name
+        -- Make it unique by appending user ID to avoid conflicts
+        handle_value := LOWER(REPLACE(fighter_name, ' ', '_')) || '_' || SUBSTRING(NEW.id::TEXT, 1, 8);
         
         -- Parse birthday
         IF NEW.raw_user_meta_data->>'birthday' IS NOT NULL THEN
@@ -56,31 +76,33 @@ BEGIN
             LOWER(NEW.raw_user_meta_data->>'stance'),
             'orthodox'
         );
-        -- Extract platform (default to 'PC' if not provided)
-        -- The schema expects: 'PSN', 'Xbox', or 'PC'
-        fighter_platform := COALESCE(
-            NEW.raw_user_meta_data->>'platform',
-            'PC'
-        );
-        -- Ensure platform is one of the valid values (schema: 'PSN', 'Xbox', 'PC')
-        IF fighter_platform NOT IN ('PSN', 'Xbox', 'PC') THEN
-            -- Try to normalize common variations
-            IF UPPER(fighter_platform) IN ('XBOX', 'X-BOX') THEN
-                fighter_platform := 'Xbox';
-            ELSIF UPPER(fighter_platform) IN ('PSN', 'PLAYSTATION', 'PS4', 'PS5') THEN
-                fighter_platform := 'PSN';
-            ELSIF UPPER(fighter_platform) IN ('PC', 'STEAM', 'COMPUTER') THEN
-                fighter_platform := 'PC';
-            ELSE
-                fighter_platform := 'PC'; -- Default fallback
+        
+        -- Extract platform/timezone only if columns exist
+        IF has_platform THEN
+            fighter_platform := COALESCE(
+                NEW.raw_user_meta_data->>'platform',
+                'PC'
+            );
+            -- Ensure platform is one of the valid values
+            IF fighter_platform NOT IN ('PSN', 'Xbox', 'PC') THEN
+                IF UPPER(fighter_platform) IN ('XBOX', 'X-BOX') THEN
+                    fighter_platform := 'Xbox';
+                ELSIF UPPER(fighter_platform) IN ('PSN', 'PLAYSTATION', 'PS4', 'PS5') THEN
+                    fighter_platform := 'PSN';
+                ELSIF UPPER(fighter_platform) IN ('PC', 'STEAM', 'COMPUTER') THEN
+                    fighter_platform := 'PC';
+                ELSE
+                    fighter_platform := 'PC';
+                END IF;
             END IF;
         END IF;
         
-        -- Extract timezone (default to 'UTC' if not provided)
-        fighter_timezone := COALESCE(
-            NEW.raw_user_meta_data->>'timezone',
-            'UTC'
-        );
+        IF has_timezone THEN
+            fighter_timezone := COALESCE(
+                NEW.raw_user_meta_data->>'timezone',
+                'UTC'
+            );
+        END IF;
         
         -- Parse height - use height_feet/height_inches from metadata if available
         IF NEW.raw_user_meta_data->>'height_feet' IS NOT NULL THEN
@@ -112,57 +134,109 @@ BEGIN
         fighter_trainer := NEW.raw_user_meta_data->>'trainer';
         fighter_gym := NEW.raw_user_meta_data->>'gym';
         
-        -- Create fighter profile
-        INSERT INTO public.fighter_profiles (
-            user_id,
-            name,
-            handle,
-            platform,
-            platform_id,
-            timezone,
-            birthday,
-            hometown,
-            stance,
-            height_feet,
-            height_inches,
-            reach,
-            weight,
-            weight_class,
-            tier,
-            trainer,
-            gym,
-            points,
-            wins,
-            losses,
-            draws
-        )
-        VALUES (
-            NEW.id,
-            fighter_name,
-            LOWER(REPLACE(fighter_name, ' ', '_')),
-            fighter_platform,
-            NEW.id::TEXT, -- Use user ID as platform_id initially
-            fighter_timezone,
-            fighter_birthday,
-            fighter_hometown,
-            fighter_stance,
-            fighter_height_feet,
-            fighter_height_inches,
-            fighter_reach,
-            fighter_weight,
-            fighter_weight_class,
-            'amateur',
-            fighter_trainer,
-            fighter_gym,
-            0,
-            0,
-            0,
-            0
-        )
-        ON CONFLICT (user_id) DO NOTHING;
+        -- Create fighter profile with dynamic column insertion based on what exists
+        IF has_platform AND has_platform_id AND has_timezone THEN
+            -- Schema with platform, platform_id, timezone
+            INSERT INTO public.fighter_profiles (
+                user_id,
+                name,
+                handle,
+                platform,
+                platform_id,
+                timezone,
+                birthday,
+                hometown,
+                stance,
+                height_feet,
+                height_inches,
+                reach,
+                weight,
+                weight_class,
+                tier,
+                trainer,
+                gym,
+                points,
+                wins,
+                losses,
+                draws
+            )
+            VALUES (
+                NEW.id,
+                fighter_name,
+                handle_value,
+                fighter_platform,
+                NEW.id::TEXT,
+                fighter_timezone,
+                fighter_birthday,
+                fighter_hometown,
+                fighter_stance,
+                fighter_height_feet,
+                fighter_height_inches,
+                fighter_reach,
+                fighter_weight,
+                fighter_weight_class,
+                'amateur',
+                fighter_trainer,
+                fighter_gym,
+                0,
+                0,
+                0,
+                0
+            )
+            ON CONFLICT (user_id) DO NOTHING;
+        ELSE
+            -- Schema without platform, platform_id, timezone (COMPLETE_WORKING_SCHEMA.sql version)
+            INSERT INTO public.fighter_profiles (
+                user_id,
+                name,
+                handle,
+                birthday,
+                hometown,
+                stance,
+                height_feet,
+                height_inches,
+                reach,
+                weight,
+                weight_class,
+                tier,
+                trainer,
+                gym,
+                points,
+                wins,
+                losses,
+                draws
+            )
+            VALUES (
+                NEW.id,
+                fighter_name,
+                handle_value,
+                fighter_birthday,
+                fighter_hometown,
+                fighter_stance,
+                fighter_height_feet,
+                fighter_height_inches,
+                fighter_reach,
+                fighter_weight,
+                fighter_weight_class,
+                'amateur',
+                fighter_trainer,
+                fighter_gym,
+                0,
+                0,
+                0,
+                0
+            )
+            ON CONFLICT (user_id) DO NOTHING;
+        END IF;
     END IF;
   
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log the error but don't fail the user creation
+        -- This prevents the trigger from blocking user signup
+        RAISE WARNING 'Error creating fighter profile for user %: %', NEW.id, SQLERRM;
+        RETURN NEW;
 END;
 $$;
 

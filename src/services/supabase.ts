@@ -246,7 +246,23 @@ if (typeof window !== 'undefined') {
         errorObjMessage?.toLowerCase().includes('mismatch') ||
         errorObjMessage?.toLowerCase().includes('not eligible')));
     
-    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError || isFighterProfile400Error || isTournamentValidationError) {
+    // Suppress refresh token 400 errors - these are expected when sessions expire
+    // Supabase auto-refreshes tokens, and 400 errors occur when refresh token is invalid/expired
+    // This is normal behavior - user will need to log in again
+    const isRefreshToken400Error = 
+      ((errorObj as any)?.code === '400' || errorMessage.includes('400')) &&
+      (combinedErrorText.includes('refresh_token') ||
+       combinedErrorText.includes('refresh token') ||
+       combinedErrorText.includes('/auth/v1/token') ||
+       combinedErrorText.includes('grant_type=refresh_token') ||
+       errorObjMessage?.includes('refresh_token') ||
+       errorObjMessage?.includes('refresh token') ||
+       errorStack?.includes('refresh_token') ||
+       errorStack?.includes('_refreshAccessToken') ||
+       errorStack?.includes('GoTrueClient.ts') ||
+       (errorStack?.includes('helpers.ts') && combinedErrorText.includes('400')));
+    
+    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError || isFighterProfile400Error || isTournamentValidationError || isRefreshToken400Error) {
       // Don't log - these are expected/user-friendly or known issues that need SQL fixes
       return;
     }

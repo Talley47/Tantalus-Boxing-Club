@@ -85,8 +85,15 @@ if (typeof window !== 'undefined') {
       (allArgs.includes('failed to load resource') && (allArgs.includes('cache') || allArgs.includes('err_cache'))) ||
       (allArgs.includes('boxing-bell') && (allArgs.includes('cache') || allArgs.includes('err_cache') || allArgs.includes('failed to load')));
     
-    // Don't log browser extension errors or cache errors
-    if (isBrowserExtensionError || isCacheError) {
+    // Suppress Supabase refresh token 400 errors (expected when sessions expire)
+    const isRefreshTokenError = 
+      (lowerErrorMessage.includes('400') || allArgs.includes('400')) &&
+      (lowerErrorMessage.includes('refresh') || allArgs.includes('refresh') ||
+       lowerErrorMessage.includes('grant_type') || allArgs.includes('grant_type') ||
+       lowerErrorMessage.includes('/auth/v1/token') || allArgs.includes('/auth/v1/token'));
+    
+    // Don't log browser extension errors, cache errors, or refresh token errors
+    if (isBrowserExtensionError || isCacheError || isRefreshTokenError) {
       return;
     }
     

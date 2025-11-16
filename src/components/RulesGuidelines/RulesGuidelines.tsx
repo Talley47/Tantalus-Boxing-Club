@@ -54,6 +54,12 @@ const RulesGuidelines: React.FC = () => {
     setExpanded(isExpanded ? panel : false);
   };
 
+  // Force component to be included in production build
+  if (typeof window !== 'undefined') {
+    // Ensure component is loaded
+    (window as any).__RULES_GUIDELINES_LOADED__ = true;
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}

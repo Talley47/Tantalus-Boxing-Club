@@ -218,6 +218,9 @@ export interface ScheduledFight {
   match_type?: 'manual' | 'auto_mandatory' | 'callout' | 'training_camp';
   auto_matched_at?: string;
   match_score?: number;
+  requested_by?: string; // Profile ID of the fighter who requested the fight (for mandatory fights)
+  fighter1_profile_id?: string; // Profile ID (primary key) for fighter1
+  fighter2_profile_id?: string; // Profile ID (primary key) for fighter2
   result1?: FightRecord;
   result2?: FightRecord;
   created_at: string;

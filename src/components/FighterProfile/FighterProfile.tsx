@@ -785,7 +785,7 @@ const FighterProfile: React.FC = () => {
       // Get the fight details to check if fighters have fought before
       const { data: fight, error: fightError } = await supabase
         .from('scheduled_fights')
-        .select('fighter1_id, fighter2_id, match_type, created_at')
+        .select('fighter1_id, fighter2_id, match_type, created_at, requested_by, status')
         .eq('id', fightId)
         .single();
 
@@ -802,6 +802,30 @@ const FighterProfile: React.FC = () => {
 
       if (!currentFighter) {
         throw new Error('Fighter profile not found');
+      }
+
+      // Check if fight is already scheduled
+      if (fight.status === 'Scheduled') {
+        alert('This fight request has already been accepted and scheduled.');
+        return;
+      }
+
+      // For mandatory fights (match_type = 'manual'), prevent requester from accepting their own request
+      if (fight.match_type === 'manual' && fight.requested_by) {
+        // Check if the current fighter is the requester
+        if (fight.requested_by === currentFighter.id) {
+          alert('You cannot accept your own mandatory fight request. Please wait for your opponent to accept the request.');
+          return;
+        }
+        
+        // Verify that the current fighter is the opponent (not the requester)
+        const isFighter1 = fight.fighter1_id === currentFighter.id;
+        const isFighter2 = fight.fighter2_id === currentFighter.id;
+        
+        if (!isFighter1 && !isFighter2) {
+          alert('You are not part of this fight request.');
+          return;
+        }
       }
 
       // For mandatory fights (match_type = 'manual'), check if fighters have fought before
@@ -2259,6 +2283,13 @@ const FighterProfile: React.FC = () => {
                     const opponentName = opponent?.name || 'TBD';
                     const currentFighterName = currentFighter?.name || fighterProfile?.name || 'You';
                     
+                    // Check if current fighter is the requester (for mandatory fights)
+                    // requested_by is a profile ID, so we compare with fighterProfile.id
+                    const isRequester = fight.match_type === 'manual' && 
+                                      fight.requested_by && 
+                                      fighterProfile?.id &&
+                                      fight.requested_by === fighterProfile.id;
+                    
                     // Format: Fighter1 vs Fighter2 (opponent first if they requested it)
                     const fightersDisplay = isFighter1 
                       ? `${currentFighterName} vs ${opponentName}`
@@ -2275,9 +2306,15 @@ const FighterProfile: React.FC = () => {
                                 size="small"
                                 sx={{ mb: 1 }}
                               />
-                              <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                {opponentName} has scheduled a mandatory fight with you
-                              </Typography>
+                              {isRequester ? (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  You have sent a mandatory fight request to {opponentName}
+                                </Typography>
+                              ) : (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  {opponentName} has scheduled a mandatory fight with you
+                                </Typography>
+                              )}
                               <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
                                 {fightersDisplay}
                               </Typography>
@@ -2287,27 +2324,34 @@ const FighterProfile: React.FC = () => {
                               <Typography variant="body2" color="text.secondary">
                                 TBD • {fight.weight_class} • {fight.timezone}
                               </Typography>
+                              {isRequester && (
+                                <Alert severity="info" sx={{ mt: 2 }}>
+                                  Waiting for {opponentName} to accept your mandatory fight request.
+                                </Alert>
+                              )}
                             </Box>
-                            <Box display="flex" gap={1} flexDirection="column">
-                              <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
-                                onClick={() => handleAcceptFightRequest(fight.id)}
-                                disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                              >
-                                Accept
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
-                                onClick={() => handleDenyFightRequest(fight.id)}
-                                disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                              >
-                                Deny
-                              </Button>
-                            </Box>
+                            {!isRequester && (
+                              <Box display="flex" gap={1} flexDirection="column">
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
+                                  onClick={() => handleAcceptFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
+                                  onClick={() => handleDenyFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Deny
+                                </Button>
+                              </Box>
+                            )}
                           </Box>
                         </CardContent>
                       </Card>

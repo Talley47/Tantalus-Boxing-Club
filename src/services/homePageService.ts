@@ -40,6 +40,9 @@ export interface ScheduledFight {
   status: string;
   match_type?: 'manual' | 'auto_mandatory' | 'callout' | 'training_camp';
   match_score?: number;
+  requested_by?: string; // Profile ID of the fighter who requested the fight (for mandatory fights)
+  fighter1_profile_id?: string; // Profile ID (primary key) for fighter1
+  fighter2_profile_id?: string; // Profile ID (primary key) for fighter2
 }
 
 export interface NewsItem {
@@ -236,7 +239,10 @@ export class HomePageService {
               weight_class: fight.weight_class || 'Unknown',
               status: fight.status || 'scheduled',
               match_type: (fight as any).match_type,
-              match_score: (fight as any).match_score
+              match_score: (fight as any).match_score,
+              requested_by: (fight as any).requested_by, // Include requested_by field
+              fighter1_profile_id: fighter1Profile.id, // Include profile IDs for comparison
+              fighter2_profile_id: fighter2Profile.id
             });
           }
         }

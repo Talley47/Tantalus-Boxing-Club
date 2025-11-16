@@ -61,21 +61,37 @@ BEGIN
         
         -- Generate handle from fighter name
         -- Make it unique by appending user ID to avoid conflicts
-        handle_value := LOWER(REPLACE(fighter_name, ' ', '_')) || '_' || SUBSTRING(NEW.id::TEXT, 1, 8);
+        -- Use first 8 chars of UUID to keep it short
+        handle_value := LOWER(REPLACE(REGEXP_REPLACE(fighter_name, '[^a-zA-Z0-9 ]', '', 'g'), ' ', '_'));
+        -- Ensure handle is not too long (max 50 chars typically, but we'll keep it shorter)
+        IF LENGTH(handle_value) > 30 THEN
+            handle_value := SUBSTRING(handle_value, 1, 30);
+        END IF;
+        -- Append user ID to ensure uniqueness
+        handle_value := handle_value || '_' || SUBSTRING(REPLACE(NEW.id::TEXT, '-', ''), 1, 8);
         
         -- Parse birthday
         IF NEW.raw_user_meta_data->>'birthday' IS NOT NULL THEN
-            fighter_birthday := (NEW.raw_user_meta_data->>'birthday')::DATE;
+            BEGIN
+                fighter_birthday := (NEW.raw_user_meta_data->>'birthday')::DATE;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    fighter_birthday := CURRENT_DATE - INTERVAL '25 years';
+            END;
         ELSE
             fighter_birthday := CURRENT_DATE - INTERVAL '25 years';
         END IF;
         
         -- Extract other fields
-        fighter_hometown := COALESCE(NEW.raw_user_meta_data->>'hometown', 'Unknown');
+        fighter_hometown := COALESCE(NULLIF(TRIM(NEW.raw_user_meta_data->>'hometown'), ''), 'Unknown');
         fighter_stance := COALESCE(
-            LOWER(NEW.raw_user_meta_data->>'stance'),
+            LOWER(NULLIF(TRIM(NEW.raw_user_meta_data->>'stance'), '')),
             'orthodox'
         );
+        -- Ensure stance is valid
+        IF fighter_stance NOT IN ('orthodox', 'southpaw', 'switch') THEN
+            fighter_stance := 'orthodox';
+        END IF;
         
         -- Extract platform/timezone only if columns exist
         IF has_platform THEN
@@ -130,9 +146,14 @@ BEGIN
             fighter_weight := 150;
         END IF;
         
-        fighter_weight_class := COALESCE(NEW.raw_user_meta_data->>'weightClass', 'Middleweight');
-        fighter_trainer := NEW.raw_user_meta_data->>'trainer';
-        fighter_gym := NEW.raw_user_meta_data->>'gym';
+        fighter_weight_class := COALESCE(NULLIF(TRIM(NEW.raw_user_meta_data->>'weightClass'), ''), 'Middleweight');
+        fighter_trainer := NULLIF(TRIM(NEW.raw_user_meta_data->>'trainer'), '');
+        fighter_gym := NULLIF(TRIM(NEW.raw_user_meta_data->>'gym'), '');
+        
+        -- Ensure handle is unique - if it exists, append more of the UUID
+        WHILE EXISTS (SELECT 1 FROM public.fighter_profiles WHERE handle = handle_value) LOOP
+            handle_value := handle_value || '_' || SUBSTRING(REPLACE(NEW.id::TEXT, '-', ''), 1, 4);
+        END LOOP;
         
         -- Create fighter profile with dynamic column insertion based on what exists
         IF has_platform AND has_platform_id AND has_timezone THEN
@@ -175,7 +196,7 @@ BEGIN
                 fighter_reach,
                 fighter_weight,
                 fighter_weight_class,
-                'amateur',
+                'bronze',
                 fighter_trainer,
                 fighter_gym,
                 0,
@@ -218,7 +239,7 @@ BEGIN
                 fighter_reach,
                 fighter_weight,
                 fighter_weight_class,
-                'amateur',
+                'bronze',
                 fighter_trainer,
                 fighter_gym,
                 0,
@@ -233,12 +254,19 @@ BEGIN
     RETURN NEW;
 EXCEPTION
     WHEN OTHERS THEN
-        -- Log the error but don't fail the user creation
+        -- Log the error with full details but don't fail the user creation
         -- This prevents the trigger from blocking user signup
-        RAISE WARNING 'Error creating fighter profile for user %: %', NEW.id, SQLERRM;
+        -- Use RAISE NOTICE so it appears in Supabase logs
+        RAISE NOTICE 'Error creating fighter profile for user %: % (SQLSTATE: %)', 
+            NEW.id, SQLERRM, SQLSTATE;
         RETURN NEW;
 END;
 $$;
+
+-- Grant necessary permissions to the function
+-- This ensures the function can insert into fighter_profiles even with RLS enabled
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON public.fighter_profiles TO postgres, service_role;
 
 -- Create trigger on auth.users to create fighter profile after user signup
 DROP TRIGGER IF EXISTS on_auth_user_created_fighter ON auth.users;
@@ -249,4 +277,28 @@ CREATE TRIGGER on_auth_user_created_fighter
   EXECUTE FUNCTION public.handle_new_fighter_profile_from_auth();
 
 COMMENT ON FUNCTION public.handle_new_fighter_profile_from_auth() IS 'Automatically creates a fighter_profiles entry when a new fighter signs up';
+
+-- =====================================================
+-- DIAGNOSTIC QUERIES (Run these if registration still fails)
+-- =====================================================
+
+-- Check if trigger exists
+-- SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created_fighter';
+
+-- Check function exists
+-- SELECT proname, proowner, prosecdef FROM pg_proc WHERE proname = 'handle_new_fighter_profile_from_auth';
+
+-- Check table structure
+-- SELECT column_name, data_type, is_nullable, column_default 
+-- FROM information_schema.columns 
+-- WHERE table_schema = 'public' AND table_name = 'fighter_profiles' 
+-- ORDER BY ordinal_position;
+
+-- Check RLS policies
+-- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+-- FROM pg_policies 
+-- WHERE tablename = 'fighter_profiles';
+
+-- Test the function manually (replace USER_ID with an actual UUID)
+-- SELECT public.handle_new_fighter_profile_from_auth() FROM auth.users WHERE id = 'USER_ID';
 

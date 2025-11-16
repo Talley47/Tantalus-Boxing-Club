@@ -507,15 +507,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return; // Skip read-only or non-existent columns
         }
         
-        // For required numeric fields, ensure they have a default value (0) if null/undefined
+        // For required numeric fields, ensure they have a default value if null/undefined/NaN
         if (requiredNumericFields.includes(key)) {
-          if (value === undefined || value === null || value === '') {
-            cleanUpdates[key] = 0; // Default to 0 for required numeric fields
+          // If the field is explicitly in updates, we must provide a value (can't skip it)
+          // Use current profile value as fallback, or sensible defaults
+          let numValue: number;
+          if (value === undefined || value === null || value === '' || (typeof value === 'number' && isNaN(value))) {
+            // Use current profile value if available, otherwise use defaults
+            const currentValue = (fighterProfile as any)[key];
+            if (currentValue !== undefined && currentValue !== null && !isNaN(currentValue)) {
+              numValue = Number(currentValue);
+            } else {
+              // Use sensible defaults based on field
+              if (key === 'height_feet') {
+                numValue = 5;
+              } else if (key === 'height_inches') {
+                numValue = 8;
+              } else if (key === 'weight') {
+                numValue = 150;
+              } else if (key === 'reach') {
+                numValue = 70;
+              } else {
+                numValue = 0;
+              }
+            }
           } else {
-            const numValue = typeof value === 'string' ? parseInt(value) || 0 : Number(value) || 0;
-            cleanUpdates[key] = numValue;
+            numValue = typeof value === 'string' ? parseInt(value, 10) : Number(value);
+            // If parsing resulted in NaN, use fallback
+            if (isNaN(numValue)) {
+              const currentValue = (fighterProfile as any)[key];
+              numValue = (currentValue !== undefined && currentValue !== null && !isNaN(currentValue)) 
+                ? Number(currentValue) 
+                : (key === 'height_inches' ? 8 : key === 'height_feet' ? 5 : key === 'weight' ? 150 : key === 'reach' ? 70 : 0);
+            }
           }
-        } else if (value !== undefined && value !== null) {
+          cleanUpdates[key] = numValue;
+        } else if (value !== undefined && value !== null && value !== '') {
           // Ensure platform value matches database constraint if provided
           if (key === 'platform' && value) {
             const platformValue = value as string;

@@ -60,10 +60,12 @@ const RulesGuidelines: React.FC = () => {
     (window as any).__RULES_GUIDELINES_LOADED__ = true;
   }
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Paper elevation={3} sx={{ p: 4, mb: 4, background: 'linear-gradient(135deg, #d32f2f 0%, #9a0007 100%)' }}>
+  // Early return test - if this doesn't show, component isn't rendering
+  try {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header */}
+        <Paper elevation={3} sx={{ p: 4, mb: 4, background: 'linear-gradient(135deg, #d32f2f 0%, #9a0007 100%)' }}>
         <Box display="flex" alignItems="center" gap={2} mb={2}>
           <Gavel sx={{ fontSize: 40, color: 'white' }} />
           <Box>
@@ -784,7 +786,17 @@ const RulesGuidelines: React.FC = () => {
         </Typography>
       </Paper>
     </Container>
-  );
+    );
+  } catch (error) {
+    console.error('RulesGuidelines component error:', error);
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">
+          Error loading Rules/Guidelines: {error instanceof Error ? error.message : 'Unknown error'}
+        </Alert>
+      </Container>
+    );
+  }
 };
 
 // Rules/Guidelines component for Creative Fighter League

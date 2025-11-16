@@ -201,6 +201,7 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Rules/Guidelines route - must be before catch-all route */}
           <Route
             path="/rules"
             element={
@@ -209,7 +210,6 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          {/* Rules/Guidelines route for Creative Fighter League */}
           
           {/* Admin Routes */}
           <Route

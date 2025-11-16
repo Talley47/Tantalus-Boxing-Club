@@ -771,5 +771,6 @@ const RulesGuidelines: React.FC = () => {
   );
 };
 
+// Rules/Guidelines component for Creative Fighter League
 export default RulesGuidelines;
 

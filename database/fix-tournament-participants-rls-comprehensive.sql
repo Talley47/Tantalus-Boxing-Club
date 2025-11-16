@@ -10,11 +10,15 @@ DO $$
 BEGIN
     DROP POLICY IF EXISTS "Fighters read own participations" ON tournament_participants;
     DROP POLICY IF EXISTS "Fighters join tournaments" ON tournament_participants;
+    DROP POLICY IF EXISTS "Fighters can join tournaments" ON tournament_participants;
+    DROP POLICY IF EXISTS "Fighters can view own participations" ON tournament_participants;
+    DROP POLICY IF EXISTS "Fighters can update own participations" ON tournament_participants;
     DROP POLICY IF EXISTS "Users can view own tournament participations" ON tournament_participants;
     DROP POLICY IF EXISTS "Users can join tournaments" ON tournament_participants;
     DROP POLICY IF EXISTS "Users can update own participations" ON tournament_participants;
     DROP POLICY IF EXISTS "Tournament creators and admins can manage participants" ON tournament_participants;
     DROP POLICY IF EXISTS "Tournament creators can manage participants" ON tournament_participants;
+    DROP POLICY IF EXISTS "Admins can manage all participants" ON tournament_participants;
     DROP POLICY IF EXISTS "Public read tournament participants" ON tournament_participants;
 EXCEPTION
     WHEN undefined_object THEN NULL;

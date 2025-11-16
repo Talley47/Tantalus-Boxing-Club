@@ -43,10 +43,11 @@ const RulesGuidelines: React.FC = () => {
 
   // Ensure component is loaded in production
   React.useEffect(() => {
-    // Rules/Guidelines component mounted
-    if (process.env.NODE_ENV === 'production') {
-      // Component is available in production
-    }
+    // Log component mount for debugging
+    console.log('RulesGuidelines component mounted', { 
+      env: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
   }, []);
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {

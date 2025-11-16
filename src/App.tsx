@@ -22,6 +22,11 @@ import LoadingSpinner from './components/Shared/LoadingSpinner';
 import Social from './components/Social/Social';
 import RulesGuidelines from './components/RulesGuidelines/RulesGuidelines';
 
+// Debug: Verify RulesGuidelines is imported
+if (process.env.NODE_ENV === 'development') {
+  console.log('RulesGuidelines component imported:', typeof RulesGuidelines);
+}
+
 // Create theme
 const theme = createTheme({
   palette: {

@@ -110,6 +110,12 @@ const RegisterPage = () => {
   };
 
   const handleNext = () => {
+    if (activeStep === 0) {
+      // Validate step 1 before proceeding
+      if (!validateStep1()) {
+        return; // Don't proceed if validation fails
+      }
+    }
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
@@ -442,6 +448,9 @@ const RegisterPage = () => {
                     value={formData.fighterName}
                     onChange={handleChange('fighterName')}
                     placeholder="Your fighting name or nickname"
+                    inputProps={{ 
+                      autoComplete: 'nickname'
+                    }}
                   />
                   
                   <TextField
@@ -454,6 +463,9 @@ const RegisterPage = () => {
                     value={formData.birthday}
                     onChange={handleChange('birthday')}
                     InputLabelProps={{ shrink: true }}
+                    inputProps={{ 
+                      autoComplete: 'bday'
+                    }}
                   />
                   
                   <TextField
@@ -465,6 +477,9 @@ const RegisterPage = () => {
                     value={formData.hometown}
                     onChange={handleChange('hometown')}
                     placeholder="City, State/Country"
+                    inputProps={{ 
+                      autoComplete: 'address-level2'
+                    }}
                   />
                   
                   <FormControl fullWidth required>
@@ -526,7 +541,11 @@ const RegisterPage = () => {
                         value={formData.heightFeet}
                         onChange={handleChange('heightFeet')}
                         placeholder="5"
-                        inputProps={{ min: 3, max: 8 }}
+                        inputProps={{ 
+                          min: 3, 
+                          max: 8,
+                          autoComplete: 'off'
+                        }}
                         sx={{ flex: 1 }}
                       />
                       <TextField
@@ -538,7 +557,11 @@ const RegisterPage = () => {
                         value={formData.heightInches}
                         onChange={handleChange('heightInches')}
                         placeholder="10"
-                        inputProps={{ min: 0, max: 11 }}
+                        inputProps={{ 
+                          min: 0, 
+                          max: 11,
+                          autoComplete: 'off'
+                        }}
                         sx={{ flex: 1 }}
                       />
                     </Box>
@@ -553,7 +576,11 @@ const RegisterPage = () => {
                       value={formData.reach || ''}
                       onChange={handleChange('reach')}
                       placeholder="72"
-                      inputProps={{ min: 50, max: 100 }}
+                      inputProps={{ 
+                        min: 50, 
+                        max: 100,
+                        autoComplete: 'off'
+                      }}
                       error={!formData.reach || formData.reach.toString().trim() === '' || isNaN(parseInt(formData.reach.toString())) || parseInt(formData.reach.toString()) <= 0}
                       helperText={(!formData.reach || formData.reach.toString().trim() === '') ? 'Reach is required' : ''}
                     />
@@ -569,7 +596,11 @@ const RegisterPage = () => {
                     value={formData.weight}
                     onChange={handleChange('weight')}
                     placeholder="150"
-                    inputProps={{ min: 80, max: 400 }}
+                    inputProps={{ 
+                      min: 80, 
+                      max: 400,
+                      autoComplete: 'off'
+                    }}
                   />
                   
                   <FormControl fullWidth required>
@@ -599,6 +630,9 @@ const RegisterPage = () => {
                     value={formData.trainer}
                     onChange={handleChange('trainer')}
                     placeholder="Your coach or trainer's name"
+                    inputProps={{ 
+                      autoComplete: 'organization'
+                    }}
                   />
                   
                   <TextField
@@ -610,6 +644,9 @@ const RegisterPage = () => {
                     value={formData.gym}
                     onChange={handleChange('gym')}
                     placeholder="Your gym or team name"
+                    inputProps={{ 
+                      autoComplete: 'organization'
+                    }}
                   />
                 </Box>
               </CardContent>

@@ -56,6 +56,12 @@ export default function Home() {
             >
               Create Account
             </Link>
+            <Link
+              href="/rules"
+              className="bg-gray-800 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-900 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform w-full sm:w-auto"
+            >
+              Rules & Guidelines
+            </Link>
           </div>
 
           {/* Footer */}

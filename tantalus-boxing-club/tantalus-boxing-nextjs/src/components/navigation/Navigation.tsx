@@ -17,6 +17,7 @@ export function Navigation() {
     { name: 'Training', href: '/training' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Disputes', href: '/disputes' },
+    { name: 'Rules', href: '/rules' },
     { name: 'Admin', href: '/admin' },
     { name: 'Monitoring', href: '/admin/monitoring' },
   ]

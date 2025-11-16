@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const userRoleUpdateSchema = z.object({
   userId: z.string().uuid('Invalid user ID'),
   role: z.enum(['user', 'moderator', 'admin'], {
-    errorMap: () => ({ message: 'Role must be user, moderator, or admin' })
+    message: 'Role must be user, moderator, or admin'
   }),
 })
 
@@ -17,7 +17,7 @@ export const disputeSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters').max(200, 'Title cannot exceed 200 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters').max(2000, 'Description cannot exceed 2000 characters'),
   category: z.enum(['fight_result', 'points', 'behavior', 'technical', 'other'], {
-    errorMap: () => ({ message: 'Category must be fight_result, points, behavior, technical, or other' })
+    message: 'Category must be fight_result, points, behavior, technical, or other'
   }),
   relatedFightId: z.string().uuid('Invalid fight ID').optional(),
 })
@@ -25,7 +25,7 @@ export const disputeSchema = z.object({
 export const disputeResolutionSchema = z.object({
   disputeId: z.string().uuid('Invalid dispute ID'),
   resolution: z.enum(['upheld', 'dismissed', 'partial', 'pending_investigation'], {
-    errorMap: () => ({ message: 'Resolution must be upheld, dismissed, partial, or pending_investigation' })
+    message: 'Resolution must be upheld, dismissed, partial, or pending_investigation'
   }),
   adminNotes: z.string().max(1000, 'Admin notes cannot exceed 1000 characters').optional(),
 })
@@ -43,9 +43,9 @@ export const mediaUploadSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100, 'Title cannot exceed 100 characters'),
   description: z.string().max(500, 'Description cannot exceed 500 characters').optional(),
   category: z.enum(['highlight', 'training', 'interview', 'promo'], {
-    errorMap: () => ({ message: 'Category must be highlight, training, interview, or promo' })
+    message: 'Category must be highlight, training, interview, or promo'
   }),
-  file: z.instanceof(File, 'File is required')
+  file: z.instanceof(File, { message: 'File is required' })
     .refine((file) => file.size <= 50 * 1024 * 1024, 'File size must be less than 50MB')
     .refine((file) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime']

@@ -18,13 +18,10 @@ export async function createTrainingCamp(formData: FormData) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.API,
-    identifier: `training_camp:${user.id}`,
-  })
+  const rateLimitResult = await rateLimit.limit(`training_camp:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for training camp creation', { userId: user.id, ip })

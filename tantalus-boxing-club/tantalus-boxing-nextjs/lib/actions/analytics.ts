@@ -35,17 +35,17 @@ export async function getFighterAnalytics(fighterId: string) {
       .order('date', { ascending: false })
 
     // Calculate analytics
-    const totalFights = fightRecords.length
-    const wins = fightRecords.filter(f => f.result === 'Win').length
-    const losses = fightRecords.filter(f => f.result === 'Loss').length
-    const draws = fightRecords.filter(f => f.result === 'Draw').length
+    const totalFights = fightRecords?.length || 0
+    const wins = fightRecords?.filter(f => f.result === 'Win').length || 0
+    const losses = fightRecords?.filter(f => f.result === 'Loss').length || 0
+    const draws = fightRecords?.filter(f => f.result === 'Draw').length || 0
     const winPercentage = totalFights > 0 ? (wins / totalFights) * 100 : 0
 
-    const totalTrainingMinutes = trainingLogs.reduce((sum, log) => sum + log.duration_minutes, 0)
-    const averageTrainingPerSession = trainingLogs.length > 0 ? totalTrainingMinutes / trainingLogs.length : 0
+    const totalTrainingMinutes = trainingLogs?.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) || 0
+    const averageTrainingPerSession = trainingLogs && trainingLogs.length > 0 ? totalTrainingMinutes / trainingLogs.length : 0
 
     // Recent performance (last 10 fights)
-    const recentFights = fightRecords.slice(0, 10)
+    const recentFights = fightRecords?.slice(0, 10) || []
     const recentWins = recentFights.filter(f => f.result === 'Win').length
     const recentWinPercentage = recentFights.length > 0 ? (recentWins / recentFights.length) * 100 : 0
 
@@ -53,24 +53,24 @@ export async function getFighterAnalytics(fighterId: string) {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     
-    const recentTrainingLogs = trainingLogs.filter(log => 
+    const recentTrainingLogs = trainingLogs?.filter(log => 
       new Date(log.date) >= thirtyDaysAgo
-    )
+    ) || []
     const trainingFrequency = recentTrainingLogs.length
 
     // Weight class distribution
-    const weightClassStats = fightRecords.reduce((acc, fight) => {
+    const weightClassStats = fightRecords?.reduce((acc, fight) => {
       acc[fight.weight_class] = (acc[fight.weight_class] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {} as Record<string, number>) || {}
 
     // Method of victory
     const methodStats = fightRecords
-      .filter(f => f.result === 'Win')
+      ?.filter(f => f.result === 'Win')
       .reduce((acc, fight) => {
         acc[fight.method] = (acc[fight.method] || 0) + 1
         return acc
-      }, {} as Record<string, number>)
+      }, {} as Record<string, number>) || {}
 
     return {
       success: true,
@@ -122,35 +122,35 @@ export async function getLeagueAnalytics() {
       .order('created_at', { ascending: false })
 
     // Calculate league statistics
-    const totalFighters = fighters.length
-    const totalFights = fightRecords.length
-    const totalTournaments = tournaments.length
+    const totalFighters = fighters?.length || 0
+    const totalFights = fightRecords?.length || 0
+    const totalTournaments = tournaments?.length || 0
 
     // Tier distribution
-    const tierDistribution = fighters.reduce((acc, fighter) => {
+    const tierDistribution = fighters?.reduce((acc, fighter) => {
       acc[fighter.tier] = (acc[fighter.tier] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {} as Record<string, number>) || {}
 
     // Weight class distribution
-    const weightClassDistribution = fighters.reduce((acc, fighter) => {
+    const weightClassDistribution = fighters?.reduce((acc, fighter) => {
       acc[fighter.weight_class] = (acc[fighter.weight_class] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {} as Record<string, number>) || {}
 
     // Recent activity (last 30 days)
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     
-    const recentFights = fightRecords.filter(fight => 
+    const recentFights = fightRecords?.filter(fight => 
       new Date(fight.date) >= thirtyDaysAgo
-    )
-    const recentTournaments = tournaments.filter(tournament => 
+    ) || []
+    const recentTournaments = tournaments?.filter(tournament => 
       new Date(tournament.created_at) >= thirtyDaysAgo
-    )
+    ) || []
 
     // Top performers
-    const topFighters = fighters.slice(0, 10)
+    const topFighters = fighters?.slice(0, 10) || []
 
     return {
       success: true,

@@ -28,7 +28,7 @@ export const fighterProfileSchema = z.object({
   }, 'Age must be between 16 and 50 years'),
   hometown: z.string().min(2, 'Hometown must be at least 2 characters').max(100, 'Hometown too long'),
   stance: z.enum(['orthodox', 'southpaw', 'switch'], {
-    errorMap: () => ({ message: 'Stance must be orthodox, southpaw, or switch' })
+    message: 'Stance must be orthodox, southpaw, or switch'
   }),
   heightFeet: z.number().min(4, 'Height must be at least 4 feet').max(7, 'Height cannot exceed 7 feet'),
   heightInches: z.number().min(0, 'Inches must be 0 or more').max(11, 'Inches cannot exceed 11'),

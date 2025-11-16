@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { rateLimit, adminRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function getUsers(page = 1, limit = 20, search = '') {
@@ -76,13 +76,10 @@ export async function updateUserRole(userId: string, role: string) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.API,
-    identifier: `admin_action:${user.id}`,
-  })
+  const rateLimitResult = await adminRateLimit.limit(`admin_action:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for admin action', { userId: user.id, ip })
@@ -135,7 +132,14 @@ export async function suspendUser(userId: string, reason: string, duration?: num
   }
 
   try {
-    const suspensionData = {
+    let suspensionData: {
+      user_id: string
+      reason: string
+      suspended_by: string
+      suspended_at: string
+      status: string
+      expires_at?: string
+    } = {
       user_id: userId,
       reason,
       suspended_by: user.id,
@@ -146,7 +150,7 @@ export async function suspendUser(userId: string, reason: string, duration?: num
     if (duration) {
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + duration)
-      suspensionData.expires_at = expiresAt.toISOString()
+      suspensionData = { ...suspensionData, expires_at: expiresAt.toISOString() }
     }
 
     const { error } = await supabase

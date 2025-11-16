@@ -1,11 +1,30 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { fightRecordSchema, matchmakingSchema } from '@/lib/validations/fighter'
+import { fightRecordSchema, matchmakingRequestSchema } from '@/lib/validations/fighter'
 import { logger } from '@/lib/logger'
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+
+// Calculate points based on fight result and method
+function calculateFightPoints(result: 'Win' | 'Loss' | 'Draw', method: string): number {
+  let basePoints = 0
+  
+  if (result === 'Win') {
+    basePoints = 5
+    // KO/TKO bonus
+    if (method === 'KO' || method === 'TKO') {
+      basePoints += 3 // Total: 8 points
+    }
+  } else if (result === 'Loss') {
+    basePoints = -3
+  } else if (result === 'Draw') {
+    basePoints = 0
+  }
+  
+  return basePoints
+}
 
 export async function createFightRecord(formData: FormData) {
   const supabase = createClient()
@@ -20,13 +39,10 @@ export async function createFightRecord(formData: FormData) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.API,
-    identifier: `fight_record:${user.id}`,
-  })
+  const rateLimitResult = await rateLimit.limit(`fight_record:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for fight record creation', { userId: user.id, ip })
@@ -43,7 +59,6 @@ export async function createFightRecord(formData: FormData) {
     round: parseInt(formData.get('round') as string),
     date: formData.get('date') as string,
     weightClass: formData.get('weightClass') as string,
-    pointsEarned: parseInt(formData.get('pointsEarned') as string),
     proofUrl: formData.get('proofUrl') as string,
     notes: formData.get('notes') as string,
   }
@@ -83,8 +98,8 @@ export async function createFightRecord(formData: FormData) {
         round: validatedFields.data.round,
         date: validatedFields.data.date,
         weight_class: validatedFields.data.weightClass,
-        points_earned: validatedFields.data.pointsEarned,
-        proof_url: validatedFields.data.proofUrl || null,
+        points_earned: calculateFightPoints(validatedFields.data.result, validatedFields.data.method),
+        proof_url: null, // Proof URL not in schema, can be added later if needed
         notes: validatedFields.data.notes || null,
       })
 
@@ -129,13 +144,10 @@ export async function requestMatchmaking(formData: FormData) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.MATCHMAKING,
-    identifier: `matchmaking:${user.id}`,
-  })
+  const rateLimitResult = await rateLimit.limit(`matchmaking:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for matchmaking request', { userId: user.id, ip })
@@ -146,15 +158,14 @@ export async function requestMatchmaking(formData: FormData) {
 
   // Extract and validate form data
   const rawData = {
-    weightClass: formData.get('weightClass') as string,
-    tier: formData.get('tier') as string,
-    maxDistance: parseInt(formData.get('maxDistance') as string),
-    preferredDate: formData.get('preferredDate') as string,
-    notes: formData.get('notes') as string,
+    preferredWeightClass: formData.get('preferredWeightClass') as string || undefined,
+    preferredTier: formData.get('preferredTier') as string || undefined,
+    maxDistance: formData.get('maxDistance') ? parseInt(formData.get('maxDistance') as string) : undefined,
+    notes: formData.get('notes') as string || undefined,
   }
 
   // Validate input
-  const validatedFields = matchmakingSchema.safeParse(rawData)
+  const validatedFields = matchmakingRequestSchema.safeParse(rawData)
   
   if (!validatedFields.success) {
     return {
@@ -182,10 +193,10 @@ export async function requestMatchmaking(formData: FormData) {
       .from('matchmaking_requests')
       .insert({
         fighter_id: fighterProfile.id,
-        weight_class: validatedFields.data.weightClass,
-        tier: validatedFields.data.tier,
-        max_distance: validatedFields.data.maxDistance,
-        preferred_date: validatedFields.data.preferredDate || null,
+        weight_class: validatedFields.data.preferredWeightClass || fighterProfile.weight_class,
+        tier: validatedFields.data.preferredTier || fighterProfile.tier,
+        max_distance: validatedFields.data.maxDistance || null,
+        preferred_date: null, // Not in schema
         notes: validatedFields.data.notes || null,
         status: 'pending',
       })
@@ -200,7 +211,7 @@ export async function requestMatchmaking(formData: FormData) {
     logger.info('Matchmaking request created successfully', { 
       userId: user.id, 
       fighterId: fighterProfile.id,
-      weightClass: validatedFields.data.weightClass 
+      preferredWeightClass: validatedFields.data.preferredWeightClass 
     })
     
     return {
@@ -232,7 +243,8 @@ async function updateFighterStats(fighterId: string, fightData: any) {
     const newWins = currentStats.wins + (fightData.result === 'Win' ? 1 : 0)
     const newLosses = currentStats.losses + (fightData.result === 'Loss' ? 1 : 0)
     const newDraws = currentStats.draws + (fightData.result === 'Draw' ? 1 : 0)
-    const newPoints = currentStats.points + fightData.pointsEarned
+    const pointsEarned = calculateFightPoints(fightData.result, fightData.method)
+    const newPoints = currentStats.points + pointsEarned
     const newKnockouts = currentStats.knockouts + (fightData.method === 'KO' || fightData.method === 'TKO' ? 1 : 0)
     
     const totalFights = newWins + newLosses + newDraws

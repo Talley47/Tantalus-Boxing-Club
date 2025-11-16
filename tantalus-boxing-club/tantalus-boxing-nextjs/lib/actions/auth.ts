@@ -19,14 +19,14 @@ export async function signIn(formData: FormData) {
   const validationResult = loginSchema.safeParse(rawData)
   if (!validationResult.success) {
     return {
-      error: validationResult.error.errors[0].message,
+      error: validationResult.error.issues[0]?.message || 'Validation failed',
     }
   }
 
   const { email, password } = validationResult.data
 
   // Rate limiting with error handling
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
   try {
@@ -78,14 +78,14 @@ export async function signUp(formData: FormData) {
   const validationResult = registerSchema.safeParse(rawData)
   if (!validationResult.success) {
     return {
-      error: validationResult.error.errors[0].message,
+      error: validationResult.error.issues[0]?.message || 'Validation failed',
     }
   }
 
   const { fullName, email, password } = validationResult.data
 
   // Rate limiting with error handling
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
   try {
@@ -161,7 +161,7 @@ export async function createFighterProfile(formData: FormData) {
   const validationResult = fighterProfileSchema.safeParse(rawData)
   if (!validationResult.success) {
     return {
-      error: validationResult.error.errors[0].message,
+      error: validationResult.error.issues[0]?.message || 'Validation failed',
     }
   }
 

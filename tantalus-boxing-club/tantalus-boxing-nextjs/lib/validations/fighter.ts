@@ -14,7 +14,7 @@ export const matchmakingRequestSchema = z.object({
 export const fightRecordSchema = z.object({
   opponentName: z.string().min(2, 'Opponent name must be at least 2 characters').max(100, 'Opponent name too long'),
   result: z.enum(['Win', 'Loss', 'Draw'], {
-    errorMap: () => ({ message: 'Result must be Win, Loss, or Draw' })
+    message: 'Result must be Win, Loss, or Draw'
   }),
   method: z.enum([
     'Decision', 'TKO', 'KO', 'Submission', 'DQ', 'No Contest', 'Technical Decision'

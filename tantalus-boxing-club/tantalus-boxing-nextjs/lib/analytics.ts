@@ -2,38 +2,67 @@
 
 import { PostHog } from 'posthog-js'
 
-// Initialize PostHog
-export const posthog = new PostHog(
-  process.env.NEXT_PUBLIC_POSTHOG_KEY!,
-  {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
-    person_profiles: 'identified_only',
-    capture_pageview: false,
-    capture_pageleave: true,
+// Initialize PostHog (only if key is provided)
+let posthog: PostHog | null = null
+
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  try {
+    // PostHog initialization - make it optional
+    posthog = new PostHog()
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
+      person_profiles: 'identified_only',
+      capture_pageview: false,
+      capture_pageleave: true,
+    })
+  } catch (error) {
+    console.warn('Failed to initialize PostHog:', error)
+    posthog = null
   }
-)
+}
+
+// Helper function to safely call PostHog
+const safeCapture = (event: string, properties?: any) => {
+  if (posthog) {
+    try {
+      posthog.capture(event, properties)
+    } catch (error) {
+      console.warn('PostHog capture failed:', error)
+    }
+  }
+}
+
+const safeIdentify = (userId: string, properties?: any) => {
+  if (posthog) {
+    try {
+      posthog.identify(userId, properties)
+    } catch (error) {
+      console.warn('PostHog identify failed:', error)
+    }
+  }
+}
 
 // Analytics events
 export const analytics = {
   // User events
   userRegistered: (userId: string, properties?: any) => {
-    posthog.identify(userId, properties)
-    posthog.capture('user_registered', {
+    safeIdentify(userId, properties)
+    safeCapture('user_registered', {
       ...properties,
       timestamp: new Date().toISOString(),
     })
   },
   
   userLoggedIn: (userId: string, properties?: any) => {
-    posthog.identify(userId, properties)
-    posthog.capture('user_logged_in', {
+    safeIdentify(userId, properties)
+    safeCapture('user_logged_in', {
       ...properties,
       timestamp: new Date().toISOString(),
     })
   },
   
   userLoggedOut: (userId: string) => {
-    posthog.capture('user_logged_out', {
+    safeCapture('user_logged_out', {
       userId,
       timestamp: new Date().toISOString(),
     })
@@ -41,7 +70,7 @@ export const analytics = {
   
   // Fighter events
   fighterProfileCreated: (userId: string, fighterData: any) => {
-    posthog.capture('fighter_profile_created', {
+    safeCapture('fighter_profile_created', {
       userId,
       fighterName: fighterData.name,
       weightClass: fighterData.weight_class,
@@ -51,7 +80,7 @@ export const analytics = {
   },
   
   fightRecordAdded: (userId: string, fightData: any) => {
-    posthog.capture('fight_record_added', {
+    safeCapture('fight_record_added', {
       userId,
       result: fightData.result,
       method: fightData.method,
@@ -62,7 +91,7 @@ export const analytics = {
   
   // Matchmaking events
   matchmakingRequestCreated: (userId: string, requestData: any) => {
-    posthog.capture('matchmaking_request_created', {
+    safeCapture('matchmaking_request_created', {
       userId,
       preferredWeightClass: requestData.preferred_weight_class,
       preferredTier: requestData.preferred_tier,
@@ -71,7 +100,7 @@ export const analytics = {
   },
   
   matchFound: (userId: string, matchData: any) => {
-    posthog.capture('match_found', {
+    safeCapture('match_found', {
       userId,
       opponentId: matchData.opponent_id,
       weightClass: matchData.weight_class,
@@ -81,7 +110,7 @@ export const analytics = {
   
   // Tournament events
   tournamentCreated: (userId: string, tournamentData: any) => {
-    posthog.capture('tournament_created', {
+    safeCapture('tournament_created', {
       userId,
       tournamentName: tournamentData.name,
       weightClass: tournamentData.weight_class,
@@ -91,7 +120,7 @@ export const analytics = {
   },
   
   tournamentJoined: (userId: string, tournamentId: string) => {
-    posthog.capture('tournament_joined', {
+    safeCapture('tournament_joined', {
       userId,
       tournamentId,
       timestamp: new Date().toISOString(),
@@ -100,7 +129,7 @@ export const analytics = {
   
   // Media events
   mediaUploaded: (userId: string, mediaData: any) => {
-    posthog.capture('media_uploaded', {
+    safeCapture('media_uploaded', {
       userId,
       category: mediaData.category,
       fileType: mediaData.file_type,
@@ -111,7 +140,7 @@ export const analytics = {
   
   // Training events
   trainingCampJoined: (userId: string, campId: string) => {
-    posthog.capture('training_camp_joined', {
+    safeCapture('training_camp_joined', {
       userId,
       campId,
       timestamp: new Date().toISOString(),
@@ -119,7 +148,7 @@ export const analytics = {
   },
   
   trainingLogged: (userId: string, trainingData: any) => {
-    posthog.capture('training_logged', {
+    safeCapture('training_logged', {
       userId,
       activity: trainingData.activity,
       duration: trainingData.duration_minutes,
@@ -129,7 +158,7 @@ export const analytics = {
   
   // Admin events
   adminAction: (adminId: string, action: string, targetId?: string) => {
-    posthog.capture('admin_action', {
+    safeCapture('admin_action', {
       adminId,
       action,
       targetId,
@@ -139,7 +168,7 @@ export const analytics = {
   
   // Dispute events
   disputeCreated: (userId: string, disputeData: any) => {
-    posthog.capture('dispute_created', {
+    safeCapture('dispute_created', {
       userId,
       category: disputeData.category,
       timestamp: new Date().toISOString(),
@@ -147,7 +176,7 @@ export const analytics = {
   },
   
   disputeResolved: (adminId: string, disputeId: string, resolution: string) => {
-    posthog.capture('dispute_resolved', {
+    safeCapture('dispute_resolved', {
       adminId,
       disputeId,
       resolution,
@@ -157,7 +186,7 @@ export const analytics = {
   
   // Page views
   pageView: (page: string, properties?: any) => {
-    posthog.capture('$pageview', {
+    safeCapture('$pageview', {
       page,
       ...properties,
       timestamp: new Date().toISOString(),
@@ -166,7 +195,7 @@ export const analytics = {
   
   // Feature usage
   featureUsed: (userId: string, feature: string, properties?: any) => {
-    posthog.capture('feature_used', {
+    safeCapture('feature_used', {
       userId,
       feature,
       ...properties,
@@ -176,7 +205,7 @@ export const analytics = {
   
   // Performance metrics
   performanceMetric: (metric: string, value: number, properties?: any) => {
-    posthog.capture('performance_metric', {
+    safeCapture('performance_metric', {
       metric,
       value,
       ...properties,
@@ -184,9 +213,3 @@ export const analytics = {
     })
   },
 }
-
-// Initialize PostHog on page load
-if (typeof window !== 'undefined') {
-  posthog.init()
-}
-

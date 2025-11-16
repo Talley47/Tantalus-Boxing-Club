@@ -10,7 +10,9 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Get client IP for rate limiting
-  const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? '127.0.0.1'
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+             request.headers.get('x-real-ip') || 
+             '127.0.0.1'
   
   // Apply different rate limits based on route with error handling
   let rateLimitResult

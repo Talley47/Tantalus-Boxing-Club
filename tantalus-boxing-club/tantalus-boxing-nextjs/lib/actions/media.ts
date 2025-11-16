@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { uploadRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function uploadMediaAsset(formData: FormData) {
@@ -18,13 +18,10 @@ export async function uploadMediaAsset(formData: FormData) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.UPLOAD,
-    identifier: `media_upload:${user.id}`,
-  })
+  const rateLimitResult = await uploadRateLimit.limit(`media_upload:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for media upload', { userId: user.id, ip })

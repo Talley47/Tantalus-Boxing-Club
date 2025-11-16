@@ -19,13 +19,10 @@ export async function createTournament(formData: FormData) {
   }
 
   // Rate limiting
-  const headersList = headers()
+  const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await rateLimit({
-    ...RATE_LIMITS.API,
-    identifier: `tournament:${user.id}`,
-  })
+  const rateLimitResult = await rateLimit.limit(`tournament:${user.id}`)
 
   if (!rateLimitResult.success) {
     logger.warn('Rate limit exceeded for tournament creation', { userId: user.id, ip })
@@ -42,8 +39,6 @@ export async function createTournament(formData: FormData) {
     endDate: formData.get('endDate') as string,
     weightClass: formData.get('weightClass') as string,
     maxParticipants: parseInt(formData.get('maxParticipants') as string),
-    entryFee: parseInt(formData.get('entryFee') as string),
-    prizePool: parseInt(formData.get('prizePool') as string),
   }
 
   // Validate input
@@ -68,8 +63,8 @@ export async function createTournament(formData: FormData) {
         weight_class: validatedFields.data.weightClass,
         max_participants: validatedFields.data.maxParticipants,
         current_participants: 0,
-        entry_fee: validatedFields.data.entryFee,
-        prize_pool: validatedFields.data.prizePool,
+        entry_fee: 0, // Not in schema, default to 0
+        prize_pool: 0, // Not in schema, default to 0
         status: 'upcoming',
         created_by: user.id,
       })

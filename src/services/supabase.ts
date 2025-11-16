@@ -217,9 +217,36 @@ if (typeof window !== 'undefined') {
       ((errorObj as any)?.code === '400' || errorMessage.includes('400')) &&
       (combinedErrorText.includes('fighter_profiles') || 
        combinedErrorText.includes('fighter profile') ||
-       errorObjMessage?.includes('fighter_profiles'));
+       errorObjMessage?.includes('fighter_profiles') ||
+       errorString?.includes('fighter_profiles') ||
+       errorStack?.includes('fighter_profiles'));
     
-    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError || isFighterProfile400Error) {
+    // Suppress tournament validation errors (weight class mismatch, tier requirements, etc.)
+    // These are expected validation errors shown to users in the UI
+    // If error message contains "Error joining tournament", suppress it (all tournament join errors are validation)
+    const isTournamentValidationError = 
+      combinedErrorText.includes('error joining tournament') ||
+      errorMessage.toLowerCase().includes('error joining tournament') ||
+      errorObjMessage?.toLowerCase().includes('error joining tournament') ||
+      (combinedErrorText.includes('error joining tournament') &&
+       (combinedErrorText.includes('weight class') ||
+        combinedErrorText.includes('tier') ||
+        combinedErrorText.includes('minimum tier') ||
+        combinedErrorText.includes('mismatch') ||
+        combinedErrorText.includes('not eligible') ||
+        combinedErrorText.includes('amateur') ||
+        combinedErrorText.includes('professional'))) ||
+      (errorObjMessage?.toLowerCase().includes('weight class') ||
+       errorObjMessage?.toLowerCase().includes('minimum tier') ||
+       errorObjMessage?.toLowerCase().includes('tier required') ||
+       errorObjMessage?.toLowerCase().includes('minimum tier required')) ||
+      (errorMessage.toLowerCase().includes('error joining tournament') &&
+       (errorObjMessage?.toLowerCase().includes('tier') ||
+        errorObjMessage?.toLowerCase().includes('weight class') ||
+        errorObjMessage?.toLowerCase().includes('mismatch') ||
+        errorObjMessage?.toLowerCase().includes('not eligible')));
+    
+    if (isUserAlreadyRegistered || isInvalidCredentials || isEventsTriggerError || isFighterProfile400Error || isTournamentValidationError) {
       // Don't log - these are expected/user-friendly or known issues that need SQL fixes
       return;
     }

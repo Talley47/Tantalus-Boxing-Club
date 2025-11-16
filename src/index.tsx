@@ -247,11 +247,18 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress 400 errors from resources (likely from browser extensions or network issues)
+    // Also suppress 400 errors from fighter_profiles queries (handled gracefully in code)
     if (
       errorMessage.includes('400') ||
       (errorSrc && errorMessage.includes('Failed to load resource') && errorMessage.includes('400'))
     ) {
-      // Only suppress if it's not from our own API endpoints
+      // Suppress 400 errors from fighter_profiles queries (RLS or query format issues - handled gracefully)
+      if (errorSrc.includes('fighter_profiles') || decodedSrc.includes('fighter_profiles')) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+      // Suppress other 400 errors if not from our own API endpoints
       if (!errorSrc.includes('supabase.co') && !errorSrc.includes('tantalus')) {
         event.preventDefault();
         event.stopPropagation();

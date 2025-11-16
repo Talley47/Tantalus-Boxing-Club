@@ -25,17 +25,23 @@ export async function signIn(formData: FormData) {
 
   const { email, password } = validationResult.data
 
-  // Rate limiting
+  // Rate limiting with error handling
   const headersList = headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await authRateLimit.limit(`auth:${ip}`)
+  try {
+    const rateLimitResult = await authRateLimit.limit(`auth:${ip}`)
 
-  if (!rateLimitResult.success) {
-    logger.warn('Rate limit exceeded for auth', { ip })
-    return {
-      error: 'Too many login attempts. Please try again later.',
+    if (!rateLimitResult.success) {
+      logger.warn('Rate limit exceeded for auth', { ip })
+      return {
+        error: 'Too many login attempts. Please try again later.',
+      }
     }
+  } catch (error) {
+    // If rate limiting fails, log error but allow request to proceed
+    logger.error('Rate limiting failed for auth', { ip, error })
+    // Continue with authentication attempt
   }
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -78,17 +84,23 @@ export async function signUp(formData: FormData) {
 
   const { fullName, email, password } = validationResult.data
 
-  // Rate limiting
+  // Rate limiting with error handling
   const headersList = headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   
-  const rateLimitResult = await authRateLimit.limit(`auth:${ip}`)
+  try {
+    const rateLimitResult = await authRateLimit.limit(`auth:${ip}`)
 
-  if (!rateLimitResult.success) {
-    logger.warn('Rate limit exceeded for auth', { ip })
-    return {
-      error: 'Too many registration attempts. Please try again later.',
+    if (!rateLimitResult.success) {
+      logger.warn('Rate limit exceeded for auth', { ip })
+      return {
+        error: 'Too many registration attempts. Please try again later.',
+      }
     }
+  } catch (error) {
+    // If rate limiting fails, log error but allow request to proceed
+    logger.error('Rate limiting failed for auth', { ip, error })
+    // Continue with registration attempt
   }
 
   const { data, error } = await supabase.auth.signUp({

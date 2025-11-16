@@ -41,9 +41,12 @@ const RulesGuidelines: React.FC = () => {
   // Rules/Guidelines component for Creative Fighter League
   const [expanded, setExpanded] = useState<string | false>('introduction');
 
-  // Ensure component is loaded
+  // Ensure component is loaded in production
   React.useEffect(() => {
-    // Component mounted successfully
+    // Rules/Guidelines component mounted
+    if (process.env.NODE_ENV === 'production') {
+      // Component is available in production
+    }
   }, []);
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {

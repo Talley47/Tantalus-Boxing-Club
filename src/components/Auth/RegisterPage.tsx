@@ -355,6 +355,9 @@ const RegisterPage = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange('name')}
+                    inputProps={{ 
+                      autoComplete: 'name'
+                    }}
                   />
                   
                   <TextField
@@ -366,6 +369,9 @@ const RegisterPage = () => {
                     type="email"
                     value={formData.email}
                     onChange={handleChange('email')}
+                    inputProps={{ 
+                      autoComplete: 'email'
+                    }}
                   />
                   
                   <TextField

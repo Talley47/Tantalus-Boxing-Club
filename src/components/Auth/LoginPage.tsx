@@ -162,10 +162,12 @@ const LoginPage: React.FC = () => {
               id="email"
               label="Email Address"
               name="email"
-              autoComplete="email"
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              inputProps={{ 
+                autoComplete: 'email'
+              }}
             />
             
             <TextField
@@ -176,9 +178,11 @@ const LoginPage: React.FC = () => {
               label="Password"
               type="password"
               id="password"
-              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              inputProps={{ 
+                autoComplete: 'current-password'
+              }}
             />
             
             <Button

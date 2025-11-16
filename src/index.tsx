@@ -317,8 +317,6 @@ if (typeof window !== 'undefined') {
     
     // Suppress browser extension errors (including background-redux-new.js and chrome-extension:// URLs)
     // Also check for errors from routes (these are often browser extension errors)
-    const lowerErrorMsg = errorMessage.toLowerCase();
-    const lowerFilename = errorFilename.toLowerCase();
     const lowerStack = errorStack.toLowerCase();
     // Check if error is from any route (login, matchmaking, rules, rankings, etc.)
     const isFromRoute = /^\/?\d*[a-z]+/.test(errorFilename) || 

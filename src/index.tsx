@@ -41,8 +41,11 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
+      lowerErrorMessage.includes('duplicate id') ||
       (lowerErrorMessage.includes('unchecked runtime') && lowerErrorMessage.includes('cannot create item')) ||
+      (lowerErrorMessage.includes('unchecked runtime') && lowerErrorMessage.includes('duplicate id')) ||
       (lowerErrorMessage.includes('runtime.last') && lowerErrorMessage.includes('cannot create item')) ||
+      (lowerErrorMessage.includes('runtime.last') && lowerErrorMessage.includes('duplicate id')) ||
       lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
@@ -57,8 +60,11 @@ if (typeof window !== 'undefined') {
       allArgs.includes('runtime.lasterror') ||
       allArgs.includes('unchecked runtime.lasterror') ||
       allArgs.includes('cannot create item') ||
+      allArgs.includes('duplicate id') ||
       (allArgs.includes('unchecked runtime') && allArgs.includes('cannot create item')) ||
+      (allArgs.includes('unchecked runtime') && allArgs.includes('duplicate id')) ||
       (allArgs.includes('runtime.last') && allArgs.includes('cannot create item')) ||
+      (allArgs.includes('runtime.last') && allArgs.includes('duplicate id')) ||
       allArgs.includes('cannot find menu item') ||
       allArgs.includes('no tab with id') ||
       allArgs.includes('background-redux') ||
@@ -67,13 +73,54 @@ if (typeof window !== 'undefined') {
       allArgs.includes('ch-content-script') ||
       allArgs.includes('lastpass');
     
-    // Don't log browser extension errors
-    if (isBrowserExtensionError) {
+    // Suppress cache errors for audio files (harmless browser cache warnings)
+    // These errors don't prevent the audio from working
+    const isCacheError = 
+      (lowerErrorMessage.includes('err_cache_operation_not_supported') ||
+       lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
+      (allArgs.includes('err_cache_operation_not_supported') ||
+       (allArgs.includes('failed to load resource') && allArgs.includes('cache'))) ||
+      (allArgs.includes('boxing-bell') && (allArgs.includes('cache') || allArgs.includes('err_cache')));
+    
+    // Don't log browser extension errors or cache errors
+    if (isBrowserExtensionError || isCacheError) {
       return;
     }
     
     // Log all other errors normally
     originalConsoleError.apply(console, args);
+  };
+  
+  // Also suppress console.warn for browser extension errors (LastPass sometimes uses warn)
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    const errorMessage = args[0]?.toString() || '';
+    const allArgs = args.join(' ').toLowerCase();
+    const lowerErrorMessage = errorMessage.toLowerCase();
+    
+    // Check if this is a browser extension error
+    const isBrowserExtensionError = 
+      lowerErrorMessage.includes('unchecked runtime.lasterror') ||
+      lowerErrorMessage.includes('runtime.lasterror') ||
+      lowerErrorMessage.includes('cannot create item') ||
+      lowerErrorMessage.includes('duplicate id') ||
+      (lowerErrorMessage.includes('unchecked runtime') && lowerErrorMessage.includes('duplicate id')) ||
+      lowerErrorMessage.includes('cannot find menu item') ||
+      allArgs.includes('unchecked runtime.lasterror') ||
+      allArgs.includes('runtime.lasterror') ||
+      allArgs.includes('cannot create item') ||
+      allArgs.includes('duplicate id') ||
+      (allArgs.includes('unchecked runtime') && allArgs.includes('duplicate id')) ||
+      allArgs.includes('cannot find menu item') ||
+      allArgs.includes('lastpass');
+    
+    // Don't log browser extension errors
+    if (isBrowserExtensionError) {
+      return;
+    }
+    
+    // Log all other warnings normally
+    originalConsoleWarn.apply(console, args);
   };
   
   // Suppress unhandled promise rejections from browser extensions
@@ -103,6 +150,8 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
+      lowerErrorMessage.includes('duplicate id') ||
+      (lowerErrorMessage.includes('unchecked runtime') && lowerErrorMessage.includes('duplicate id')) ||
       lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
@@ -113,6 +162,8 @@ if (typeof window !== 'undefined') {
       lowerErrorString.includes('runtime.lasterror') ||
       lowerErrorString.includes('unchecked runtime.lasterror') ||
       lowerErrorString.includes('cannot create item') ||
+      lowerErrorString.includes('duplicate id') ||
+      (lowerErrorString.includes('unchecked runtime') && lowerErrorString.includes('duplicate id')) ||
       lowerErrorString.includes('cannot find menu item') ||
       lowerErrorString.includes('lastpass') ||
       lowerErrorString.includes('no tab with id') ||
@@ -125,6 +176,8 @@ if (typeof window !== 'undefined') {
       lowerErrorStack.includes('runtime.lasterror') ||
       lowerErrorStack.includes('unchecked runtime.lasterror') ||
       lowerErrorStack.includes('cannot create item') ||
+      lowerErrorStack.includes('duplicate id') ||
+      (lowerErrorStack.includes('unchecked runtime') && lowerErrorStack.includes('duplicate id')) ||
       lowerErrorStack.includes('cannot find menu item') ||
       lowerErrorStack.includes('background-redux') ||
       lowerErrorStack.includes('background-redux-new.js') ||
@@ -138,6 +191,8 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('runtime.lasterror') ||
       allErrorText.includes('unchecked runtime.lasterror') ||
       allErrorText.includes('cannot create item') ||
+      allErrorText.includes('duplicate id') ||
+      (allErrorText.includes('unchecked runtime') && allErrorText.includes('duplicate id')) ||
       allErrorText.includes('cannot find menu item') ||
       allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
@@ -145,7 +200,17 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('chrome-extension://') ||
       allErrorText.includes('lastpass');
     
-    if (isBrowserExtensionError) {
+    // Suppress cache errors for audio files (harmless browser cache warnings)
+    const isCacheError = 
+      lowerErrorMessage.includes('err_cache_operation_not_supported') ||
+      (lowerErrorMessage.includes('failed to load resource') && lowerErrorMessage.includes('cache')) ||
+      lowerErrorString.includes('err_cache_operation_not_supported') ||
+      (lowerErrorString.includes('failed to load resource') && lowerErrorString.includes('cache')) ||
+      allErrorText.includes('err_cache_operation_not_supported') ||
+      (allErrorText.includes('failed to load resource') && allErrorText.includes('cache')) ||
+      (allErrorText.includes('boxing-bell') && (allErrorText.includes('cache') || allErrorText.includes('err_cache')));
+    
+    if (isBrowserExtensionError || isCacheError) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();

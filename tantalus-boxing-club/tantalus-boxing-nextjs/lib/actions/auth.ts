@@ -186,7 +186,7 @@ export async function createFighterProfile(formData: FormData) {
         weight_class: profileData.weightClass,
         trainer: profileData.trainer,
         gym: profileData.gym,
-        tier: 'bronze',
+        tier: 'amateur',
         points: 0,
         wins: 0,
         losses: 0,

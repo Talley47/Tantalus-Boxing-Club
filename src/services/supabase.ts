@@ -357,18 +357,35 @@ if (typeof window !== 'undefined') {
     
     // Suppress performance violation warnings (harmless browser DevTools warnings)
     // Check for various formats: [Violation], handler took, scheduler warnings
-    if (
-      lowerWarningMessage.includes('[violation]') ||
-      allArgs.includes('[violation]') ||
+    // These warnings can come from React, scheduler, or other libraries
+    const hasViolation = lowerWarningMessage.includes('[violation]') || allArgs.includes('[violation]');
+    const hasHandlerTook = 
+      lowerWarningMessage.includes("handler took") ||
+      allArgs.includes("handler took") ||
       lowerWarningMessage.includes("'message' handler took") ||
       lowerWarningMessage.includes("'settimeout' handler took") ||
       lowerWarningMessage.includes("'setTimeout' handler took") ||
-      (lowerWarningMessage.includes("handler took") && lowerWarningMessage.includes('ms')) ||
-      allArgs.includes("handler took") ||
+      lowerWarningMessage.includes("'close' handler took") ||
+      lowerWarningMessage.includes("'open' handler took") ||
+      lowerWarningMessage.includes("'click' handler took") ||
+      lowerWarningMessage.includes("'input' handler took");
+    const isFromReactOrScheduler = 
       allArgs.includes("scheduler.development.js") ||
+      allArgs.includes("react-dom-client.development.js") ||
+      allArgs.includes("react.development.js") ||
       allArgs.includes("refreshutils.js") ||
+      allArgs.includes("scheduler") ||
+      allArgs.includes("react-dom");
+    
+    if (
+      hasViolation ||
+      (hasViolation && hasHandlerTook) ||
+      (hasViolation && isFromReactOrScheduler) ||
+      (hasHandlerTook && isFromReactOrScheduler) ||
       // Catch any warning that mentions violation and handler
-      (allArgs.includes('violation') && allArgs.includes('handler'))
+      (allArgs.includes('violation') && allArgs.includes('handler')) ||
+      // Catch any warning from React/scheduler files with handler took
+      (isFromReactOrScheduler && hasHandlerTook)
     ) {
       // Silently ignore performance violation warnings - they're just DevTools warnings
       return;

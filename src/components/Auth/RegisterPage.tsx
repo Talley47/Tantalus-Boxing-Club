@@ -381,7 +381,10 @@ const RegisterPage = () => {
                       ? `Password must be at least 12 characters (${formData.password.length}/12)`
                       : 'Password must be at least 12 characters'}
                     error={formData.password.length > 0 && formData.password.length < 12}
-                    inputProps={{ minLength: 12 }}
+                    inputProps={{ 
+                      minLength: 12,
+                      autoComplete: 'new-password'
+                    }}
                   />
                   
                   <TextField
@@ -397,6 +400,9 @@ const RegisterPage = () => {
                       ? 'Passwords do not match'
                       : ''}
                     error={formData.password !== formData.confirmPassword && formData.confirmPassword.length > 0}
+                    inputProps={{ 
+                      autoComplete: 'new-password'
+                    }}
                   />
                 </Box>
               </CardContent>

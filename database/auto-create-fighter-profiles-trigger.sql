@@ -32,12 +32,15 @@ BEGIN
         (NEW.raw_user_meta_data->>'role')::TEXT,
         'fighter'
     ) = 'fighter' THEN
-        -- Extract fighter name (priority: fighterName > name > full_name > email prefix)
+        -- Extract fighter name (priority: fighterName only - do NOT use account name)
+        -- The fighter name should always be provided during registration
+        -- Check multiple possible field names for fighter name
         fighter_name := COALESCE(
-            NEW.raw_user_meta_data->>'fighterName',
-            NEW.raw_user_meta_data->>'name',
-            NEW.raw_user_meta_data->>'full_name',
-            split_part(NEW.email, '@', 1) || ' Fighter'
+            NULLIF(TRIM(NEW.raw_user_meta_data->>'fighterName'), ''),
+            NULLIF(TRIM(NEW.raw_user_meta_data->>'fighter_name'), ''),
+            NULLIF(TRIM(NEW.raw_user_meta_data->>'boxerName'), ''),
+            NULLIF(TRIM(NEW.raw_user_meta_data->>'boxer_name'), ''),
+            'Fighter'  -- Fallback only if fighterName is not provided (shouldn't happen)
         );
         
         -- Parse birthday
@@ -148,7 +151,7 @@ BEGIN
             fighter_reach,
             fighter_weight,
             fighter_weight_class,
-            'Amateur',
+            'amateur',
             fighter_trainer,
             fighter_gym,
             0,

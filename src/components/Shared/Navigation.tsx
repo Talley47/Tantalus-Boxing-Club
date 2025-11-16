@@ -79,13 +79,11 @@ const Navigation: React.FC = () => {
     { text: 'Rules/Guidelines', icon: <Gavel />, path: '/rules' },
   ];
 
-  // Debug: Log menu items in production to verify Rules/Guidelines is included
+  // Debug: Log menu items to verify Rules/Guidelines is included
   React.useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Navigation menu items:', menuItems.map(item => item.text));
-      const rulesItem = menuItems.find(item => item.path === '/rules');
-      console.log('Rules/Guidelines menu item:', rulesItem ? 'FOUND' : 'NOT FOUND', rulesItem);
-    }
+    console.log('Navigation menu items:', menuItems.map(item => item.text));
+    const rulesItem = menuItems.find(item => item.path === '/rules');
+    console.log('Rules/Guidelines menu item:', rulesItem ? 'FOUND' : 'NOT FOUND', rulesItem);
   }, []);
 
   if (isAdmin) {

@@ -210,6 +210,15 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Explicit route for /rules/ to handle trailing slash */}
+          <Route
+            path="/rules/"
+            element={
+              <ProtectedRoute>
+                <RulesGuidelines />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Admin Routes */}
           <Route

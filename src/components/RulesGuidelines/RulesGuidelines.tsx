@@ -55,14 +55,15 @@ const RulesGuidelines: React.FC = () => {
   };
 
   // Force component to be included in production build
-  if (typeof window !== 'undefined') {
-    // Ensure component is loaded
-    (window as any).__RULES_GUIDELINES_LOADED__ = true;
-  }
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Ensure component is loaded
+      (window as any).__RULES_GUIDELINES_LOADED__ = true;
+      console.log('RulesGuidelines component initialized - window flag set');
+    }
+  }, []);
 
-  // Early return test - if this doesn't show, component isn't rendering
-  try {
-    return (
+  return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Header */}
         <Paper elevation={3} sx={{ p: 4, mb: 4, background: 'linear-gradient(135deg, #d32f2f 0%, #9a0007 100%)' }}>
@@ -786,17 +787,7 @@ const RulesGuidelines: React.FC = () => {
         </Typography>
       </Paper>
     </Container>
-    );
-  } catch (error) {
-    console.error('RulesGuidelines component error:', error);
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">
-          Error loading Rules/Guidelines: {error instanceof Error ? error.message : 'Unknown error'}
-        </Alert>
-      </Container>
-    );
-  }
+  );
 };
 
 // Rules/Guidelines component for Creative Fighter League

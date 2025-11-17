@@ -1,4 +1,10 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Rules & Guidelines | Tantalus Boxing Club',
+  description: 'Official Rules and Guidelines for the Creative Fighter League',
+}
 
 export default function RulesPage() {
   return (

@@ -4,7 +4,7 @@ import { RecordEntryForm } from '@/components/record-entry/RecordEntryForm'
 import { FightHistory } from '@/components/record-entry/FightHistory'
 
 export default async function RecordEntryPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

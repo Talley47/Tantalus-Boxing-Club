@@ -8,7 +8,7 @@ import { loginSchema, registerSchema, fighterProfileSchema } from '@/lib/validat
 import { z } from 'zod'
 
 export async function signIn(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Validate input
   const rawData = {
@@ -65,7 +65,7 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Validate registration data
   const rawData = {
@@ -131,7 +131,7 @@ export async function signUp(formData: FormData) {
 }
 
 export async function createFighterProfile(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -234,7 +234,7 @@ export async function createFighterProfile(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { error } = await supabase.auth.signOut()
 

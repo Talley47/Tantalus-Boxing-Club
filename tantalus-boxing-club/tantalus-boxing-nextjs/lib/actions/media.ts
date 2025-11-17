@@ -6,7 +6,7 @@ import { uploadRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function uploadMediaAsset(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -103,7 +103,7 @@ export async function uploadMediaAsset(formData: FormData) {
 }
 
 export async function getMediaAssets(category?: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     let query = supabase
@@ -140,7 +140,7 @@ export async function getMediaAssets(category?: string) {
 }
 
 export async function scheduleInterview(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -212,7 +212,7 @@ export async function scheduleInterview(formData: FormData) {
 }
 
 export async function getInterviews() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase

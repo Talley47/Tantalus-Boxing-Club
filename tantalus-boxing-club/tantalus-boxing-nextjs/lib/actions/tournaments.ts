@@ -7,7 +7,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function createTournament(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -98,7 +98,7 @@ export async function createTournament(formData: FormData) {
 }
 
 export async function joinTournament(tournamentId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -176,8 +176,101 @@ export async function joinTournament(tournamentId: string) {
   }
 }
 
+export async function leaveTournament(tournamentId: string) {
+  const supabase = await createClient()
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return {
+      error: 'Not authenticated',
+    }
+  }
+
+  try {
+    // Get fighter profile
+    const { data: fighterProfile } = await supabase
+      .from('fighter_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!fighterProfile) {
+      return {
+        error: 'Fighter profile not found',
+      }
+    }
+
+    // Check if joined
+    const { data: existingParticipation } = await supabase
+      .from('tournament_participants')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('fighter_id', fighterProfile.id)
+      .single()
+
+    if (!existingParticipation) {
+      return {
+        error: 'Not joined to this tournament',
+      }
+    }
+
+    // Leave tournament
+    const { error } = await supabase
+      .from('tournament_participants')
+      .delete()
+      .eq('tournament_id', tournamentId)
+      .eq('fighter_id', fighterProfile.id)
+
+    if (error) {
+      logger.error('Tournament leave failed', { userId: user.id, tournamentId, error: error.message })
+      return {
+        error: 'Failed to leave tournament',
+      }
+    }
+
+    // Update tournament participant count (decrement)
+    try {
+      await supabase.rpc('decrement_tournament_participants', {
+        tournament_id: tournamentId
+      })
+    } catch {
+      // If RPC doesn't exist, manually update
+      const { data: tournament } = await supabase
+        .from('tournaments')
+        .select('current_participants')
+        .eq('id', tournamentId)
+        .single()
+      
+      if (tournament) {
+        await supabase
+          .from('tournaments')
+          .update({ current_participants: Math.max(0, tournament.current_participants - 1) })
+          .eq('id', tournamentId)
+      }
+    }
+
+    logger.info('Tournament left successfully', { 
+      userId: user.id, 
+      tournamentId,
+      fighterId: fighterProfile.id 
+    })
+    
+    return {
+      success: true,
+      message: 'Successfully left tournament',
+    }
+  } catch (error) {
+    logger.error('Tournament leave error', { userId: user.id, tournamentId, error })
+    return {
+      error: 'An unexpected error occurred',
+    }
+  }
+}
+
 export async function getTournaments(status?: string, weightClass?: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     let query = supabase
@@ -218,7 +311,7 @@ export async function getTournaments(status?: string, weightClass?: string) {
 }
 
 export async function getTournamentDetails(tournamentId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const { data: tournament, error: tournamentError } = await supabase

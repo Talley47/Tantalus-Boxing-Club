@@ -86,7 +86,7 @@ export function TournamentsList({ tournaments }: TournamentsListProps) {
           
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-500">
-              Created by {tournament.creator?.full_name || 'Unknown'}
+              Created: {new Date(tournament.created_at).toLocaleDateString()}
             </div>
             <Link
               href={`/tournaments/${tournament.id}`}

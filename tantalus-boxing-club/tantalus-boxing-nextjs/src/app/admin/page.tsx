@@ -4,7 +4,7 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function AdminPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

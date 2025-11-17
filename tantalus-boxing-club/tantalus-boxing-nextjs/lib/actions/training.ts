@@ -6,7 +6,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function createTrainingCamp(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -81,7 +81,7 @@ export async function createTrainingCamp(formData: FormData) {
 }
 
 export async function joinTrainingCamp(campId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -160,7 +160,7 @@ export async function joinTrainingCamp(campId: string) {
 }
 
 export async function createTrainingObjective(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -216,7 +216,7 @@ export async function createTrainingObjective(formData: FormData) {
 }
 
 export async function logTraining(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -289,7 +289,7 @@ export async function logTraining(formData: FormData) {
 }
 
 export async function getTrainingCamps() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const { data, error } = await supabase

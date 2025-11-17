@@ -4,7 +4,7 @@ import { TournamentsList } from '@/components/tournaments/TournamentsList'
 import { CreateTournamentForm } from '@/components/tournaments/CreateTournamentForm'
 
 export default async function TournamentsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

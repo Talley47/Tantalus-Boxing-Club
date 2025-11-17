@@ -4,7 +4,7 @@ import { DisputeForm } from '@/components/disputes/DisputeForm'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function DisputesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

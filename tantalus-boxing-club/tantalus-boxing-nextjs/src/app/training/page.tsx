@@ -4,7 +4,7 @@ import { TrainingCamps } from '@/components/training/TrainingCamps'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function TrainingPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

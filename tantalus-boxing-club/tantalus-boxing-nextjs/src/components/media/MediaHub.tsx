@@ -191,7 +191,6 @@ export function MediaHub({ mediaAssets, interviews, fighterProfile }: MediaHubPr
                   <p className="text-sm text-gray-500 mb-2">{asset.description}</p>
                 )}
                 <div className="flex justify-between items-center text-xs text-gray-400">
-                  <span>By {asset.user?.full_name || 'Unknown'}</span>
                   <span>{new Date(asset.created_at).toLocaleDateString()}</span>
                 </div>
               </div>

@@ -8,7 +8,7 @@ export default async function RankingsPage({
 }: {
   searchParams: { weightClass?: string; tier?: string }
 }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

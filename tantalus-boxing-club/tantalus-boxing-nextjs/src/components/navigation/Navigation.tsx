@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from '@/lib/actions/auth'
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
@@ -23,6 +24,15 @@ export function Navigation() {
   ]
 
   const isActive = (href: string) => pathname === href
+
+  const handleSignOut = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const result = await signOut()
+    if (result?.success) {
+      router.push('/login')
+      router.refresh()
+    }
+  }
 
   return (
     <nav className="bg-white shadow-lg">
@@ -51,7 +61,7 @@ export function Navigation() {
             </div>
           </div>
           <div className="flex items-center">
-            <form action={signOut}>
+            <form onSubmit={handleSignOut}>
               <button
                 type="submit"
                 className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"

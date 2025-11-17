@@ -4,7 +4,7 @@ import { MatchmakingForm } from '@/components/matchmaking/MatchmakingForm'
 import { MatchmakingRequests } from '@/components/matchmaking/MatchmakingRequests'
 
 export default async function MatchmakingPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

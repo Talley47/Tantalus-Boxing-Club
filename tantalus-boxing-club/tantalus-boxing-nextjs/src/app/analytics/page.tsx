@@ -4,7 +4,7 @@ import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function AnalyticsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

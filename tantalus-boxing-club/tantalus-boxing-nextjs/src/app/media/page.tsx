@@ -4,7 +4,7 @@ import { MediaHub } from '@/components/media/MediaHub'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function MediaPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

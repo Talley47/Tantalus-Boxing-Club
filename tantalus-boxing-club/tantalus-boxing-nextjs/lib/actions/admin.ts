@@ -6,7 +6,7 @@ import { rateLimit, adminRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function getUsers(page = 1, limit = 20, search = '') {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -64,7 +64,7 @@ export async function getUsers(page = 1, limit = 20, search = '') {
 }
 
 export async function updateUserRole(userId: string, role: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -120,7 +120,7 @@ export async function updateUserRole(userId: string, role: string) {
 }
 
 export async function suspendUser(userId: string, reason: string, duration?: number) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -183,7 +183,7 @@ export async function suspendUser(userId: string, reason: string, duration?: num
 }
 
 export async function createDispute(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -240,7 +240,7 @@ export async function createDispute(formData: FormData) {
 }
 
 export async function getDisputes(status?: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     let query = supabase
@@ -278,7 +278,7 @@ export async function getDisputes(status?: string) {
 }
 
 export async function resolveDispute(disputeId: string, resolution: string, adminNotes?: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -327,7 +327,7 @@ export async function resolveDispute(disputeId: string, resolution: string, admi
 }
 
 export async function getSystemStats() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Get total users
@@ -391,7 +391,7 @@ export async function getSystemStats() {
 }
 
 export async function updateSystemSettings(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

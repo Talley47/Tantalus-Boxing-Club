@@ -27,7 +27,7 @@ function calculateFightPoints(result: 'Win' | 'Loss' | 'Draw', method: string): 
 }
 
 export async function createFightRecord(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -132,7 +132,7 @@ export async function createFightRecord(formData: FormData) {
 }
 
 export async function requestMatchmaking(formData: FormData) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()
@@ -227,7 +227,7 @@ export async function requestMatchmaking(formData: FormData) {
 }
 
 async function updateFighterStats(fighterId: string, fightData: any) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Get current stats
@@ -279,7 +279,7 @@ async function updateFighterStats(fighterId: string, fightData: any) {
 }
 
 export async function getFighterRankings(weightClass?: string, tier?: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     let query = supabase

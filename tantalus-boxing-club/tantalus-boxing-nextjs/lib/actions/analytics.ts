@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
 export async function getFighterAnalytics(fighterId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Get fighter profile
@@ -100,7 +100,7 @@ export async function getFighterAnalytics(fighterId: string) {
 }
 
 export async function getLeagueAnalytics() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Get all fighters

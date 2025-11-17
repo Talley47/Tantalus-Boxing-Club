@@ -1,4 +1,4 @@
-export { posthog, analytics } from '../../lib/analytics'
+export { analytics } from '../../lib/analytics'
 
 
 

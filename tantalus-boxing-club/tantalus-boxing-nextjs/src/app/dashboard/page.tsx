@@ -4,7 +4,7 @@ import { FighterDashboard } from '@/components/dashboard/FighterDashboard'
 import { Navigation } from '@/components/Navigation'
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

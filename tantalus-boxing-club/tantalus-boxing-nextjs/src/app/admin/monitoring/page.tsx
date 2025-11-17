@@ -4,7 +4,7 @@ import { MonitoringDashboard } from '@/components/admin/MonitoringDashboard'
 import { Navigation } from '@/components/navigation/Navigation'
 
 export default async function AdminMonitoringPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

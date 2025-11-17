@@ -64,6 +64,49 @@ export default function Home() {
             </Link>
           </div>
 
+          {/* Rules & Guidelines Section */}
+          <div className="mt-16 bg-white/10 backdrop-blur-sm rounded-lg p-8 border border-white/20 max-w-5xl mx-auto">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Rules & Guidelines
+              </h2>
+              <p className="text-gray-300 text-lg">
+                Creative Fighter League - Official Rules
+              </p>
+            </div>
+            
+            <div className="bg-white/5 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-white mb-4">Quick Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300 text-sm">
+                <div>
+                  <p className="font-semibold text-white mb-2">🏆 Tier System</p>
+                  <p>Fighters are ranked across multiple tiers from Novice to Elite</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-white mb-2">📊 Points System</p>
+                  <p>Earn points through wins, with bonuses for different victory methods</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-white mb-2">🥊 Matchmaking</p>
+                  <p>Fair matchups based on tier, weight class, and skill level</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-white mb-2">⚖️ Code of Conduct</p>
+                  <p>Respect, sportsmanship, and fair play are mandatory</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Link
+                href="/rules"
+                className="inline-block bg-red-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform"
+              >
+                View Full Rules & Guidelines →
+              </Link>
+            </div>
+          </div>
+
           {/* Footer */}
           <div className="mt-16 text-gray-400 text-sm">
             <p>Powered by TBC Promotions</p>

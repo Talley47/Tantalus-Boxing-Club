@@ -127,3 +127,4 @@ If needed, trigger a manual redeploy:
 - **GitHub Repository:** https://github.com/Talley47/Tantalus-Boxing-Club
 - **Production URL:** https://tantalus-boxing-club.vercel.app
 
+

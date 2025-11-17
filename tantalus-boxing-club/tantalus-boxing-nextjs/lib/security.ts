@@ -11,10 +11,11 @@ export const securityHeaders = {
 }
 
 // Content Security Policy
+// Note: script-src-elem must come before script-src to take precedence
 export const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel.live https://*.vercel-insights.com https://*.supabase.co",
   "script-src-elem 'self' 'unsafe-inline' https://*.supabase.co https://vercel.live https://*.vercel.live https://*.vercel-insights.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel.live https://*.vercel-insights.com https://*.supabase.co",
   "script-src-attr 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
@@ -24,9 +25,9 @@ export const csp = [
   "frame-src 'self' https://vercel.live https://*.vercel.live https://*.supabase.co",
   "frame-ancestors 'none'",
   "worker-src 'self' blob:",
+  "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "object-src 'none'",
   "upgrade-insecure-requests"
 ].join('; ')
 

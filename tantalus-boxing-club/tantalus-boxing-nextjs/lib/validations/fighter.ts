@@ -6,7 +6,7 @@ export const matchmakingRequestSchema = z.object({
     'super_featherweight', 'lightweight', 'super_lightweight', 'welterweight', 'super_welterweight',
     'middleweight', 'super_middleweight', 'light_heavyweight', 'cruiserweight', 'heavyweight'
   ]).optional(),
-  preferredTier: z.enum(['bronze', 'silver', 'gold', 'platinum', 'diamond']).optional(),
+  preferredTier: z.enum(['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite']).optional(),
   maxDistance: z.number().min(0, 'Distance must be positive').max(1000, 'Distance cannot exceed 1000 miles').optional(),
   notes: z.string().max(500, 'Notes cannot exceed 500 characters').optional(),
 })
@@ -42,7 +42,7 @@ export const tournamentSchema = z.object({
     'super_featherweight', 'lightweight', 'super_lightweight', 'welterweight', 'super_welterweight',
     'middleweight', 'super_middleweight', 'light_heavyweight', 'cruiserweight', 'heavyweight'
   ]),
-  tier: z.enum(['bronze', 'silver', 'gold', 'platinum', 'diamond']),
+  tier: z.enum(['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite']),
   maxParticipants: z.number().min(4, 'Minimum 4 participants').max(64, 'Maximum 64 participants'),
   startDate: z.string().refine((date) => {
     const startDate = new Date(date)

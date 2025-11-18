@@ -40,7 +40,7 @@ export interface FighterProfile {
   draws: number;
   knockouts: number;
   points: number;
-  tier: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'amateur' | 'semi-pro' | 'contender' | 'elite' | 'champion';
+  tier: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite';
   rank?: number;
   weight_class: string;
   

@@ -552,6 +552,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               console.warn(`Invalid platform value: ${platformValue}, defaulting to PC`);
               cleanUpdates[key] = 'PC';
             }
+          } else if (key === 'tier' && value) {
+            // Normalize tier to match database constraint
+            const tierValue = value as string;
+            const validTiers = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite'];
+            // Map old tier values to new ones
+            const tierMap: Record<string, string> = {
+              'bronze': 'Amateur',
+              'silver': 'Semi-Pro',
+              'gold': 'Pro',
+              'platinum': 'Contender',
+              'diamond': 'Elite',
+              'amateur': 'Amateur',
+              'semi-pro': 'Semi-Pro',
+              'semi_pro': 'Semi-Pro',
+              'pro': 'Pro',
+              'contender': 'Contender',
+              'elite': 'Elite',
+              'champion': 'Elite'
+            };
+            const normalizedTier = tierMap[tierValue.toLowerCase()] || tierValue;
+            if (validTiers.includes(normalizedTier)) {
+              cleanUpdates[key] = normalizedTier;
+            } else {
+              console.warn(`Invalid tier value: ${tierValue}, defaulting to Amateur`);
+              cleanUpdates[key] = 'Amateur';
+            }
           } else if (key === 'stance' && value) {
             // Normalize stance to lowercase to match database constraint
             const stanceValue = (value as string).toLowerCase();

@@ -189,6 +189,7 @@ const NotificationBell: React.FC = () => {
       const data = await notificationService.getNotifications(user.id, 50);
       setNotifications(data);
       const count = await notificationService.getUnreadCount(user.id);
+      console.log('🔔 Loaded unread count from API:', count);
       setUnreadCount(count);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -373,9 +374,31 @@ const NotificationBell: React.FC = () => {
   // Load initial unread count
   useEffect(() => {
     if (user) {
-      notificationService.getUnreadCount(user.id).then(setUnreadCount);
+      notificationService.getUnreadCount(user.id)
+        .then(count => {
+          console.log('Initial unread count loaded:', count);
+          setUnreadCount(count);
+        })
+        .catch(error => {
+          console.error('Error loading initial unread count:', error);
+          setUnreadCount(0);
+        });
+    } else {
+      setUnreadCount(0);
     }
   }, [user]);
+
+  // Debug: Log unread count for troubleshooting
+  useEffect(() => {
+    if (user) {
+      console.log('🔔 NotificationBell - Current unread count:', unreadCount);
+      console.log('🔔 NotificationBell - Badge will show:', unreadCount > 0 ? unreadCount : 'hidden');
+      // Force a re-render check
+      if (unreadCount > 0) {
+        console.log('🔔 NotificationBell - Badge should be visible with count:', unreadCount);
+      }
+    }
+  }, [unreadCount, user]);
 
   // Play sound continuously when there are unread notifications
   useEffect(() => {
@@ -449,10 +472,15 @@ const NotificationBell: React.FC = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          console.log('🔔 Notification real-time event:', payload.eventType, payload.new);
           if (payload.eventType === 'INSERT') {
             const newNotification = payload.new as Notification;
             setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
+            setUnreadCount(prev => {
+              const newCount = (prev || 0) + 1;
+              console.log('🔔 Unread count updated to:', newCount);
+              return newCount;
+            });
           } else if (payload.eventType === 'UPDATE') {
             const updatedNotification = payload.new as Notification;
             setNotifications(prev =>
@@ -529,6 +557,9 @@ const NotificationBell: React.FC = () => {
 
   if (!user) return null;
 
+  // Debug: Force badge to show for testing (remove after verification)
+  const displayCount = unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null;
+
   return (
     <>
       <IconButton
@@ -545,32 +576,35 @@ const NotificationBell: React.FC = () => {
         }}
       >
         <Badge 
-          badgeContent={unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined}
+          badgeContent={displayCount}
           color="error"
           showZero={false}
           max={99}
-          overlap="circular"
+          overlap="rectangular"
           anchorOrigin={{
             vertical: 'top',
             horizontal: 'right',
           }}
+          invisible={unreadCount === 0}
           sx={{
             '& .MuiBadge-badge': {
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               fontWeight: 'bold',
-              minWidth: unreadCount > 9 ? '24px' : '20px',
+              minWidth: '20px',
               height: '20px',
               padding: '0 4px',
-              right: unreadCount > 9 ? '-4px' : '0px',
-              top: '0px',
-              zIndex: 1000,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              right: '4px',
+              top: '4px',
+              zIndex: 1001,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.8)',
               border: '2px solid white',
-              backgroundColor: '#dc2626',
-              color: 'white',
+              backgroundColor: '#dc2626 !important',
+              color: 'white !important',
               display: unreadCount > 0 ? 'flex' : 'none',
               alignItems: 'center',
               justifyContent: 'center',
+              lineHeight: 1,
+              fontFamily: 'Arial, sans-serif',
             },
           }}
         >

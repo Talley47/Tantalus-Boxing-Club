@@ -33,14 +33,20 @@ class NotificationService {
   // Get unread notifications count
   async getUnreadCount(userId: string): Promise<number> {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('notifications')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('is_read', false);
 
-      if (error) throw error;
-      return data?.length || 0;
+      if (error) {
+        console.error('Error fetching unread count:', error);
+        throw error;
+      }
+      
+      const unreadCount = count || 0;
+      console.log('📊 getUnreadCount result:', unreadCount, 'for user:', userId);
+      return unreadCount;
     } catch (error) {
       console.error('Error fetching unread count:', error);
       return 0;

@@ -41,6 +41,7 @@ import { trainingCampService } from '../../services/trainingCampService';
 import { calloutService } from '../../services/calloutService';
 import { supabase } from '../../services/supabase';
 import NotificationBell from '../Shared/NotificationBell';
+import EmojiReactions from '../News/EmojiReactions';
 import { getTimezoneLabel } from '../../utils/timezones';
 // Import FB cover Undisputed.png directly from src folder
 import homePageBackground from '../../FB cover Undisputed.png';
@@ -1173,7 +1174,10 @@ const HomePage: React.FC = () => {
                           </Box>
                         )}
 
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                        {/* Emoji Reactions */}
+                        <EmojiReactions newsId={item.id} />
+
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
                           <Box>
                             <Typography variant="caption" color="text.secondary">
                               By {item.author}

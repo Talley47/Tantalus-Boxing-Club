@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -79,9 +79,62 @@ function TabPanel(props: TabPanelProps) {
 const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string }> = ({ src, alt, maxHeight = '200px' }) => {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // Check if URL is from Facebook or other blocked domains
-  const isBlockedDomain = src.includes('facebook.com') || src.includes('fbcdn.net');
+  const isBlockedDomain = src.includes('facebook.com') || src.includes('fbcdn.net') || src.includes('fbid');
+
+  // If it's a blocked domain, skip loading entirely
+  useEffect(() => {
+    if (isBlockedDomain) {
+      setImageError(true);
+      setIsLoading(false);
+    }
+  }, [isBlockedDomain]);
+
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // Silently handle CORS errors for external images (e.g., Facebook)
+    // Prevent error from bubbling to console
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Suppress console errors for known blocked domains
+    if (isBlockedDomain) {
+      // These errors are expected and handled gracefully
+      return;
+    }
+    
+    setImageError(true);
+    setIsLoading(false);
+  };
+
+  // Don't even attempt to load if it's a blocked domain
+  if (isBlockedDomain) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: maxHeight,
+          maxHeight: maxHeight,
+          borderRadius: '8px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+          p: 2,
+        }}
+      >
+        <Typography variant="caption" align="center" color="text.secondary">
+          Image unavailable
+        </Typography>
+        <Typography variant="caption" align="center" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+          (Facebook images cannot be embedded due to privacy restrictions)
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -100,16 +153,10 @@ const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string
     >
       {!imageError ? (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
-          onError={(e) => {
-            // Silently handle CORS errors for external images (e.g., Facebook)
-            // The placeholder will be shown instead
-            // Prevent error from bubbling to console by stopping propagation
-            e.stopPropagation();
-            setImageError(true);
-            setIsLoading(false);
-          }}
+          onError={handleError}
           onLoad={() => {
             setIsLoading(false);
           }}
@@ -119,6 +166,7 @@ const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string
             objectFit: 'cover',
             display: isLoading ? 'none' : 'block',
           }}
+          crossOrigin="anonymous"
         />
       ) : (
         <Box
@@ -135,11 +183,6 @@ const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string
           <Typography variant="caption" align="center">
             Image unavailable
           </Typography>
-          {isBlockedDomain && (
-            <Typography variant="caption" align="center" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-              (Facebook images cannot be embedded)
-            </Typography>
-          )}
         </Box>
       )}
       {isLoading && !imageError && (

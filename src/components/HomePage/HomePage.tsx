@@ -32,7 +32,7 @@ import {
   CalendarToday,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { HomePageService, Fighter, ScheduledFight } from '../../services/homePageService';
 import { useRealtime } from '../../contexts/RealtimeContext';
 import { TournamentService } from '../../services/tournamentService';
@@ -75,35 +75,48 @@ function TabPanel(props: TabPanelProps) {
 }
 
 // Component to handle image loading errors (CORS, etc.)
-const ImageWithFallback: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string }> = ({ src, alt, maxHeight = '200px' }) => {
   const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if URL is from Facebook or other blocked domains
+  const isBlockedDomain = src.includes('facebook.com') || src.includes('fbcdn.net');
 
   return (
     <Box
       sx={{
         width: '100%',
-        height: '200px',
+        height: maxHeight,
+        maxHeight: maxHeight,
         borderRadius: '8px',
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'background.default',
+        position: 'relative',
       }}
     >
       {!imageError ? (
         <img
           src={src}
           alt={alt}
-          onError={() => {
+          onError={(e) => {
             // Silently handle CORS errors for external images (e.g., Facebook)
             // The placeholder will be shown instead
+            // Prevent error from bubbling to console by stopping propagation
+            e.stopPropagation();
             setImageError(true);
+            setIsLoading(false);
+          }}
+          onLoad={() => {
+            setIsLoading(false);
           }}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            display: isLoading ? 'none' : 'block',
           }}
         />
       ) : (
@@ -115,13 +128,33 @@ const ImageWithFallback: React.FC<{ src: string; alt: string }> = ({ src, alt })
             justifyContent: 'center',
             p: 2,
             color: 'text.secondary',
+            height: '100%',
           }}
         >
           <Typography variant="caption" align="center">
             Image unavailable
           </Typography>
-          <Typography variant="caption" align="center" sx={{ mt: 0.5 }}>
-            (External link blocked)
+          {isBlockedDomain && (
+            <Typography variant="caption" align="center" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+              (Facebook images cannot be embedded)
+            </Typography>
+          )}
+        </Box>
+      )}
+      {isLoading && !imageError && (
+        <Box
+          sx={{
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            bgcolor: 'background.default',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            Loading...
           </Typography>
         </Box>
       )}
@@ -132,7 +165,28 @@ const ImageWithFallback: React.FC<{ src: string; alt: string }> = ({ src, alt })
 const HomePage: React.FC = () => {
   const { fighterProfile, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tabValue, setTabValue] = useState(0);
+  
+  // Check URL hash/query params to set initial tab (e.g., for notifications)
+  // This runs on mount and whenever the location changes
+  useEffect(() => {
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Check for #news hash or ?tab=news query param
+    if (hash === '#news' || searchParams.get('tab') === 'news') {
+      setTabValue(4); // News & Announcements tab is index 4
+      // Clear the hash/query param after setting tab
+      if (hash === '#news') {
+        window.history.replaceState(null, '', window.location.pathname);
+      } else if (searchParams.get('tab') === 'news') {
+        // Remove the query param but keep the pathname
+        const newUrl = window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
+  }, [location]); // Re-run when location changes
   const [topFighters, setTopFighters] = useState<Fighter[]>([]);
   const [scheduledFights, setScheduledFights] = useState<ScheduledFight[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
@@ -1064,15 +1118,10 @@ const HomePage: React.FC = () => {
                         {/* Featured Image */}
                         {item.featured_image && (
                           <Box sx={{ mb: 2 }}>
-                            <img
-                              src={item.featured_image}
+                            <ImageWithFallback 
+                              src={item.featured_image} 
                               alt={item.title}
-                              style={{
-                                width: '100%',
-                                maxHeight: '300px',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                              }}
+                              maxHeight="300px"
                             />
                           </Box>
                         )}

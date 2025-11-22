@@ -359,7 +359,7 @@ BEGIN
         'News',
         'New Announcement',
         'A new announcement has been posted: ' || COALESCE(NEW.title, 'News'),
-        '/home'
+        '/?tab=news'  -- Navigate to home page and switch to News & Announcements tab
     );
     
     RETURN NEW;

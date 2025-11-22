@@ -42,6 +42,8 @@ const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+  const soundIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const previousUnreadCountRef = useRef<number>(0);
 
   const open = Boolean(anchorEl);
 
@@ -167,6 +169,10 @@ const NotificationBell: React.FC = () => {
 
     // Cleanup on unmount
     return () => {
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current);
+        soundIntervalRef.current = null;
+      }
       if (notificationSoundRef.current) {
         notificationSoundRef.current.pause();
         notificationSoundRef.current = null;
@@ -247,9 +253,36 @@ const NotificationBell: React.FC = () => {
       }
     }
 
-    // Navigate to action URL if provided
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    // Handle navigation based on notification type
+    if (notification.type === 'News') {
+      // Navigate to home page with news tab selected
+      // Use replace to avoid adding to history, and force navigation even if already on home
+      if (window.location.pathname === '/') {
+        // If already on home page, update the URL to trigger the useEffect
+        window.history.replaceState(null, '', '/?tab=news');
+        // Force a re-render by triggering location change
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        navigate('/?tab=news');
+      }
+      handleClose();
+    } else if (notification.action_url) {
+      // Navigate to action URL if provided
+      if (notification.action_url.includes('?tab=')) {
+        // If action_url has tab parameter and we're already on that page, force update
+        const urlPath = notification.action_url.split('?')[0];
+        if (window.location.pathname === urlPath) {
+          window.history.replaceState(null, '', notification.action_url);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } else {
+          navigate(notification.action_url);
+        }
+      } else {
+        navigate(notification.action_url);
+      }
+      handleClose();
+    } else {
+      // If no action URL and not News type, just close the popover
       handleClose();
     }
   };
@@ -344,6 +377,63 @@ const NotificationBell: React.FC = () => {
     }
   }, [user]);
 
+  // Play sound continuously when there are unread notifications
+  useEffect(() => {
+    // Stop any existing sound interval
+    if (soundIntervalRef.current) {
+      clearInterval(soundIntervalRef.current);
+      soundIntervalRef.current = null;
+    }
+
+    // If there are unread notifications, play sound on loop
+    if (unreadCount > 0 && notificationSoundRef.current) {
+      const audio = notificationSoundRef.current;
+      audio.volume = 0.8;
+      audio.loop = true;
+
+      const playSound = () => {
+        if (audio && unreadCount > 0) {
+          audio.currentTime = 0;
+          audio.play().catch((error: any) => {
+            // Autoplay may be blocked, but we'll try again on next interval
+            console.log('Sound autoplay blocked, will retry:', error);
+          });
+        }
+      };
+
+      // Play immediately
+      playSound();
+
+      // Set up interval to play every 3 seconds while there are unread notifications
+      soundIntervalRef.current = setInterval(() => {
+        if (unreadCount > 0 && notificationSoundRef.current) {
+          playSound();
+        } else {
+          // Stop interval if no unread notifications
+          if (soundIntervalRef.current) {
+            clearInterval(soundIntervalRef.current);
+            soundIntervalRef.current = null;
+          }
+        }
+      }, 3000);
+    } else {
+      // Stop sound if no unread notifications
+      if (notificationSoundRef.current) {
+        notificationSoundRef.current.pause();
+        notificationSoundRef.current.currentTime = 0;
+        notificationSoundRef.current.loop = false;
+      }
+    }
+
+    // Cleanup on unmount or when unreadCount changes
+    return () => {
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current);
+        soundIntervalRef.current = null;
+      }
+    };
+  }, [unreadCount]);
+
   // Set up real-time subscription for notifications
   useEffect(() => {
     if (!user) return;
@@ -363,56 +453,6 @@ const NotificationBell: React.FC = () => {
             const newNotification = payload.new as Notification;
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
-            
-            // Play notification sound
-            const playNotificationSound = () => {
-              if (notificationSoundRef.current) {
-                try {
-                  const audio = notificationSoundRef.current;
-                  
-                  // Reset audio to start
-                  audio.currentTime = 0;
-                  
-                  // Ensure volume is set
-                  audio.volume = 0.8;
-                  
-                  // Play the sound
-                  const playPromise = audio.play();
-                  
-                  if (playPromise !== undefined) {
-                    playPromise
-                      .then(() => {
-                        console.log('🔔 Notification sound played successfully');
-                      })
-                      .catch((error: any) => {
-                        console.warn('Could not play notification sound (autoplay blocked):', error);
-                        // Try to play on next user interaction
-                        const playOnInteraction = () => {
-                          if (notificationSoundRef.current) {
-                            notificationSoundRef.current.currentTime = 0;
-                            notificationSoundRef.current.play().catch(() => {
-                              console.warn('Still unable to play sound after user interaction');
-                            });
-                          }
-                          document.removeEventListener('click', playOnInteraction);
-                          document.removeEventListener('keydown', playOnInteraction);
-                          document.removeEventListener('touchstart', playOnInteraction);
-                        };
-                        document.addEventListener('click', playOnInteraction, { once: true });
-                        document.addEventListener('keydown', playOnInteraction, { once: true });
-                        document.addEventListener('touchstart', playOnInteraction, { once: true });
-                      });
-                  }
-                } catch (error) {
-                  console.error('Error playing notification sound:', error);
-                }
-              } else {
-                console.warn('Notification sound not loaded yet');
-              }
-            };
-            
-            // Play sound immediately
-            playNotificationSound();
           } else if (payload.eventType === 'UPDATE') {
             const updatedNotification = payload.new as Notification;
             setNotifications(prev =>
@@ -420,6 +460,12 @@ const NotificationBell: React.FC = () => {
             );
             if (updatedNotification.is_read) {
               setUnreadCount(prev => Math.max(0, prev - 1));
+            } else {
+              // If notification was unread, increment count
+              const wasRead = notifications.find(n => n.id === updatedNotification.id)?.is_read;
+              if (wasRead && !updatedNotification.is_read) {
+                setUnreadCount(prev => prev + 1);
+              }
             }
           } else if (payload.eventType === 'DELETE') {
             const deletedNotification = payload.old as Notification;
@@ -435,7 +481,7 @@ const NotificationBell: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, notifications]);
 
   // Boxing Glove Icon Component
   const BoxingGloveIcon = ({ hasNotifications }: { hasNotifications: boolean }) => (
@@ -499,15 +545,32 @@ const NotificationBell: React.FC = () => {
         }}
       >
         <Badge 
-          badgeContent={unreadCount} 
+          badgeContent={unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined}
           color="error"
+          showZero={false}
+          max={99}
+          overlap="circular"
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
           sx={{
             '& .MuiBadge-badge': {
               fontSize: '0.75rem',
               fontWeight: 'bold',
-              minWidth: '20px',
+              minWidth: unreadCount > 9 ? '24px' : '20px',
               height: '20px',
-              padding: '0 6px',
+              padding: '0 4px',
+              right: unreadCount > 9 ? '-4px' : '0px',
+              top: '0px',
+              zIndex: 1000,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+              border: '2px solid white',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              display: unreadCount > 0 ? 'flex' : 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
             },
           }}
         >

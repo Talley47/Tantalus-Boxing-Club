@@ -28,6 +28,7 @@ import {
   Upload as UploadIcon,
   EmojiEvents as TrophyIcon,
 } from '@mui/icons-material';
+import Tooltip from '@mui/material/Tooltip';
 import { AdminService, AdminUser } from '../../services/adminService';
 import {
   championshipBeltService,
@@ -61,6 +62,7 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [beltToDelete, setBeltToDelete] = useState<ChampionshipBelt | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedFighterForDeletion, setSelectedFighterForDeletion] = useState<string>('all');
 
   // Load fighters when dialog opens
   useEffect(() => {
@@ -260,6 +262,7 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
     setSuccess(null);
     setBeltToDelete(null);
     setDeleteConfirmOpen(false);
+    setSelectedFighterForDeletion('all');
     onClose();
   };
 
@@ -267,6 +270,12 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
   const selectedFighterBelts = selectedFighterId
     ? existingBelts.filter(belt => belt.user_id === selectedFighterId)
     : [];
+
+  // Get fighter name for a belt
+  const getFighterNameForBelt = (belt: ChampionshipBelt): string => {
+    const fighter = fighters.find(f => f.id === belt.user_id);
+    return fighter?.fighter_profile?.name || fighter?.email || 'Unknown Fighter';
+  };
 
   return (
     <>
@@ -381,7 +390,7 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
           </Card>
 
           {selectedFighter && (
-            <Card>
+            <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   {selectedFighter.fighter_profile?.name || selectedFighter.email}'s Championship Belts
@@ -407,12 +416,21 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
                         <ImageListItemBar
                           title={GOVERNING_BODY_LABELS[belt.governing_body]}
                           actionIcon={
-                            <IconButton
-                              sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
-                              onClick={() => handleDeleteClick(belt)}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
+                            <Tooltip title="Delete Championship Belt">
+                              <IconButton
+                                sx={{ 
+                                  color: 'rgba(255, 255, 255, 0.9)',
+                                  '&:hover': {
+                                    color: '#ff4444',
+                                    backgroundColor: 'rgba(255, 68, 68, 0.2)'
+                                  }
+                                }}
+                                onClick={() => handleDeleteClick(belt)}
+                                aria-label="Delete belt"
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
                           }
                         />
                       </ImageListItem>
@@ -422,6 +440,108 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
               </CardContent>
             </Card>
           )}
+
+          {/* All Championship Belts - Admin can delete any belt */}
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Delete Championship Belts
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Select a fighter to view and delete their championship belts
+              </Typography>
+              
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <InputLabel>Select Fighter to Delete Belts From</InputLabel>
+                <Select
+                  value={selectedFighterForDeletion}
+                  onChange={(e) => setSelectedFighterForDeletion(e.target.value)}
+                  label="Select Fighter to Delete Belts From"
+                  disabled={loadingFighters}
+                >
+                  <MenuItem value="all">
+                    <em>All Fighters (Show All Belts)</em>
+                  </MenuItem>
+                  {fighters.map((fighter) => (
+                    <MenuItem key={fighter.id} value={fighter.id}>
+                      {fighter.fighter_profile?.name || fighter.email} 
+                      {fighter.fighter_profile && ` (${fighter.fighter_profile.tier})`}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {loadingBelts ? (
+                <Box display="flex" justifyContent="center" p={3}>
+                  <CircularProgress />
+                </Box>
+              ) : (() => {
+                // Filter belts based on selected fighter
+                const beltsToShow = selectedFighterForDeletion === 'all'
+                  ? existingBelts
+                  : existingBelts.filter(belt => belt.user_id === selectedFighterForDeletion);
+                
+                const selectedFighterName = selectedFighterForDeletion === 'all'
+                  ? null
+                  : fighters.find(f => f.id === selectedFighterForDeletion)?.fighter_profile?.name ||
+                    fighters.find(f => f.id === selectedFighterForDeletion)?.email ||
+                    'Unknown Fighter';
+
+                if (beltsToShow.length === 0) {
+                  return (
+                    <Typography color="text.secondary">
+                      {selectedFighterForDeletion === 'all'
+                        ? 'No championship belts assigned to any fighter.'
+                        : `${selectedFighterName} has no championship belts assigned.`}
+                    </Typography>
+                  );
+                }
+
+                return (
+                  <>
+                    {selectedFighterForDeletion !== 'all' && (
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                        {selectedFighterName}'s Championship Belts ({beltsToShow.length})
+                      </Typography>
+                    )}
+                    <ImageList cols={3} gap={16}>
+                      {beltsToShow.map((belt) => (
+                        <ImageListItem key={belt.id}>
+                          <img
+                            src={belt.belt_image_url}
+                            alt={GOVERNING_BODY_LABELS[belt.governing_body]}
+                            loading="lazy"
+                            style={{ width: '100%', height: 'auto' }}
+                          />
+                          <ImageListItemBar
+                            title={GOVERNING_BODY_LABELS[belt.governing_body]}
+                            subtitle={selectedFighterForDeletion === 'all' ? getFighterNameForBelt(belt) : undefined}
+                            actionIcon={
+                              <Tooltip title="Delete Championship Belt">
+                                <IconButton
+                                  sx={{ 
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    '&:hover': {
+                                      color: '#ff4444',
+                                      backgroundColor: 'rgba(255, 68, 68, 0.2)'
+                                    }
+                                  }}
+                                  onClick={() => handleDeleteClick(belt)}
+                                  aria-label="Delete belt"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            }
+                          />
+                        </ImageListItem>
+                      ))}
+                    </ImageList>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Close</Button>
@@ -440,7 +560,15 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
             {beltToDelete && (
               <>
                 <br />
-                <strong>{GOVERNING_BODY_LABELS[beltToDelete.governing_body]}</strong>
+                <br />
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Governing Body:</strong> {GOVERNING_BODY_LABELS[beltToDelete.governing_body]}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Fighter:</strong> {getFighterNameForBelt(beltToDelete)}
+                  </Typography>
+                </Box>
               </>
             )}
           </DialogContentText>

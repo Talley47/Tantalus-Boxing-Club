@@ -22,8 +22,51 @@ GRANT SELECT ON fighter_profiles TO anon;
 GRANT SELECT ON profiles TO anon;
 
 -- ============================================
--- STEP 2: Ensure policies allow anonymous access
+-- STEP 2: Fix policies to avoid auth.users access for anonymous users
 -- ============================================
+
+-- Drop the problematic "Admin manage news" policy that uses FOR ALL
+-- This policy tries to access auth.users on SELECT, which fails for anonymous users
+DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+
+-- Recreate admin policy for INSERT, UPDATE, DELETE only (not SELECT)
+-- This prevents it from being evaluated on SELECT queries
+CREATE POLICY "Admin insert news" ON news_announcements
+    FOR INSERT 
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admin update news" ON news_announcements
+    FOR UPDATE 
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admin delete news" ON news_announcements
+    FOR DELETE 
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
 
 -- Drop and recreate news policies to ensure they work for anonymous users
 DROP POLICY IF EXISTS "Public read published news" ON news_announcements;
@@ -34,21 +77,12 @@ CREATE POLICY "Public read published news" ON news_announcements
         COALESCE(is_published, false) = TRUE
     );
 
--- Ensure authenticated users can read all news (keep existing policy if it works)
--- If the policy doesn't exist, create it
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies 
-        WHERE schemaname = 'public' 
-        AND tablename = 'news_announcements'
-        AND policyname = 'Authenticated read all news'
-    ) THEN
-        CREATE POLICY "Authenticated read all news" ON news_announcements
-            FOR SELECT 
-            USING (auth.uid() IS NOT NULL);
-    END IF;
-END $$;
+-- Ensure authenticated users can read all news
+DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
+
+CREATE POLICY "Authenticated read all news" ON news_announcements
+    FOR SELECT 
+    USING (auth.uid() IS NOT NULL);
 
 -- Ensure scheduled fights are publicly readable
 DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;
@@ -56,6 +90,48 @@ DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;
 CREATE POLICY "Public read scheduled fights" ON scheduled_fights
     FOR SELECT 
     USING (true);
+
+-- Fix callout_requests admin policy to avoid auth.users access
+-- Drop the problematic "Admins can manage all callouts" policy that uses FOR ALL
+DROP POLICY IF EXISTS "Admins can manage all callouts" ON callout_requests;
+
+-- Recreate admin policy for INSERT, UPDATE, DELETE only (not SELECT)
+CREATE POLICY "Admins can insert callouts" ON callout_requests
+    FOR INSERT 
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can update callouts" ON callout_requests
+    FOR UPDATE 
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can delete callouts" ON callout_requests
+    FOR DELETE 
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid()
+            AND role = 'admin'
+        )
+    );
 
 -- Ensure callout_requests with status 'scheduled' are publicly readable
 DROP POLICY IF EXISTS "Anyone can view scheduled callouts" ON callout_requests;

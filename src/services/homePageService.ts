@@ -24,6 +24,7 @@ export interface Fighter {
   gym?: string;
   platform?: string;
   timezone?: string;
+  creative_fighter_image_url?: string;
 }
 
 export interface ScheduledFight {
@@ -65,7 +66,7 @@ export class HomePageService {
       // Note: Using application-level filtering since there's no FK relationship for JOIN
       const { data, error, status, statusText } = await supabase
         .from('fighter_profiles')
-        .select('user_id, name, handle, tier, points, weight_class, wins, losses, draws, height_feet, height_inches, weight, reach, stance, hometown, birthday, trainer, gym, platform, timezone')
+        .select('user_id, name, handle, tier, points, weight_class, wins, losses, draws, height_feet, height_inches, weight, reach, stance, hometown, birthday, trainer, gym, platform, timezone, creative_fighter_image_url')
         .not('user_id', 'is', null)
         .order('points', { ascending: false })
         .limit(limit);
@@ -132,7 +133,8 @@ export class HomePageService {
         trainer: fighter.trainer,
         gym: fighter.gym,
         platform: (fighter as any).platform,
-        timezone: (fighter as any).timezone
+        timezone: (fighter as any).timezone,
+        creative_fighter_image_url: (fighter as any).creative_fighter_image_url
       }));
 
       console.log('Mapped fighters (after admin filter):', fighters);

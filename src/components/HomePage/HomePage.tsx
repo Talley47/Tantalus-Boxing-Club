@@ -669,6 +669,33 @@ const HomePage: React.FC = () => {
                         }}
                       >
                         <CardContent>
+                          {/* Creative Fighter Image */}
+                          {fighter.creative_fighter_image_url && (
+                            <Box 
+                              sx={{ 
+                                mb: 2, 
+                                display: 'flex', 
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <Box
+                                component="img"
+                                src={fighter.creative_fighter_image_url}
+                                alt={`${fighter.name}'s Creative Fighter`}
+                                sx={{
+                                  maxWidth: '100%',
+                                  maxHeight: '200px',
+                                  width: 'auto',
+                                  height: 'auto',
+                                  border: '2px solid',
+                                  borderColor: index < 3 ? '#ffd700' : 'divider',
+                                  borderRadius: 2,
+                                  boxShadow: 2,
+                                }}
+                              />
+                            </Box>
+                          )}
                           <Box display="flex" alignItems="center" mb={2}>
                             <Badge
                               badgeContent={index + 1}

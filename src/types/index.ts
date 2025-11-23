@@ -58,6 +58,7 @@ export interface FighterProfile {
   
   // Social and media
   profile_photo_url?: string;
+  creative_fighter_image_url?: string;
   social_links?: SocialLink[];
   
   // Timestamps

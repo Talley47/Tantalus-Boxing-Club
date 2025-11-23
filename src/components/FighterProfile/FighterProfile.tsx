@@ -266,6 +266,8 @@ const FighterProfile: React.FC = () => {
   const [scorecardFile, setScorecardFile] = useState<File | null>(null);
   const [uploadingScorecard, setUploadingScorecard] = useState(false);
   const [selectedFightForSubmission, setSelectedFightForSubmission] = useState<ScheduledFight | null>(null);
+  const [creativeFighterImageFile, setCreativeFighterImageFile] = useState<File | null>(null);
+  const [uploadingCreativeFighterImage, setUploadingCreativeFighterImage] = useState(false);
   const [deleteSubmissionDialogOpen, setDeleteSubmissionDialogOpen] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<string | null>(null);
   const [mandatoryFights, setMandatoryFights] = useState<any[]>([]);
@@ -966,8 +968,40 @@ const FighterProfile: React.FC = () => {
     }
   };
 
+  // Upload Creative Fighter image to Supabase Storage
+  const uploadCreativeFighterImage = async (file: File, fighterId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${fighterId}/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('fight-submissions')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Error uploading Creative Fighter image:', error);
+      if (error.message?.includes('row-level security') || error.message?.includes('RLS') || error.message?.includes('policy')) {
+        throw new Error('Storage bucket RLS policy error. Please run setup-scorecard-storage.sql in Supabase SQL Editor and create the "fight-submissions" bucket in Storage.');
+      }
+      if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
+        throw new Error('Storage bucket "fight-submissions" not found. Please create it in Supabase Dashboard > Storage.');
+      }
+      throw error;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('fight-submissions')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSaveEdit = async () => {
-    if (!fighterProfile) return;
+    if (!fighterProfile?.id) return;
     setLoading(true);
     setError(null);
     
@@ -988,6 +1022,25 @@ const FighterProfile: React.FC = () => {
     }
     
     try {
+      setUploadingCreativeFighterImage(true);
+      
+      let creativeFighterImageUrl: string | undefined = (fighterProfile as any)?.creative_fighter_image_url;
+      
+      // Upload Creative Fighter image if provided
+      if (creativeFighterImageFile) {
+        try {
+          creativeFighterImageUrl = await uploadCreativeFighterImage(creativeFighterImageFile, fighterProfile.id);
+          console.log('Creative Fighter image uploaded successfully:', creativeFighterImageUrl);
+        } catch (error: any) {
+          console.error('Error uploading Creative Fighter image:', error);
+          setError('Failed to upload Creative Fighter image: ' + (error.message || 'Unknown error'));
+          setUploadingCreativeFighterImage(false);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Update fighter profile with all fields including the image URL
       await updateFighterProfile({
         name: editForm.fighterName,
         height_feet: editForm.height_feet,
@@ -1002,13 +1055,20 @@ const FighterProfile: React.FC = () => {
         gym: editForm.gym,
         birthday: editForm.birthday,
         weight_class: editForm.weight_class,
-      });
+        creative_fighter_image_url: creativeFighterImageUrl,
+      } as any);
+      
+      // Refresh the fighter profile to get the updated image URL
+      await refreshFighterProfile();
+      
       setIsEditing(false);
+      setCreativeFighterImageFile(null);
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
+      setUploadingCreativeFighterImage(false);
     }
   };
 
@@ -1032,6 +1092,7 @@ const FighterProfile: React.FC = () => {
         : '',
       weight_class: normalizeWeightClass(fighterProfile?.weight_class) || '',
     });
+    setCreativeFighterImageFile(null);
     setIsEditing(false);
   };
 
@@ -1437,7 +1498,7 @@ const FighterProfile: React.FC = () => {
                 </Alert>
               )}
               
-              {/* Fighter Name - Prominently displayed at top */}
+              {/* Fighter Name - Prominently displayed at top (only when not editing) */}
               {!isEditing && (
                 <Box 
                   sx={{ 
@@ -1457,6 +1518,7 @@ const FighterProfile: React.FC = () => {
                 </Box>
               )}
               
+              {/* When editing: Show full-width form */}
               {isEditing ? (
                 <Stack spacing={2}>
                   <TextField
@@ -1635,175 +1697,312 @@ const FighterProfile: React.FC = () => {
                       </Typography>
                     )}
                   </FormControl>
+                  <Box>
+                    <Typography variant="body2" mb={1} sx={{ fontWeight: 'medium' }}>
+                      Creative Fighter Image (Optional)
+                    </Typography>
+                    <input
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      id="creative-fighter-upload"
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Validate file type
+                          if (!file.type.startsWith('image/')) {
+                            alert('Please upload an image file');
+                            return;
+                          }
+                          // Validate file size (max 10MB)
+                          if (file.size > 10 * 1024 * 1024) {
+                            alert('File size must be less than 10MB');
+                            return;
+                          }
+                          setCreativeFighterImageFile(file);
+                        }
+                      }}
+                    />
+                    <label htmlFor="creative-fighter-upload">
+                      <Button
+                        variant="outlined"
+                        component="span"
+                        fullWidth
+                        startIcon={<Person />}
+                        disabled={uploadingCreativeFighterImage}
+                      >
+                        {creativeFighterImageFile ? `Selected: ${creativeFighterImageFile.name}` : (fighterProfile as any)?.creative_fighter_image_url ? 'Change Creative Fighter Image' : 'Upload Creative Fighter Image'}
+                      </Button>
+                    </label>
+                    {creativeFighterImageFile && (
+                      <Box mt={1} display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                        <Typography variant="body2" color="text.secondary">
+                          {creativeFighterImageFile.name} ({(creativeFighterImageFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </Typography>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => setCreativeFighterImageFile(null)}
+                        >
+                          Remove
+                        </Button>
+                      </Box>
+                    )}
+                    {(fighterProfile as any)?.creative_fighter_image_url && !creativeFighterImageFile && (
+                      <Box mt={1}>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                          Current Image:
+                        </Typography>
+                        <Box
+                          component="img"
+                          src={(fighterProfile as any).creative_fighter_image_url}
+                          alt="Current Creative Fighter"
+                          sx={{
+                            maxWidth: '100%',
+                            maxHeight: '200px',
+                            width: 'auto',
+                            height: 'auto',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                          }}
+                        />
+                      </Box>
+                    )}
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      Upload a picture of your Creative Fighter (PNG, JPG, or GIF, max 10MB)
+                    </Typography>
+                  </Box>
                   <Box display="flex" gap={2}>
                     <Button
                       variant="contained"
-                      startIcon={<Save />}
+                      startIcon={loading || uploadingCreativeFighterImage ? <CircularProgress size={16} /> : <Save />}
                       onClick={handleSaveEdit}
-                      disabled={loading}
+                      disabled={loading || uploadingCreativeFighterImage}
                     >
-                      Save
+                      {uploadingCreativeFighterImage ? 'Uploading...' : loading ? 'Saving...' : 'Save'}
                     </Button>
                     <Button
                       variant="outlined"
                       startIcon={<Cancel />}
-                      onClick={handleCancelEdit}
-                      disabled={loading}
+                      onClick={() => {
+                        handleCancelEdit();
+                        setCreativeFighterImageFile(null);
+                      }}
+                      disabled={loading || uploadingCreativeFighterImage}
                     >
                       Cancel
                     </Button>
                   </Box>
                 </Stack>
               ) : (
-                <Stack spacing={2}>
-                  <Box display="flex" alignItems="center">
-                    <Height sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Height
-                      </Typography>
-                      <Typography variant="body1">
-                        {(fighterProfile as any).height_feet || 0}'{(fighterProfile as any).height_inches || 0}"
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Scale sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Weight
-                      </Typography>
-                      <Typography variant="body1">{fighterProfile.weight} lbs</Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Person sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Reach
-                      </Typography>
-                      <Typography variant="body1">{fighterProfile.reach}"</Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Stance
-                      </Typography>
-                      <Typography variant="body1" textTransform="capitalize">
-                        {(fighterProfile as any).stance || 'orthodox'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Platform
-                      </Typography>
-                      <Typography variant="body1">
-                        {(fighterProfile as any)?.platform === 'PSN' ? 'PlayStation/PSN' : 
-                         (fighterProfile as any)?.platform === 'Xbox' ? 'Xbox' : 
-                         (fighterProfile as any)?.platform === 'PC' ? 'Steam/PC' : 
-                         (fighterProfile as any)?.platform || 'Not set'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <LocationOn sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Timezone
-                      </Typography>
-                      <Typography variant="body1">
-                        {getTimezoneLabel((fighterProfile as any)?.timezone || 'UTC')}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <LocationOn sx={{ mr: 2, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Hometown
-                      </Typography>
-                      <Typography variant="body1">{fighterProfile.hometown}</Typography>
-                    </Box>
-                  </Box>
-                  {fighterProfile.trainer && (
-                    <Box display="flex" alignItems="center">
-                      <Person sx={{ mr: 2, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Trainer
-                        </Typography>
-                        <Typography variant="body1">{fighterProfile.trainer}</Typography>
+                /* When NOT editing: Show two-column layout with image on right */
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                  {/* Left Column: Physical Information */}
+                  <Box sx={{ flex: 1 }}>
+                    <Stack spacing={2}>
+                      <Box display="flex" alignItems="center">
+                        <Height sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Height
+                          </Typography>
+                          <Typography variant="body1">
+                            {(fighterProfile as any).height_feet || 0}'{(fighterProfile as any).height_inches || 0}"
+                          </Typography>
+                        </Box>
                       </Box>
+                      <Box display="flex" alignItems="center">
+                        <Scale sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Weight
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.weight} lbs</Typography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Reach
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.reach}"</Typography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Stance
+                          </Typography>
+                          <Typography variant="body1" textTransform="capitalize">
+                            {(fighterProfile as any).stance || 'orthodox'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Platform
+                          </Typography>
+                          <Typography variant="body1">
+                            {(fighterProfile as any)?.platform === 'PSN' ? 'PlayStation/PSN' : 
+                             (fighterProfile as any)?.platform === 'Xbox' ? 'Xbox' : 
+                             (fighterProfile as any)?.platform === 'PC' ? 'Steam/PC' : 
+                             (fighterProfile as any)?.platform || 'Not set'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <LocationOn sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Timezone
+                          </Typography>
+                          <Typography variant="body1">
+                            {getTimezoneLabel((fighterProfile as any)?.timezone || 'UTC')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <LocationOn sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Hometown
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.hometown}</Typography>
+                        </Box>
+                      </Box>
+                      {fighterProfile.trainer && (
+                        <Box display="flex" alignItems="center">
+                          <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Trainer
+                            </Typography>
+                            <Typography variant="body1">{fighterProfile.trainer}</Typography>
+                          </Box>
+                        </Box>
+                      )}
+                      {fighterProfile.gym && (
+                        <Box display="flex" alignItems="center">
+                          <Business sx={{ mr: 2, color: 'text.secondary' }} />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Gym
+                            </Typography>
+                            <Typography variant="body1">{fighterProfile.gym}</Typography>
+                          </Box>
+                        </Box>
+                      )}
+                      {(fighterProfile as any).birthday && (
+                        <Box display="flex" alignItems="center">
+                          <CalendarToday sx={{ mr: 2, color: 'text.secondary' }} />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Birthday
+                            </Typography>
+                            <Typography variant="body1">
+                              {(() => {
+                                const birthday = (fighterProfile as any).birthday;
+                                if (!birthday) return 'Not set';
+                                try {
+                                  // Parse date string manually to avoid timezone issues
+                                  let dateStr = typeof birthday === 'string' 
+                                    ? birthday.split('T')[0] 
+                                    : birthday instanceof Date 
+                                      ? birthday.toISOString().split('T')[0]
+                                      : String(birthday);
+                                  
+                                  // Handle YYYY-MM-DD format
+                                  const parts = dateStr.split('-');
+                                  if (parts.length === 3) {
+                                    const year = parseInt(parts[0], 10);
+                                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                                    const day = parseInt(parts[2], 10);
+                                    const date = new Date(year, month, day);
+                                    
+                                    if (isNaN(date.getTime())) return 'Invalid date';
+                                    return date.toLocaleDateString('en-US', { 
+                                      year: 'numeric', 
+                                      month: 'long', 
+                                      day: 'numeric' 
+                                    });
+                                  }
+                                  
+                                  // Fallback to standard parsing
+                                  const date = new Date(dateStr);
+                                  if (isNaN(date.getTime())) return 'Invalid date';
+                                  return date.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  });
+                                } catch {
+                                  return 'Invalid date';
+                                }
+                              })()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Box>
+                  
+                  {/* Right Column: Creative Fighter Image */}
+                  {(fighterProfile as any)?.creative_fighter_image_url ? (
+                    <Box 
+                      sx={{ 
+                        flex: { xs: '1', md: '0 0 300px' },
+                        display: 'flex', 
+                        justifyContent: 'center',
+                        alignItems: 'flex-start',
+                        mt: { xs: 2, md: 0 }
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={(fighterProfile as any).creative_fighter_image_url}
+                        alt="Creative Fighter"
+                        sx={{
+                          maxWidth: '100%',
+                          maxHeight: '400px',
+                          width: 'auto',
+                          height: 'auto',
+                          border: '2px solid',
+                          borderColor: 'primary.main',
+                          borderRadius: 2,
+                          boxShadow: 3,
+                          objectFit: 'contain',
+                        }}
+                        onError={(e) => {
+                          console.error('Error loading Creative Fighter image:', (fighterProfile as any).creative_fighter_image_url);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <Box 
+                      sx={{ 
+                        flex: { xs: '1', md: '0 0 300px' },
+                        display: 'flex', 
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        mt: { xs: 2, md: 0 },
+                        minHeight: '200px',
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary" textAlign="center">
+                        No Creative Fighter image uploaded yet
+                      </Typography>
                     </Box>
                   )}
-                  {fighterProfile.gym && (
-                    <Box display="flex" alignItems="center">
-                      <Business sx={{ mr: 2, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Gym
-                        </Typography>
-                        <Typography variant="body1">{fighterProfile.gym}</Typography>
-                      </Box>
-                    </Box>
-                  )}
-                  {(fighterProfile as any).birthday && (
-                    <Box display="flex" alignItems="center">
-                      <CalendarToday sx={{ mr: 2, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Birthday
-                        </Typography>
-                        <Typography variant="body1">
-                          {(() => {
-                            const birthday = (fighterProfile as any).birthday;
-                            if (!birthday) return 'Not set';
-                            try {
-                              // Parse date string manually to avoid timezone issues
-                              let dateStr = typeof birthday === 'string' 
-                                ? birthday.split('T')[0] 
-                                : birthday instanceof Date 
-                                  ? birthday.toISOString().split('T')[0]
-                                  : String(birthday);
-                              
-                              // Handle YYYY-MM-DD format
-                              const parts = dateStr.split('-');
-                              if (parts.length === 3) {
-                                const year = parseInt(parts[0], 10);
-                                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-                                const day = parseInt(parts[2], 10);
-                                const date = new Date(year, month, day);
-                                
-                                if (isNaN(date.getTime())) return 'Invalid date';
-                                return date.toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                });
-                              }
-                              
-                              // Fallback to standard parsing
-                              const date = new Date(dateStr);
-                              if (isNaN(date.getTime())) return 'Invalid date';
-                              return date.toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                              });
-                            } catch {
-                              return 'Invalid date';
-                            }
-                          })()}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  )}
-                </Stack>
+                </Box>
               )}
             </CardContent>
           </Card>

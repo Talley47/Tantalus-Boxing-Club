@@ -616,6 +616,8 @@ const RulesGuidelines: React.FC = () => {
           </Typography>
           <List>
             <ListItem><ListItemText primary="Attribute Budget Cap: League‑set total budget per CAF." /></ListItem>
+            <ListItem><ListItemText primary="All Creative Fighters Overall must be 85." /></ListItem>
+            <ListItem><ListItemText primary="No Traits." /></ListItem>
             <ListItem><ListItemText primary="Hard Caps: Max 2 attributes > 90; no stat > 92." /></ListItem>
             <ListItem><ListItemText primary="Body Metrics: Height/reach must be plausible for the weight class; no extreme body types to evade hitboxes." /></ListItem>
             <ListItem><ListItemText primary="Cosmetics: No distracting/glitch‑triggering gear." /></ListItem>

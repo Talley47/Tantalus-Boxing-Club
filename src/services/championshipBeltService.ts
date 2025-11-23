@@ -40,6 +40,23 @@ class ChampionshipBeltService {
   private readonly STORAGE_BUCKET = 'championship-belts';
 
   /**
+   * Check if the storage bucket exists
+   */
+  async checkBucketExists(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.storage.listBuckets();
+      if (error) {
+        console.error('Error checking buckets:', error);
+        return false;
+      }
+      return data?.some(bucket => bucket.name === this.STORAGE_BUCKET) || false;
+    } catch (error) {
+      console.error('Error checking bucket existence:', error);
+      return false;
+    }
+  }
+
+  /**
    * Upload a championship belt image to Supabase Storage
    */
   async uploadBeltImage(file: File, fighterId: string): Promise<string> {
@@ -56,12 +73,46 @@ class ChampionshipBeltService {
 
     if (error) {
       console.error('Error uploading championship belt image:', error);
-      if (error.message?.includes('row-level security') || error.message?.includes('RLS') || error.message?.includes('policy')) {
-        throw new Error('Storage bucket RLS policy error. Please run setup-championship-belts-storage.sql in Supabase SQL Editor and create the "championship-belts" bucket in Storage.');
+      
+      // Check for bucket not found error
+      if (error.message?.includes('Bucket not found') || 
+          error.message?.includes('not found') ||
+          error.message?.toLowerCase().includes('bucket')) {
+        throw new Error(
+          `Storage bucket "championship-belts" not found!\n\n` +
+          `If you just created it, try:\n` +
+          `1. Hard refresh your browser (Ctrl+Shift+R or Cmd+Shift+R)\n` +
+          `2. Wait 10-30 seconds for Supabase to sync\n` +
+          `3. Verify the bucket exists in Supabase Dashboard > Storage\n` +
+          `4. Make sure it's set to "Public"\n\n` +
+          `If the bucket doesn't exist, create it:\n` +
+          `- Go to Supabase Dashboard > Storage\n` +
+          `- Click "New bucket"\n` +
+          `- Name: "championship-belts" (exact, lowercase, with hyphen)\n` +
+          `- Check "Public bucket" ✅\n` +
+          `- File size limit: 10 MB\n` +
+          `- MIME types: image/jpeg, image/jpg, image/png, image/gif, image/webp\n` +
+          `- Then run: setup-championship-belts-storage.sql in SQL Editor`
+        );
       }
-      if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
-        throw new Error('Storage bucket "championship-belts" not found. Please create it in Supabase Dashboard > Storage.');
+      
+      // Check for RLS/policy errors
+      if (error.message?.includes('row-level security') || 
+          error.message?.includes('RLS') || 
+          error.message?.includes('policy') ||
+          error.message?.includes('permission') ||
+          error.message?.includes('403') ||
+          error.message?.includes('Forbidden')) {
+        throw new Error(
+          `Storage bucket permission error!\n\n` +
+          `Please run: setup-championship-belts-storage.sql in Supabase SQL Editor\n\n` +
+          `Also verify:\n` +
+          `- You're logged in as an admin user\n` +
+          `- The bucket is set to "Public"\n` +
+          `- Storage policies were created successfully`
+        );
       }
+      
       throw error;
     }
 

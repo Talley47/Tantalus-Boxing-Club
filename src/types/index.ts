@@ -309,6 +309,7 @@ export interface FightUrlSubmission {
   scheduled_fight_id?: string;
   tournament_id?: string;
   fight_url: string;
+  scorecard_url?: string;
   event_type: 'Live Event' | 'Tournament';
   description?: string;
   status: 'Pending' | 'Reviewed' | 'Rejected' | 'Approved';
@@ -327,6 +328,7 @@ export interface CreateFightUrlSubmissionRequest {
   scheduled_fight_id?: string;
   tournament_id?: string;
   fight_url: string;
+  scorecard_url?: string;
   event_type: 'Live Event' | 'Tournament';
   description?: string;
 }

@@ -263,6 +263,8 @@ const FighterProfile: React.FC = () => {
     event_type: 'Live Event',
     description: '',
   });
+  const [scorecardFile, setScorecardFile] = useState<File | null>(null);
+  const [uploadingScorecard, setUploadingScorecard] = useState(false);
   const [selectedFightForSubmission, setSelectedFightForSubmission] = useState<ScheduledFight | null>(null);
   const [deleteSubmissionDialogOpen, setDeleteSubmissionDialogOpen] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<string | null>(null);
@@ -900,10 +902,28 @@ const FighterProfile: React.FC = () => {
     
     try {
       setSubmittingUrl(true);
+      setUploadingScorecard(true);
+      
+      let scorecardUrl: string | undefined;
+      
+      // Upload scorecard if provided
+      if (scorecardFile) {
+        try {
+          scorecardUrl = await fightUrlSubmissionService.uploadScorecard(scorecardFile, fighterProfile.id);
+        } catch (error: any) {
+          console.error('Error uploading scorecard:', error);
+          alert('Failed to upload scorecard: ' + (error.message || 'Unknown error'));
+          setUploadingScorecard(false);
+          setSubmittingUrl(false);
+          return;
+        }
+      }
+      
       await fightUrlSubmissionService.submitFightUrl(
         {
           ...newSubmission,
           scheduled_fight_id: selectedFightForSubmission?.id,
+          scorecard_url: scorecardUrl,
         },
         fighterProfile.id
       );
@@ -913,14 +933,16 @@ const FighterProfile: React.FC = () => {
         event_type: 'Live Event',
         description: '',
       });
+      setScorecardFile(null);
       setSelectedFightForSubmission(null);
       await loadFightUrlSubmissions();
-      alert('Fight URL submitted successfully! Admin will review it.');
+      alert('Fight URL and scorecard submitted successfully! Admin will review it.');
     } catch (error: any) {
       console.error('Error submitting fight URL:', error);
       alert('Failed to submit fight URL: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmittingUrl(false);
+      setUploadingScorecard(false);
     }
   };
 
@@ -2449,7 +2471,7 @@ const FighterProfile: React.FC = () => {
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  Submit Fight URL
+                  Submit Fight URL and Scorecard
                 </Typography>
                 <Button
                   variant="contained"
@@ -2461,6 +2483,7 @@ const FighterProfile: React.FC = () => {
                       event_type: 'Live Event',
                       description: '',
                     });
+                    setScorecardFile(null);
                     setSubmissionDialogOpen(true);
                   }}
                 >
@@ -2469,13 +2492,13 @@ const FighterProfile: React.FC = () => {
               </Box>
               
               <Typography variant="body2" color="text.secondary" mb={3}>
-                Submit your fight URL/web link to the Admin for Live events and tournaments. 
+                Submit your fight URL/web link and scorecard screenshot to the Admin for Live events and tournaments. 
                 The Admin will review and approve your submission.
               </Typography>
 
               {fightUrlSubmissions.length === 0 ? (
                 <Alert severity="info">
-                  No submissions yet. Click "Submit URL" to submit your first fight URL.
+                  No submissions yet. Click "Submit URL" to submit your first fight URL and scorecard.
                 </Alert>
               ) : (
                 <Stack spacing={2}>
@@ -2500,6 +2523,7 @@ const FighterProfile: React.FC = () => {
                             </Box>
                             <Typography variant="body2" color="text.secondary" mb={1}>
                               <LinkIcon sx={{ verticalAlign: 'middle', fontSize: 16, mr: 0.5 }} />
+                              <strong>Fight URL:</strong>{' '}
                               <a 
                                 href={submission.fight_url} 
                                 target="_blank" 
@@ -2509,6 +2533,37 @@ const FighterProfile: React.FC = () => {
                                 {submission.fight_url}
                               </a>
                             </Typography>
+                            {submission.scorecard_url && (
+                              <Box mb={1}>
+                                <Typography variant="body2" color="text.secondary" mb={0.5}>
+                                  <strong>Scorecard:</strong>
+                                </Typography>
+                                <Box
+                                  component="img"
+                                  src={submission.scorecard_url}
+                                  alt="Scorecard"
+                                  sx={{
+                                    maxWidth: '100%',
+                                    maxHeight: '300px',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={() => window.open(submission.scorecard_url, '_blank')}
+                                />
+                                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                                  <a 
+                                    href={submission.scorecard_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    style={{ color: 'inherit', textDecoration: 'underline' }}
+                                  >
+                                    View Full Size
+                                  </a>
+                                </Typography>
+                              </Box>
+                            )}
                             {submission.description && (
                               <Typography variant="body2" color="text.secondary" mb={1}>
                                 {submission.description}
@@ -2968,7 +3023,7 @@ const FighterProfile: React.FC = () => {
         keepMounted={false}
         aria-labelledby="submission-dialog-title"
       >
-        <DialogTitle id="submission-dialog-title">Submit Fight URL</DialogTitle>
+        <DialogTitle id="submission-dialog-title">Submit Fight URL and Scorecard</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
             {selectedFightForSubmission && (
@@ -3036,6 +3091,61 @@ const FighterProfile: React.FC = () => {
               required
               helperText="Enter the full URL to your fight video or recording"
             />
+            <Box>
+              <Typography variant="body2" mb={1}>
+                Scorecard Screenshot (Optional)
+              </Typography>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="scorecard-upload"
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                      alert('Please upload an image file');
+                      return;
+                    }
+                    // Validate file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                      alert('File size must be less than 10MB');
+                      return;
+                    }
+                    setScorecardFile(file);
+                  }
+                }}
+              />
+              <label htmlFor="scorecard-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  startIcon={<LinkIcon />}
+                  disabled={uploadingScorecard}
+                >
+                  {scorecardFile ? `Selected: ${scorecardFile.name}` : 'Upload Scorecard Screenshot'}
+                </Button>
+              </label>
+              {scorecardFile && (
+                <Box mt={1} display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    {scorecardFile.name} ({(scorecardFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </Typography>
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => setScorecardFile(null)}
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              )}
+              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                Upload a screenshot of your scorecard (PNG, JPG, or GIF, max 10MB)
+              </Typography>
+            </Box>
             <TextField
               fullWidth
               multiline
@@ -3054,10 +3164,10 @@ const FighterProfile: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleSubmitFightUrl}
-            disabled={!newSubmission.fight_url.trim() || submittingUrl}
-            startIcon={submittingUrl ? <CircularProgress size={16} /> : <LinkIcon />}
+            disabled={!newSubmission.fight_url.trim() || submittingUrl || uploadingScorecard}
+            startIcon={submittingUrl || uploadingScorecard ? <CircularProgress size={16} /> : <LinkIcon />}
           >
-            {submittingUrl ? 'Submitting...' : 'Submit URL'}
+            {uploadingScorecard ? 'Uploading Scorecard...' : submittingUrl ? 'Submitting...' : 'Submit URL and Scorecard'}
           </Button>
         </DialogActions>
       </Dialog>

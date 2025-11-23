@@ -248,7 +248,7 @@ const FightUrlSubmissionManagement: React.FC = () => {
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Review and manage fight URLs submitted by fighters for Live Events and Tournaments.
+          Review and manage fight URLs and scorecard screenshots submitted by fighters for Live Events and Tournaments.
         </Typography>
 
         {/* Tabs for filtering */}
@@ -292,6 +292,7 @@ const FightUrlSubmissionManagement: React.FC = () => {
                   <TableCell>Fighter</TableCell>
                   <TableCell>Event Type</TableCell>
                   <TableCell>Fight URL</TableCell>
+                  <TableCell>Scorecard</TableCell>
                   <TableCell>Description</TableCell>
                   <TableCell>Related To</TableCell>
                   <TableCell>Submitted</TableCell>
@@ -330,6 +331,40 @@ const FightUrlSubmissionManagement: React.FC = () => {
                           {submission.fight_url}
                         </Typography>
                       </Link>
+                    </TableCell>
+                    <TableCell>
+                      {submission.scorecard_url ? (
+                        <Box>
+                          <Box
+                            component="img"
+                            src={submission.scorecard_url}
+                            alt="Scorecard"
+                            sx={{
+                              maxWidth: '100px',
+                              maxHeight: '100px',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 1,
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => window.open(submission.scorecard_url, '_blank')}
+                          />
+                          <Typography variant="caption" display="block" mt={0.5}>
+                            <Link
+                              href={submission.scorecard_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{ fontSize: '0.75rem' }}
+                            >
+                              View Full
+                            </Link>
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          N/A
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -449,6 +484,36 @@ const FightUrlSubmissionManagement: React.FC = () => {
                   <Typography variant="body2">{selectedSubmission.fight_url}</Typography>
                 </Link>
               </Box>
+
+              {selectedSubmission.scorecard_url && (
+                <Box mb={2}>
+                  <Typography variant="subtitle2" color="text.secondary">Scorecard Screenshot</Typography>
+                  <Box
+                    component="img"
+                    src={selectedSubmission.scorecard_url}
+                    alt="Scorecard"
+                    sx={{
+                      maxWidth: '100%',
+                      maxHeight: '400px',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      mt: 1,
+                    }}
+                    onClick={() => window.open(selectedSubmission.scorecard_url, '_blank')}
+                  />
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    <Link
+                      href={selectedSubmission.scorecard_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Full Size
+                    </Link>
+                  </Typography>
+                </Box>
+              )}
 
               {selectedSubmission.description && (
                 <Box mb={2}>

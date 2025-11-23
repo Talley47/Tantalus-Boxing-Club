@@ -4,6 +4,40 @@ import { FightUrlSubmission, CreateFightUrlSubmissionRequest } from '../types';
 const TABLE_NAME = 'fight_url_submissions';
 
 class FightUrlSubmissionService {
+  // Upload scorecard image to Supabase Storage
+  async uploadScorecard(file: File, fighterId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    // Use fighterId as the folder name directly (no nested scorecards folder)
+    const filePath = `${fighterId}/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('fight-submissions')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Error uploading scorecard:', error);
+      // If bucket doesn't exist or RLS error, provide helpful message
+      if (error.message?.includes('row-level security') || error.message?.includes('RLS') || error.message?.includes('policy')) {
+        throw new Error('Storage bucket RLS policy error. Please run setup-scorecard-storage.sql in Supabase SQL Editor and create the "fight-submissions" bucket in Storage.');
+      }
+      if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
+        throw new Error('Storage bucket "fight-submissions" not found. Please create it in Supabase Dashboard > Storage.');
+      }
+      throw error;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('fight-submissions')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  }
+
   // Submit a fight URL to admin
   async submitFightUrl(
     request: CreateFightUrlSubmissionRequest,
@@ -16,6 +50,7 @@ class FightUrlSubmissionService {
         scheduled_fight_id: request.scheduled_fight_id || null,
         tournament_id: request.tournament_id || null,
         fight_url: request.fight_url.trim(),
+        scorecard_url: request.scorecard_url || null,
         event_type: request.event_type,
         description: request.description?.trim() || null,
         status: 'Pending',
@@ -182,6 +217,7 @@ class FightUrlSubmissionService {
     submissionId: string,
     updates: {
       fight_url?: string;
+      scorecard_url?: string;
       description?: string;
       status?: 'Pending' | 'Reviewed' | 'Rejected' | 'Approved';
       admin_notes?: string;
@@ -194,6 +230,9 @@ class FightUrlSubmissionService {
 
     if (updates.fight_url !== undefined) {
       updateData.fight_url = updates.fight_url.trim();
+    }
+    if (updates.scorecard_url !== undefined) {
+      updateData.scorecard_url = updates.scorecard_url || null;
     }
     if (updates.description !== undefined) {
       updateData.description = updates.description?.trim() || null;

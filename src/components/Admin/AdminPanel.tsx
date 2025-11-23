@@ -19,6 +19,7 @@ import ScheduledFightsManagement from './ScheduledFightsManagement';
 import TrainingCampsManagement from './TrainingCampsManagement';
 import CalloutsManagement from './CalloutsManagement';
 import ChatMessagesManagement from './ChatMessagesManagement';
+import ChampionshipBeltManagement from './ChampionshipBeltManagement';
 
 const AdminPanel: React.FC = () => {
   const [fightRecordsDialogOpen, setFightRecordsDialogOpen] = useState(false);
@@ -26,6 +27,7 @@ const AdminPanel: React.FC = () => {
   const [trainingCampsDialogOpen, setTrainingCampsDialogOpen] = useState(false);
   const [calloutsDialogOpen, setCalloutsDialogOpen] = useState(false);
   const [chatMessagesDialogOpen, setChatMessagesDialogOpen] = useState(false);
+  const [championshipBeltDialogOpen, setChampionshipBeltDialogOpen] = useState(false);
 
   return (
     <Box>
@@ -132,6 +134,17 @@ const AdminPanel: React.FC = () => {
             >
               Manage Chat Messages
             </Button>
+            <Button 
+              variant="contained" 
+              color="primary"
+              fullWidth
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setChampionshipBeltDialogOpen(true);
+              }}
+            >
+              Manage Championship Belts
+            </Button>
           </Box>
         </CardContent>
       </Card>
@@ -164,6 +177,12 @@ const AdminPanel: React.FC = () => {
       <ChatMessagesManagement
         open={chatMessagesDialogOpen}
         onClose={() => setChatMessagesDialogOpen(false)}
+      />
+
+      {/* Championship Belt Management Dialog */}
+      <ChampionshipBeltManagement
+        open={championshipBeltDialogOpen}
+        onClose={() => setChampionshipBeltDialogOpen(false)}
       />
     </Box>
   );

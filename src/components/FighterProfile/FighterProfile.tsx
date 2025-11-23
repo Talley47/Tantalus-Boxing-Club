@@ -67,6 +67,7 @@ import { FightUrlSubmission, CreateFightUrlSubmissionRequest } from '../../types
 import { smartMatchmakingService } from '../../services/smartMatchmakingService';
 import { trainingCampService, TrainingCampInvitation } from '../../services/trainingCampService';
 import { calloutService, CalloutRequest } from '../../services/calloutService';
+import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from '../../services/championshipBeltService';
 import { 
   getAllowedWeightClasses, 
   isWeightClassAllowed, 
@@ -269,6 +270,8 @@ const FighterProfile: React.FC = () => {
   const [creativeFighterImageFile, setCreativeFighterImageFile] = useState<File | null>(null);
   const [uploadingCreativeFighterImage, setUploadingCreativeFighterImage] = useState(false);
   const [deleteSubmissionDialogOpen, setDeleteSubmissionDialogOpen] = useState(false);
+  const [championshipBelts, setChampionshipBelts] = useState<ChampionshipBelt[]>([]);
+  const [loadingBelts, setLoadingBelts] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<string | null>(null);
   const [mandatoryFights, setMandatoryFights] = useState<any[]>([]);
   const [pendingFightRequests, setPendingFightRequests] = useState<any[]>([]);
@@ -339,6 +342,19 @@ const FighterProfile: React.FC = () => {
       setFightRecords(data || []);
     } catch (error) {
       console.error('Error loading fight records:', error);
+    }
+  }, [fighterProfile?.user_id]);
+
+  const loadChampionshipBelts = useCallback(async () => {
+    if (!fighterProfile?.user_id) return;
+    try {
+      setLoadingBelts(true);
+      const belts = await championshipBeltService.getBeltsByUserId(fighterProfile.user_id);
+      setChampionshipBelts(belts);
+    } catch (error) {
+      console.error('Error loading championship belts:', error);
+    } finally {
+      setLoadingBelts(false);
     }
   }, [fighterProfile?.user_id]);
 
@@ -477,6 +493,7 @@ const FighterProfile: React.FC = () => {
       loadActiveTrainingCamps();
       loadCalloutRequests();
       loadScheduledCallouts();
+      loadChampionshipBelts();
       
       // Update edit form when fighter profile changes
       setEditForm({
@@ -2036,6 +2053,65 @@ const FighterProfile: React.FC = () => {
                   {fighterProfile.weight_class}
                 </Typography>
               </Box>
+              
+              {/* Championship Belts */}
+              {loadingBelts ? (
+                <Box display="flex" justifyContent="center" mt={3}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : championshipBelts.length > 0 && (
+                <Box mt={3}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Championship Belts
+                  </Typography>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      flexWrap: 'wrap', 
+                      gap: 2, 
+                      mt: 1,
+                      justifyContent: 'flex-start'
+                    }}
+                  >
+                    {championshipBelts.map((belt) => (
+                      <Box
+                        key={belt.id}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          maxWidth: '150px',
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={belt.belt_image_url}
+                          alt={GOVERNING_BODY_LABELS[belt.governing_body]}
+                          sx={{
+                            width: '100%',
+                            maxWidth: '120px',
+                            height: 'auto',
+                            objectFit: 'contain',
+                            borderRadius: 1,
+                            mb: 0.5,
+                          }}
+                        />
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            textAlign: 'center',
+                            fontSize: '0.7rem',
+                            color: 'text.secondary',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {GOVERNING_BODY_LABELS[belt.governing_body]}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Box>

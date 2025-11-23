@@ -548,7 +548,7 @@ class TrainingCampService {
   async getAllActiveTrainingCamps(): Promise<TrainingCampInvitation[]> {
     try {
       // Fetch camps without joins (Supabase can't auto-detect foreign keys)
-      // This query should return ALL active training camps in the league
+      // This query should return ALL active training camps in the club
       // RLS policy "Anyone can view active training camps" should allow this
       const { data: camps, error: campsError } = await supabase
         .from('training_camp_invitations')
@@ -619,7 +619,7 @@ class TrainingCampService {
       console.log(`✅ Returning ${validCamps.length} active training camp(s) with fighter profiles`);
       
       // Return all active training camps (including those with admin fighters)
-      // This matches the Admin Home Page behavior - showing all League Training Camps
+      // This matches the Admin Home Page behavior - showing all Club Training Camps
       return validCamps as TrainingCampInvitation[];
     } catch (error) {
       console.error('Error in getAllActiveTrainingCamps:', error);

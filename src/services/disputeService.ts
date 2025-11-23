@@ -856,7 +856,7 @@ class DisputeService {
               .from('profiles')
               .update({
                 banned_until: null, // null = permanent ban
-                banned_reason: 'Dispute resolution: Banned from league'
+                banned_reason: 'Dispute resolution: Banned from club'
               })
               .eq('id', opponentProfile.user_id);
           }

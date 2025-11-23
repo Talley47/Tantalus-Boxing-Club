@@ -165,7 +165,7 @@ const TierSystem: React.FC = () => {
         <Box
           component="img"
           src={logo1}
-          alt="Tantalus Boxing League Logo"
+          alt="Tantalus Boxing Club Logo"
           sx={{
             height: { xs: 50, md: 70 },
             width: 'auto',
@@ -265,7 +265,7 @@ const TierSystem: React.FC = () => {
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              League Statistics
+              Club Statistics
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
               <Paper sx={{ p: 2, textAlign: 'center' }}>

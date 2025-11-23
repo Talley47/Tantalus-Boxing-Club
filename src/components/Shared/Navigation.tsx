@@ -97,7 +97,7 @@ const Navigation: React.FC = () => {
           Tantalus Boxing
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Virtual League
+          Virtual Club
         </Typography>
       </Box>
       

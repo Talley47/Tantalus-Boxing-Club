@@ -1375,7 +1375,7 @@ const FighterProfile: React.FC = () => {
             <Box
               component="img"
               src={logo1}
-              alt="Tantalus Boxing League Logo"
+              alt="Tantalus Boxing Club Logo"
               sx={{
                 height: { xs: 60, md: 80 },
                 width: 'auto',

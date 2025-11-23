@@ -533,7 +533,7 @@ const HomePage: React.FC = () => {
                 <Box
                   component="img"
                   src={logo1}
-                  alt="Tantalus Boxing League Logo"
+                  alt="Tantalus Boxing Club Logo"
                   sx={{
                     height: { xs: 60, md: 80 },
                     width: 'auto',
@@ -542,7 +542,7 @@ const HomePage: React.FC = () => {
                 />
                 <Box>
                   <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                    Tantalus Boxing League
+                    Tantalus Boxing Club
                   </Typography>
                   <Typography variant="h6" sx={{ color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
                     Welcome back, {fighterProfile?.name || (isAdmin ? 'Admin' : 'Fighter')}!
@@ -619,7 +619,7 @@ const HomePage: React.FC = () => {
                 <CardContent sx={{ color: 'white' }}>
                   <Box display="flex" alignItems="center" mb={2}>
                     <TrendingUp sx={{ mr: 1, fontSize: 30 }} />
-                    <Typography variant="h6">League Activity</Typography>
+                    <Typography variant="h6">Club Activity</Typography>
                   </Box>
                   <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
                     {topFighters.length > 0 ? Math.round((topFighters.filter(f => f.points > 0).length / topFighters.length) * 100) : 0}%
@@ -660,7 +660,7 @@ const HomePage: React.FC = () => {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  League Rankings
+                  Club Rankings
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
                   Top 30 Fighters
@@ -668,7 +668,7 @@ const HomePage: React.FC = () => {
               </Box>
               {topFighters.length === 0 ? (
                 <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  No fighters found. Register to join the league!
+                  No fighters found. Register to join the club!
                 </Alert>
               ) : (
                 <Box sx={{ 
@@ -1099,11 +1099,11 @@ const HomePage: React.FC = () => {
             {/* Training Camps Tab */}
             <TabPanel value={tabValue} index={2}>
               <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-                League Active Training Camps
+                Club Active Training Camps
               </Typography>
               {trainingCamps.length === 0 ? (
                 <Alert severity="info">
-                  No active training camps in the league at the moment. Go to Matchmaking → Training Camp to send invitations!
+                  No active training camps in the club at the moment. Go to Matchmaking → Training Camp to send invitations!
                 </Alert>
               ) : (
                 <Stack spacing={3}>

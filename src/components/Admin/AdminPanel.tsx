@@ -65,7 +65,7 @@ const AdminPanel: React.FC = () => {
         <NewsManagement />
       </Box>
 
-      {/* League Analytics Dashboard */}
+      {/* Club Analytics Dashboard */}
       <Box sx={{ mt: 3 }}>
         <AdminAnalytics />
       </Box>

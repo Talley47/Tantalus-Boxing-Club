@@ -74,8 +74,8 @@ const AnalyticsDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Get league analytics from service
-      const leagueData = await AnalyticsService.getLeagueAnalytics();
+      // Get club analytics from service
+      const clubData = await AnalyticsService.getClubAnalytics();
 
       // Get tournaments
       const tournaments = await TournamentService.getTournaments();
@@ -109,8 +109,8 @@ const AnalyticsDashboard: React.FC = () => {
         .slice(-6); // Last 6 months
 
       // Process tier distribution
-      const tierCounts = leagueData.fighters_by_tier || {};
-      const totalFighters = leagueData.total_fighters || 0;
+      const tierCounts = clubData.fighters_by_tier || {};
+      const totalFighters = clubData.total_fighters || 0;
       const tierDistribution = Object.entries(tierCounts).map(([tier, count]) => ({
         tier,
         count: count as number,
@@ -118,10 +118,10 @@ const AnalyticsDashboard: React.FC = () => {
       })).sort((a, b) => b.count - a.count);
 
       // Process weight class stats
-      const weightClassStats = Object.entries(leagueData.fighters_by_weight_class || {}).map(([weightClass, count]) => ({
+      const weightClassStats = Object.entries(clubData.fighters_by_weight_class || {}).map(([weightClass, count]) => ({
         weightClass,
         fighters: count as number,
-        avgPoints: Math.round(leagueData.average_points_by_weight_class[weightClass] || 0)
+        avgPoints: Math.round(clubData.average_points_by_weight_class[weightClass] || 0)
       }));
 
       // Get monthly stats (last 6 months)
@@ -164,10 +164,10 @@ const AnalyticsDashboard: React.FC = () => {
         .map(([month, stats]) => ({ month, ...stats }));
 
       const analyticsData: AnalyticsData = {
-        totalFighters: leagueData.total_fighters || 0,
-        totalFights: leagueData.total_matches || 0,
+        totalFighters: clubData.total_fighters || 0,
+        totalFights: clubData.total_matches || 0,
         totalTournaments,
-        activeUsers: leagueData.active_fighters || 0,
+        activeUsers: clubData.active_fighters || 0,
         fightTrends: fightTrends.length > 0 ? fightTrends : [
           { date: new Date().toISOString().slice(0, 7), fights: 0, wins: 0 }
         ],
@@ -220,7 +220,7 @@ const AnalyticsDashboard: React.FC = () => {
         <Box
           component="img"
           src={logo1}
-          alt="Tantalus Boxing League Logo"
+          alt="Tantalus Boxing Club Logo"
           sx={{
             height: { xs: 50, md: 70 },
             width: 'auto',

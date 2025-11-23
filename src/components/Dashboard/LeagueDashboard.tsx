@@ -5,12 +5,12 @@ const LeagueDashboard = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        League Dashboard
+        Club Dashboard
       </Typography>
       <Card>
         <CardContent>
           <Typography variant="body1">
-            League analytics dashboard coming soon...
+            Club analytics dashboard coming soon...
           </Typography>
         </CardContent>
       </Card>

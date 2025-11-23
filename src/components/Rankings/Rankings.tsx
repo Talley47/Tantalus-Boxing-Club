@@ -268,7 +268,7 @@ const Rankings: React.FC = () => {
             <Box
               component="img"
               src={logo1}
-              alt="Tantalus Boxing League Logo"
+              alt="Tantalus Boxing Club Logo"
               sx={{
                 height: { xs: 60, md: 80 },
                 width: 'auto',
@@ -285,7 +285,7 @@ const Rankings: React.FC = () => {
                   textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
                 }}
               >
-                League Rankings
+                Club Rankings
               </Typography>
               <Typography 
                 variant="body1" 

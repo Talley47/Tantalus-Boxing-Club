@@ -1088,7 +1088,7 @@ const Social: React.FC = () => {
           >
             <Forum color="primary" />
             <Typography variant="h5" component="h1">
-              League Chat Room
+              Club Chat Room
             </Typography>
             <Chip
               label={`${messages.length} messages`}

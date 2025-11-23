@@ -126,7 +126,7 @@ class ChatService {
           await notificationService.createNotification(
             fighter.user_id,
             'General',
-            `@${senderName} mentioned you in League Chat`,
+            `@${senderName} mentioned you in Club Chat`,
             `${senderName}: ${truncatedMessage}`,
             `/social?message=${messageId}` // Link to the specific message
           );

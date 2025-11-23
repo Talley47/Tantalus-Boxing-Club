@@ -112,7 +112,7 @@ const Scheduling: React.FC = () => {
             <Box
               component="img"
               src={logo1}
-              alt="Tantalus Boxing League Logo"
+              alt="Tantalus Boxing Club Logo"
               sx={{
                 height: { xs: 50, md: 70 },
                 width: 'auto',

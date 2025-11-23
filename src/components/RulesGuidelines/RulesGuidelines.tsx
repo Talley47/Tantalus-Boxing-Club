@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 
 const RulesGuidelines: React.FC = () => {
-  // Rules/Guidelines component for Creative Fighter League
+  // Rules/Guidelines component for Creative Fighter Club
   const [expanded, setExpanded] = useState<string | false>('introduction');
 
   // Ensure component is loaded in production
@@ -120,7 +120,7 @@ const RulesGuidelines: React.FC = () => {
           <Gavel sx={{ fontSize: 40, color: 'white' }} />
           <Box>
             <Typography variant="h3" component="h1" color="white" fontWeight="bold">
-              Tantalus Boxing Club – Creative Fighter League
+              Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
               Official Rules & Guidelines (v1.0)
@@ -137,7 +137,7 @@ const RulesGuidelines: React.FC = () => {
             sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} 
           />
           <Chip 
-            label="League Name: Creative Fighter League (CFL)" 
+            label="Club Name: Creative Fighter Club (CFC)" 
             sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} 
           />
         </Box>
@@ -198,7 +198,7 @@ const RulesGuidelines: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body1" paragraph>
-            Welcome to the <strong>Tantalus Boxing Club – Creative Fighter League (TBC‑CFL)</strong>: a competitive Undisputed league where created fighters advance through tiers, compete in tournaments, and build their legacy through skill, discipline, and fairness.
+            Welcome to the <strong>Tantalus Boxing Club – Creative Fighter Club (TBC‑CFC)</strong>: a competitive Undisputed club where created fighters advance through tiers, compete in tournaments, and build their legacy through skill, discipline, and fairness.
           </Typography>
           <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>Core Principles</Typography>
           <List>
@@ -573,7 +573,7 @@ const RulesGuidelines: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body1" paragraph>
-            Rank determines position within weight class, tier, and overall league.
+            Rank determines position within weight class, tier, and overall club.
           </Typography>
           <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Ranking Factors (priority order):</Typography>
           <List>
@@ -622,7 +622,7 @@ const RulesGuidelines: React.FC = () => {
           <List>
             <ListItem><ListItemText primary="Live events" /></ListItem>
             <ListItem><ListItemText primary="Tournament fights" /></ListItem>
-            <ListItem><ListItemText primary="Ranked or league-sanctioned matches" /></ListItem>
+            <ListItem><ListItemText primary="Ranked or club-sanctioned matches" /></ListItem>
             <ListItem><ListItemText primary="Any match requested by an Admin" /></ListItem>
           </List>
 
@@ -868,7 +868,7 @@ const RulesGuidelines: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body1" paragraph>
-            This section defines <strong>simulation</strong> for Undisputed matches in TBC‑CFL and integrates directly with league operations.
+            This section defines <strong>simulation</strong> for Undisputed matches in TBC‑CFC and integrates directly with club operations.
           </Typography>
           
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>1) Philosophy & Definition</Typography>
@@ -908,12 +908,12 @@ const RulesGuidelines: React.FC = () => {
             <ListItem><ListItemText primary="Fighters disclose controller type; macros/turbos are banned." /></ListItem>
           </List>
 
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Created Fighter (CAF) Policy (League Caps)</Typography>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Created Fighter (CAF) Policy (Club Caps)</Typography>
           <Typography variant="body2" paragraph>
             To keep CAFs fair and believable:
           </Typography>
           <List>
-            <ListItem><ListItemText primary="Attribute Budget Cap: League‑set total budget per CAF." /></ListItem>
+            <ListItem><ListItemText primary="Attribute Budget Cap: Club‑set total budget per CAF." /></ListItem>
             <ListItem><ListItemText primary="All Creative Fighters Overall must be 85." /></ListItem>
             <ListItem><ListItemText primary="No Traits." /></ListItem>
             <ListItem><ListItemText primary="Hard Caps: Max 2 attributes > 90; no stat > 92." /></ListItem>
@@ -1097,7 +1097,7 @@ const RulesGuidelines: React.FC = () => {
       {/* Footer */}
       <Paper elevation={2} sx={{ p: 3, mt: 4, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
         <Typography variant="body2" color="text.secondary">
-          For questions or clarifications, contact league administrators or check the News feed for updates.
+          For questions or clarifications, contact club administrators or check the News feed for updates.
         </Typography>
       </Paper>
       </Container>
@@ -1105,6 +1105,6 @@ const RulesGuidelines: React.FC = () => {
   );
 };
 
-// Rules/Guidelines component for Creative Fighter League
+// Rules/Guidelines component for Creative Fighter Club
 export default RulesGuidelines;
 

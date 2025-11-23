@@ -601,7 +601,7 @@ export class AdminService {
     }
   }
 
-  // Delete all chat messages from the League Chat Room
+  // Delete all chat messages from the Club Chat Room
   static async deleteAllChatMessages(): Promise<{ deletedCount: number }> {
     try {
       // First, get count of all messages

@@ -115,7 +115,7 @@ class NotificationService {
     }
   }
 
-  // Create notification for multiple users (e.g., all fighters for league-wide announcements)
+  // Create notification for multiple users (e.g., all fighters for club-wide announcements)
   async createNotificationForAllUsers(
     type: Notification['type'],
     title: string,

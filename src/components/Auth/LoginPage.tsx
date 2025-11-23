@@ -139,7 +139,7 @@ const LoginPage: React.FC = () => {
           </Typography>
           
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Virtual Boxing League
+            Virtual Boxing Club
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>

@@ -158,7 +158,7 @@ const Analytics: React.FC = () => {
         <Box
           component="img"
           src={logo1}
-          alt="Tantalus Boxing League Logo"
+          alt="Tantalus Boxing Club Logo"
           sx={{
             height: { xs: 50, md: 70 },
             width: 'auto',
@@ -272,7 +272,7 @@ const Analytics: React.FC = () => {
               #{analytics.rank_overall || 'N/A'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              League-wide
+              Club-wide
             </Typography>
           </CardContent>
         </Card>

@@ -24,22 +24,22 @@ import {
   EmojiEvents,
 } from '@mui/icons-material';
 import { useRealtime } from '../../contexts/RealtimeContext';
-import { AnalyticsService, LeagueAnalytics, FighterAnalytics } from '../../services/analyticsService';
+import { AnalyticsService, ClubAnalytics, FighterAnalytics } from '../../services/analyticsService';
 
 const AdminAnalytics: React.FC = () => {
   const { subscribeToFightRecords, subscribeToFighterProfiles } = useRealtime();
-  const [leagueAnalytics, setLeagueAnalytics] = useState<LeagueAnalytics | null>(null);
+  const [clubAnalytics, setClubAnalytics] = useState<ClubAnalytics | null>(null);
   const [allFightersAnalytics, setAllFightersAnalytics] = useState<FighterAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const [league, fighters] = await Promise.all([
-        AnalyticsService.getLeagueAnalytics(),
+      const [club, fighters] = await Promise.all([
+        AnalyticsService.getClubAnalytics(),
         AnalyticsService.getAllFightersAnalytics(),
       ]);
-      setLeagueAnalytics(league);
+      setClubAnalytics(club);
       setAllFightersAnalytics(fighters);
     } catch (error) {
       console.error('Error loading analytics:', error);
@@ -56,14 +56,14 @@ const AdminAnalytics: React.FC = () => {
   useEffect(() => {
     const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
       console.log('Fight record changed - reloading admin analytics:', payload);
-      // Reload analytics when any fight record changes (affects league stats)
+      // Reload analytics when any fight record changes (affects club stats)
       loadAnalytics();
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
       console.log('Fighter profile changed - reloading admin analytics:', payload);
-      // Reload analytics when any fighter profile changes (affects league stats, tier distribution, etc.)
-      // Check if points, tier, or weight_class changed - these affect league analytics
+      // Reload analytics when any fighter profile changes (affects club stats, tier distribution, etc.)
+      // Check if points, tier, or weight_class changed - these affect club analytics
       const analyticsChange = 
         payload.old?.points !== payload.new?.points ||
         payload.old?.tier !== payload.new?.tier ||
@@ -93,7 +93,7 @@ const AdminAnalytics: React.FC = () => {
     );
   }
 
-  if (!leagueAnalytics) {
+  if (!clubAnalytics) {
     return <Alert severity="error">Failed to load analytics</Alert>;
   }
 
@@ -102,7 +102,7 @@ const AdminAnalytics: React.FC = () => {
       <CardContent>
         <Box display="flex" alignItems="center" mb={3}>
           <TrendingUp sx={{ mr: 1 }} />
-          <Typography variant="h6">League Analytics Dashboard</Typography>
+          <Typography variant="h6">Club Analytics Dashboard</Typography>
         </Box>
 
         {/* Overview Stats */}
@@ -114,7 +114,7 @@ const AdminAnalytics: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">Total Fighters</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold">
-                {leagueAnalytics.total_fighters}
+                {clubAnalytics.total_fighters}
               </Typography>
             </CardContent>
           </Card>
@@ -126,10 +126,10 @@ const AdminAnalytics: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">Active Fighters</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold" color="success.main">
-                {leagueAnalytics.active_fighters}
+                {clubAnalytics.active_fighters}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {leagueAnalytics.inactive_fighters} inactive
+                {clubAnalytics.inactive_fighters} inactive
               </Typography>
             </CardContent>
           </Card>
@@ -141,7 +141,7 @@ const AdminAnalytics: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">Total Matches</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold">
-                {leagueAnalytics.total_matches}
+                {clubAnalytics.total_matches}
               </Typography>
             </CardContent>
           </Card>
@@ -153,7 +153,7 @@ const AdminAnalytics: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">Total KOs</Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold" color="error.main">
-                {leagueAnalytics.total_knockouts}
+                {clubAnalytics.total_knockouts}
               </Typography>
             </CardContent>
           </Card>
@@ -169,12 +169,12 @@ const AdminAnalytics: React.FC = () => {
               <Box>
                 <Typography variant="body2" color="text.secondary">Overall Average</Typography>
                 <Typography variant="h5" fontWeight="bold">
-                  {leagueAnalytics.average_points.toFixed(2)}
+                  {clubAnalytics.average_points.toFixed(2)}
                 </Typography>
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">By Weight Class</Typography>
-                {Object.entries(leagueAnalytics.average_points_by_weight_class).slice(0, 3).map(([wc, avg]) => (
+                {Object.entries(clubAnalytics.average_points_by_weight_class).slice(0, 3).map(([wc, avg]) => (
                   <Typography key={wc} variant="body2">
                     {wc}: {avg.toFixed(2)}
                   </Typography>
@@ -182,7 +182,7 @@ const AdminAnalytics: React.FC = () => {
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">By Tier</Typography>
-                {Object.entries(leagueAnalytics.average_points_by_tier).map(([tier, avg]) => (
+                {Object.entries(clubAnalytics.average_points_by_tier).map(([tier, avg]) => (
                   <Typography key={tier} variant="body2">
                     {tier}: {avg.toFixed(2)}
                   </Typography>
@@ -199,7 +199,7 @@ const AdminAnalytics: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Fighters by Weight Class
               </Typography>
-              {Object.entries(leagueAnalytics.fighters_by_weight_class).map(([wc, count]) => (
+              {Object.entries(clubAnalytics.fighters_by_weight_class).map(([wc, count]) => (
                 <Box key={wc} display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Typography variant="body2">{wc}</Typography>
                   <Chip label={count} size="small" />
@@ -213,7 +213,7 @@ const AdminAnalytics: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Fighters by Tier
               </Typography>
-              {Object.entries(leagueAnalytics.fighters_by_tier).map(([tier, count]) => (
+              {Object.entries(clubAnalytics.fighters_by_tier).map(([tier, count]) => (
                 <Box key={tier} display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Typography variant="body2">{tier}</Typography>
                   <Chip label={count} size="small" color="primary" />
@@ -224,7 +224,7 @@ const AdminAnalytics: React.FC = () => {
         </Box>
 
         {/* Fighters with 3+ Consecutive Losses (Warning) */}
-        {leagueAnalytics.fighters_with_four_consecutive_losses.length > 0 && (
+        {clubAnalytics.fighters_with_four_consecutive_losses.length > 0 && (
           <Card variant="outlined" sx={{ mb: 3, borderColor: 'error.main' }}>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
@@ -246,7 +246,7 @@ const AdminAnalytics: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {leagueAnalytics.fighters_with_four_consecutive_losses.map((fighter) => (
+                    {clubAnalytics.fighters_with_four_consecutive_losses.map((fighter) => (
                       <TableRow key={fighter.fighter_id}>
                         <TableCell>{fighter.name}</TableCell>
                         <TableCell>{fighter.weight_class}</TableCell>

@@ -731,7 +731,7 @@ const DisputeManagement: React.FC = () => {
                       <MenuItem value="one_week_suspension" aria-label="One Week Suspension">One Week Suspension</MenuItem>
                       <MenuItem value="two_week_suspension" aria-label="Two Week Suspension">Two Week Suspension</MenuItem>
                       <MenuItem value="one_month_suspension" aria-label="One Month Suspension">One Month Suspension</MenuItem>
-                      <MenuItem value="banned_from_league" aria-label="Banned from League">Banned from League</MenuItem>
+                      <MenuItem value="banned_from_club" aria-label="Banned from Club">Banned from Club</MenuItem>
                       <MenuItem value="dispute_invalid" aria-label="Dispute Invalid">Dispute Invalid</MenuItem>
                       <MenuItem value="other" aria-label="Other">Other</MenuItem>
                     </Select>
@@ -787,7 +787,7 @@ const DisputeManagement: React.FC = () => {
                     {resolutionType === 'one_month_suspension' && 
                       'The opponent will be suspended for 30 days.'}
                     {resolutionType === 'banned_from_league' && 
-                      'The opponent will be permanently banned from the league.'}
+                      'The opponent will be permanently banned from the club.'}
                   </Alert>
                   <Button
                     variant="contained"

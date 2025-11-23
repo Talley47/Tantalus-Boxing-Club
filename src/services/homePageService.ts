@@ -145,7 +145,7 @@ export class HomePageService {
     }
   }
 
-  // Get scheduled fights (all fights in the league)
+  // Get scheduled fights (all fights in the club)
   // By default, only returns Scheduled fights, but can include Pending if needed
   static async getScheduledFights(limit: number = 50, includePending: boolean = false): Promise<ScheduledFight[]> {
     try {

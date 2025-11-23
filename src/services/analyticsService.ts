@@ -22,7 +22,7 @@ export interface FighterAnalytics {
   rank_overall: number;
 }
 
-export interface LeagueAnalytics {
+export interface ClubAnalytics {
   total_fighters: number;
   active_fighters: number;
   inactive_fighters: number;
@@ -242,8 +242,8 @@ export class AnalyticsService {
     }
   }
 
-  // Get league-wide analytics
-  static async getLeagueAnalytics(): Promise<LeagueAnalytics> {
+  // Get club-wide analytics
+  static async getClubAnalytics(): Promise<ClubAnalytics> {
     try {
       // Get all fighters (exclude admin accounts)
       const { data: fighters, error: fightersError } = await supabase
@@ -397,7 +397,7 @@ export class AnalyticsService {
         top_fighters: topFighters,
       };
     } catch (error) {
-      console.error('Error getting league analytics:', error);
+      console.error('Error getting club analytics:', error);
       return {
         total_fighters: 0,
         active_fighters: 0,

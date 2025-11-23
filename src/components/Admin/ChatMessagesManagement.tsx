@@ -70,7 +70,7 @@ const ChatMessagesManagement = ({ open, onClose }: ChatMessagesManagementProps) 
 
   const handleDeleteAll = () => {
     const confirmed = window.confirm(
-      `⚠️ WARNING: This will permanently delete ALL messages from the League Chat Room.\n\n` +
+      `⚠️ WARNING: This will permanently delete ALL messages from the Club Chat Room.\n\n` +
       `- Total Messages: ${stats.totalMessages}\n\n` +
       `This action CANNOT be undone. Are you sure you want to proceed?`
     );
@@ -95,13 +95,13 @@ const ChatMessagesManagement = ({ open, onClose }: ChatMessagesManagementProps) 
         <Box display="flex" alignItems="center" gap={1}>
           <Forum color="primary" />
           <Warning color="warning" />
-          Manage League Chat Room Messages
+          Manage Club Chat Room Messages
         </Box>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <Alert severity="info">
-            This section allows you to manage all messages in the League Chat Room.
+            This section allows you to manage all messages in the Club Chat Room.
           </Alert>
 
           <Card variant="outlined">
@@ -123,7 +123,7 @@ const ChatMessagesManagement = ({ open, onClose }: ChatMessagesManagementProps) 
             </Typography>
             <Box component="div">
               <Typography variant="body2" component="div">
-                This will permanently delete all messages from the League Chat Room, including:
+                This will permanently delete all messages from the Club Chat Room, including:
               </Typography>
               <ul style={{ marginTop: '8px', marginBottom: '8px', paddingLeft: '20px' }}>
                 <li>All text messages</li>

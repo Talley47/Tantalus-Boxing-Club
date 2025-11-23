@@ -161,6 +161,7 @@ const RulesGuidelines: React.FC = () => {
             { id: 'fight-scheduling-rules', text: 'Fight Scheduling Rules', icon: <Schedule /> },
             { id: 'demotion-promotion-system', text: 'Demotion and Promotion System', icon: <ArrowUpward /> },
             { id: 'simulation-standard', text: 'Simulation Virtual Boxing Standard (Undisputed)', icon: <Gavel /> },
+            { id: 'record-your-fights', text: 'Record Your Fights', icon: <Schedule /> },
             { id: 'code-of-conduct', text: 'Code of Conduct', icon: <Gavel /> },
             { id: 'general-guidelines', text: 'General Guidelines', icon: <People /> },
             { id: 'quick-reference', text: 'Appendix: Quick Reference', icon: <CheckCircle /> },
@@ -721,6 +722,268 @@ const RulesGuidelines: React.FC = () => {
             <ListItem><ListItemText primary="Appeals Panel: Commissioner + two neutral seniors; majority decision final." /></ListItem>
             <ListItem><ListItemText primary="Possible sanctions: point deductions, No Contest, suspensions, rank forfeits." /></ListItem>
           </List>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Record Your Fights */}
+      <Accordion expanded={expanded === 'record-your-fights'} onChange={handleChange('record-your-fights')} id="record-your-fights">
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Schedule color="primary" />
+            <Typography variant="h5" fontWeight="bold">Record Your Fights</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="h6" gutterBottom>Purpose</Typography>
+          <Typography variant="body1" paragraph>
+            To ensure fairness, transparency, and accurate scoring in all Tantalus Boxing Club events—including live events, ranked matches, and tournaments—all fighters are required to record their fights and submit their footage for review.
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>1. Mandatory Recording Requirements</Typography>
+          
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>1.1 All Fighters Must Record</Typography>
+          <Typography variant="body2" paragraph>
+            Every fighter must record every fight from start to finish.
+          </Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 2 }}>
+            Recordings are required for:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="Live events" /></ListItem>
+            <ListItem><ListItemText primary="Tournament fights" /></ListItem>
+            <ListItem><ListItemText primary="Ranked or league-sanctioned matches" /></ListItem>
+            <ListItem><ListItemText primary="Any match requested by an Admin" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>1.2 What Must Be Included in the Recording</Typography>
+          <List>
+            <ListItem><ListItemText primary="The full fight with no cuts or interruptions" /></ListItem>
+            <ListItem><ListItemText primary="Clear gameplay visuals" /></ListItem>
+            <ListItem><ListItemText primary="Game audio enabled" /></ListItem>
+            <ListItem><ListItemText primary="Microphone audio muted" /></ListItem>
+            <ListItem><ListItemText primary="Scorecard screenshot after the match (see Section 3)" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>2. Audio & Video Quality Standards</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 2 }}>
+            To ensure the Admins can properly review your fight:
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>2.1 Microphones Must Be Muted</Typography>
+          <List>
+            <ListItem><ListItemText primary="Personal microphone audio must be OFF during recording." /></ListItem>
+            <ListItem><ListItemText primary="No party chat, voice chat, or background conversation may be included." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>2.2 Game Audio Must Be ON</Typography>
+          <List>
+            <ListItem><ListItemText primary="Game sounds must be audible in the recording." /></ListItem>
+            <ListItem><ListItemText primary="Audio cannot be overly quiet, distorted, or drowned out by noise." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>2.3 Video Must Be Clear</Typography>
+          <List>
+            <ListItem><ListItemText primary="Minimum resolution: 720p" /></ListItem>
+            <ListItem><ListItemText primary="Recommended: 1080p or higher" /></ListItem>
+            <ListItem><ListItemText primary="Screen must be fully visible (no shaky phone recordings of a TV)." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>2.4 Audio Must Be Clear</Typography>
+          <List>
+            <ListItem><ListItemText primary="Game audio must be clean and clearly captured." /></ListItem>
+            <ListItem><ListItemText primary="No added commentary or music overlays." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>3. Fight Submission Requirements</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 2 }}>
+            To submit an official fight for review:
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>3.1 Upload the Fight Recording</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 1 }}>
+            Acceptable platforms:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="YouTube" /></ListItem>
+            <ListItem><ListItemText primary="Twitch" /></ListItem>
+            <ListItem><ListItemText primary="Facebook Gaming" /></ListItem>
+            <ListItem><ListItemText primary="Google Drive" /></ListItem>
+            <ListItem><ListItemText primary="OneDrive" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>3.2 Submit the Following to Admin</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 1, fontWeight: 'bold' }}>
+            You MUST send both:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="The fight URL/Web link" /></ListItem>
+            <ListItem><ListItemText primary="A screenshot of your final scorecard" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>3.3 Review & Approval</Typography>
+          <List>
+            <ListItem><ListItemText primary="Admins will review the video and scorecard." /></ListItem>
+            <ListItem><ListItemText primary="Submissions may be rejected if:" /></ListItem>
+          </List>
+          <Box sx={{ pl: 4, mb: 2 }}>
+            <List dense>
+              <ListItem><ListItemText primary="Video is missing or incomplete" /></ListItem>
+              <ListItem><ListItemText primary="Mic is not muted" /></ListItem>
+              <ListItem><ListItemText primary="Game audio is off" /></ListItem>
+              <ListItem><ListItemText primary="Video or audio is unclear" /></ListItem>
+              <ListItem><ListItemText primary="Scorecard screenshot is missing" /></ListItem>
+            </List>
+          </Box>
+          <Typography variant="body2" paragraph>
+            Only Admin-approved fights count as official results.
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>4. How to Record Your Video Game Screen</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 2 }}>
+            Below are platform-specific instructions for recording gameplay.
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>4.1 Recording on Xbox (Xbox One, Series S/X)</Typography>
+          
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>A. Start Recording</Typography>
+          <List>
+            <ListItem><ListItemText primary="Press the Xbox button." /></ListItem>
+            <ListItem><ListItemText primary="Go to Capture & Share." /></ListItem>
+            <ListItem><ListItemText primary="Select Start Recording." /></ListItem>
+            <ListItem><ListItemText primary="Make sure your mic is muted and game audio is enabled." /></ListItem>
+            <ListItem><ListItemText primary="Press the Xbox button and choose Stop Recording when finished." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>B. Upload the Recording</Typography>
+          <List>
+            <ListItem><ListItemText primary="Open Captures → select the clip → Share." /></ListItem>
+            <ListItem><ListItemText primary="Share to OneDrive (for PC upload), YouTube, or a connected account." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>C. For Twitch Streaming</Typography>
+          <List>
+            <ListItem><ListItemText primary="Install Twitch app on Xbox." /></ListItem>
+            <ListItem><ListItemText primary="Go to Broadcast." /></ListItem>
+            <ListItem><ListItemText primary="Turn Microphone Off." /></ListItem>
+            <ListItem><ListItemText primary="Start streaming—VODs save automatically if enabled." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>4.2 Recording on PlayStation (PS4 & PS5)</Typography>
+          
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>A. Prepare Settings</Typography>
+          <List>
+            <ListItem><ListItemText primary="Press the Create (PS5) or Share (PS4) button." /></ListItem>
+            <ListItem><ListItemText primary="Go to Capture Settings." /></ListItem>
+            <ListItem><ListItemText primary="Set quality to 1080p (recommended)." /></ListItem>
+            <ListItem><ListItemText primary="Ensure microphone audio is muted." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>B. Start Recording</Typography>
+          <List>
+            <ListItem><ListItemText primary="Press Create/Share." /></ListItem>
+            <ListItem><ListItemText primary="Select Start Recording." /></ListItem>
+            <ListItem><ListItemText primary="Play your fight." /></ListItem>
+            <ListItem><ListItemText primary="Press the button again → Stop Recording." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>C. Uploading</Typography>
+          <List>
+            <ListItem><ListItemText primary="Go to Media Gallery → choose clip → Share to:" /></ListItem>
+          </List>
+          <Box sx={{ pl: 4, mb: 2 }}>
+            <List dense>
+              <ListItem><ListItemText primary="YouTube" /></ListItem>
+              <ListItem><ListItemText primary="Twitter" /></ListItem>
+              <ListItem><ListItemText primary="USB for PC upload" /></ListItem>
+            </List>
+          </Box>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>D. Streaming on Twitch/YouTube</Typography>
+          <List>
+            <ListItem><ListItemText primary="Press Create/Share → Broadcast." /></ListItem>
+            <ListItem><ListItemText primary="Select Twitch/YouTube." /></ListItem>
+            <ListItem><ListItemText primary="Set mic to Mute." /></ListItem>
+            <ListItem><ListItemText primary="Start live streaming." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>4.3 Recording on PC</Typography>
+          
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>Option A: Windows Game Bar (Win 10/11)</Typography>
+          <List>
+            <ListItem><ListItemText primary="Press Windows + G." /></ListItem>
+            <ListItem><ListItemText primary="Select Capture widget." /></ListItem>
+            <ListItem><ListItemText primary="Mute microphone in capture settings." /></ListItem>
+            <ListItem><ListItemText primary="Click Start Recording." /></ListItem>
+            <ListItem><ListItemText primary="Press Win + Alt + R to stop." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>Option B: OBS Studio</Typography>
+          <List>
+            <ListItem><ListItemText primary="Install OBS Studio." /></ListItem>
+            <ListItem><ListItemText primary="Add Game Capture or Display Capture source." /></ListItem>
+            <ListItem><ListItemText primary="Mute Microphone/Aux." /></ListItem>
+            <ListItem><ListItemText primary="Keep Desktop Audio ON." /></ListItem>
+            <ListItem><ListItemText primary="Click Start Recording → Stop Recording when done." /></ListItem>
+          </List>
+
+          <Typography variant="body2" paragraph sx={{ mt: 2, fontWeight: 'bold' }}>Option C: Uploading</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 1 }}>
+            Upload the video to:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="YouTube" /></ListItem>
+            <ListItem><ListItemText primary="Twitch (as VOD)" /></ListItem>
+            <ListItem><ListItemText primary="Facebook Gaming" /></ListItem>
+            <ListItem><ListItemText primary="Google Drive" /></ListItem>
+            <ListItem><ListItemText primary="OneDrive" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>5. Posting & Saving on Twitch, Facebook, or YouTube</Typography>
+          
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>5.1 Twitch</Typography>
+          <List>
+            <ListItem><ListItemText primary="Enable Store Past Broadcasts (Settings → Stream → VOD Settings)." /></ListItem>
+            <ListItem><ListItemText primary="Videos appear under Video Producer for sharing." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>5.2 YouTube</Typography>
+          <List>
+            <ListItem><ListItemText primary="Upload your recorded file." /></ListItem>
+            <ListItem><ListItemText primary="Set visibility to Unlisted (recommended for Admin review)." /></ListItem>
+            <ListItem><ListItemText primary="Copy link & submit." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>5.3 Facebook Gaming</Typography>
+          <List>
+            <ListItem><ListItemText primary="Upload video via Create Post → Add Video." /></ListItem>
+            <ListItem><ListItemText primary="Ensure the video is fully processed before copying the link." /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>6. Policy Enforcement</Typography>
+          
+          <Typography variant="h6" gutterBottom sx={{ mt: 2, fontSize: '1.1rem' }}>6.1 Failure to Comply</Typography>
+          <Typography variant="body2" paragraph sx={{ mb: 1 }}>
+            A fighter may face:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="Fight invalidation" /></ListItem>
+            <ListItem><ListItemText primary="Disqualification" /></ListItem>
+            <ListItem><ListItemText primary="Removal from tournament brackets" /></ListItem>
+            <ListItem><ListItemText primary="Temporary or permanent club sanctions" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3, fontSize: '1.1rem' }}>6.2 Prohibited</Typography>
+          <List>
+            <ListItem><ListItemText primary="Edited or tampered footage" /></ListItem>
+            <ListItem><ListItemText primary="Intentional audio/video manipulation" /></ListItem>
+            <ListItem><ListItemText primary="Missing scorecard screenshots" /></ListItem>
+            <ListItem><ListItemText primary="Incomplete recordings" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>7. Acknowledgment</Typography>
+          <Typography variant="body1" paragraph>
+            By participating in any Tantalus Boxing Club event, all fighters agree to abide by this Recording Policy. Non-compliance may result in disciplinary action at Admin discretion.
+          </Typography>
         </AccordionDetails>
       </Accordion>
 

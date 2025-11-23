@@ -351,8 +351,13 @@ const FighterProfile: React.FC = () => {
       setLoadingBelts(true);
       const belts = await championshipBeltService.getBeltsByUserId(fighterProfile.user_id);
       setChampionshipBelts(belts);
-    } catch (error) {
-      console.error('Error loading championship belts:', error);
+    } catch (error: any) {
+      // Silently fail - championship belts are optional
+      // Only log if it's not a "table doesn't exist" error
+      if (error?.message && !error.message.includes('does not exist') && !error.message.includes('relation') && !error.message.includes('table')) {
+        console.warn('Error loading championship belts (non-critical):', error);
+      }
+      setChampionshipBelts([]);
     } finally {
       setLoadingBelts(false);
     }

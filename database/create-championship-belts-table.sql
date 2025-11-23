@@ -71,6 +71,10 @@ CREATE POLICY "Fighters can view their own belts"
     USING (auth.uid() = user_id);
 
 -- Add updated_at trigger
+-- Drop trigger if it exists
+DROP TRIGGER IF EXISTS update_championship_belts_updated_at ON public.championship_belts;
+
+-- Create or replace the function
 CREATE OR REPLACE FUNCTION update_championship_belts_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -79,6 +83,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Create the trigger
 CREATE TRIGGER update_championship_belts_updated_at
     BEFORE UPDATE ON public.championship_belts
     FOR EACH ROW

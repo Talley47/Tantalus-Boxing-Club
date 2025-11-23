@@ -495,25 +495,25 @@ const Rankings: React.FC = () => {
                                   </TableCell>
                                   <TableCell>
                                     <Chip
-                                      label={entry.tier}
+                                      label={entry.tier || 'Amateur'}
                                       size="small"
                                       sx={{
-                                        backgroundColor: getTierColor(entry.tier),
-                                        color: entry.tier === 'Elite' ? '#000' : '#fff',
+                                        backgroundColor: getTierColor(entry.tier || 'Amateur'),
+                                        color: (entry.tier || 'Amateur') === 'Elite' ? '#000' : '#fff',
                                         fontWeight: 'bold',
                                       }}
                                     />
                                   </TableCell>
                                   <TableCell>
                                     <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                      {entry.points}
+                                      {entry.points ?? 0}
                                     </Typography>
                                   </TableCell>
                                   <TableCell>
                                     <Typography variant="body2">
-                                      {entry.wins}-{entry.losses}-{entry.draws}
+                                      {entry.wins ?? 0}-{entry.losses ?? 0}-{entry.draws ?? 0}
                                     </Typography>
-                                    {entry.knockouts > 0 && (
+                                    {(entry.knockouts ?? 0) > 0 && (
                                       <Typography variant="caption" color="text.secondary">
                                         {entry.knockouts} KO
                                       </Typography>
@@ -521,11 +521,11 @@ const Rankings: React.FC = () => {
                                   </TableCell>
                                   <TableCell>
                                     <Typography variant="caption" display="block">
-                                      Win: {entry.win_percentage.toFixed(1)}%
+                                      Win: {((entry.win_percentage ?? 0)).toFixed(1)}%
                                     </Typography>
-                                    {entry.ko_percentage > 0 && (
+                                    {(entry.ko_percentage ?? 0) > 0 && (
                                       <Typography variant="caption" color="text.secondary" display="block">
-                                        KO: {entry.ko_percentage.toFixed(1)}%
+                                        KO: {(entry.ko_percentage ?? 0).toFixed(1)}%
                                       </Typography>
                                     )}
                                   </TableCell>
@@ -655,25 +655,25 @@ const Rankings: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={entry.tier}
+                            label={entry.tier || 'Amateur'}
                             size="small"
                             sx={{
-                              backgroundColor: getTierColor(entry.tier),
-                              color: entry.tier === 'Elite' ? '#000' : '#fff',
+                              backgroundColor: getTierColor(entry.tier || 'Amateur'),
+                              color: (entry.tier || 'Amateur') === 'Elite' ? '#000' : '#fff',
                               fontWeight: 'bold',
                             }}
                           />
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            {entry.points}
+                            {entry.points ?? 0}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
-                            {entry.wins}-{entry.losses}-{entry.draws}
+                            {entry.wins ?? 0}-{entry.losses ?? 0}-{entry.draws ?? 0}
                           </Typography>
-                          {entry.knockouts > 0 && (
+                          {(entry.knockouts ?? 0) > 0 && (
                             <Typography variant="caption" color="text.secondary">
                               {entry.knockouts} KO
                             </Typography>
@@ -681,11 +681,11 @@ const Rankings: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Typography variant="caption" display="block">
-                            Win: {entry.win_percentage.toFixed(1)}%
+                            Win: {((entry.win_percentage ?? 0)).toFixed(1)}%
                           </Typography>
-                          {entry.ko_percentage > 0 && (
+                          {(entry.ko_percentage ?? 0) > 0 && (
                             <Typography variant="caption" color="text.secondary" display="block">
-                              KO: {entry.ko_percentage.toFixed(1)}%
+                              KO: {(entry.ko_percentage ?? 0).toFixed(1)}%
                             </Typography>
                           )}
                         </TableCell>

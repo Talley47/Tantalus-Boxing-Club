@@ -217,19 +217,32 @@ async function calculateRankingsWithTiebreakers(
       }
     }
 
+    // Calculate win percentage if not set
+    const totalFights = (fighter.wins || 0) + (fighter.losses || 0) + (fighter.draws || 0);
+    const calculatedWinPercentage = totalFights > 0 
+      ? ((fighter.wins || 0) / totalFights) * 100 
+      : 0;
+    const winPercentage = fighter.win_percentage ?? calculatedWinPercentage;
+    
+    // Calculate KO percentage if not set
+    const calculatedKoPercentage = (fighter.wins || 0) > 0
+      ? ((fighter.knockouts || 0) / (fighter.wins || 0)) * 100
+      : 0;
+    const koPercentage = fighter.ko_percentage ?? calculatedKoPercentage;
+
     return {
       rank: 0, // Will be assigned after sorting
       fighter_id: fighter.user_id,
       name: fighter.name || 'Unknown',
       handle: fighter.handle || 'unknown',
-      tier: fighter.tier || 'Amateur',
-      points: fighter.points || 0,
-      wins: fighter.wins || 0,
-      losses: fighter.losses || 0,
-      draws: fighter.draws || 0,
-      knockouts: fighter.knockouts || 0,
-      win_percentage: fighter.win_percentage || 0,
-      ko_percentage: fighter.ko_percentage || 0,
+      tier: fighter.tier || getTierForPoints(fighter.points || 0), // Use calculated tier if not set
+      points: fighter.points ?? 0,
+      wins: fighter.wins ?? 0,
+      losses: fighter.losses ?? 0,
+      draws: fighter.draws ?? 0,
+      knockouts: fighter.knockouts ?? 0,
+      win_percentage: winPercentage,
+      ko_percentage: koPercentage,
       weight_class: fighter.weight_class || 'Unknown',
       recent_form: recentForm,
       head_to_head: headToHead,

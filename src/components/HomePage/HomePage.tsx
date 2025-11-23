@@ -648,27 +648,101 @@ const HomePage: React.FC = () => {
 
             {/* Top Fighters Tab */}
             <TabPanel value={tabValue} index={0}>
-              <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-                League Rankings - Top 30 Fighters
-              </Typography>
+              <Box sx={{ mb: 4 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom 
+                  sx={{ 
+                    fontWeight: 'bold',
+                    mb: 1,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  League Rankings
+                </Typography>
+                <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+                  Top 30 Fighters
+                </Typography>
+              </Box>
               {topFighters.length === 0 ? (
-                <Alert severity="info">
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
                   No fighters found. Register to join the league!
                 </Alert>
               ) : (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  {topFighters.map((fighter, index) => (
-                    <Box key={fighter.id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)', lg: '1 1 calc(25% - 12px)' }, minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)', lg: 'calc(25% - 12px)' } }}>
+                <Box sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: 'repeat(4, 1fr)',
+                    xl: 'repeat(5, 1fr)'
+                  },
+                  gap: 3,
+                }}>
+                  {topFighters.map((fighter, index) => {
+                    const isTopThree = index < 3;
+                    const rankMedals = ['🥇', '🥈', '🥉'];
+                    
+                    return (
                       <Card
+                        key={fighter.id}
                         sx={{
                           height: '100%',
-                          background: index < 3 
-                            ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
-                            : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                          border: index < 3 ? '2px solid #ffd700' : '1px solid #dee2e6'
+                          display: 'flex',
+                          flexDirection: 'column',
+                          background: isTopThree
+                            ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)'
+                            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                          border: isTopThree 
+                            ? '3px solid #ffd700' 
+                            : '1px solid rgba(0, 0, 0, 0.12)',
+                          borderRadius: 3,
+                          boxShadow: isTopThree
+                            ? '0 8px 24px rgba(255, 215, 0, 0.4)'
+                            : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: isTopThree
+                              ? '0 12px 32px rgba(255, 215, 0, 0.5)'
+                              : '0 4px 16px rgba(0, 0, 0, 0.15)',
+                          },
+                          position: 'relative',
+                          overflow: 'visible',
                         }}
                       >
-                        <CardContent>
+                        {/* Rank Badge */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -12,
+                            left: 16,
+                            zIndex: 2,
+                          }}
+                        >
+                          <Chip
+                            icon={isTopThree ? <span style={{ fontSize: '20px' }}>{rankMedals[index]}</span> : undefined}
+                            label={isTopThree ? `#${index + 1}` : `#${index + 1}`}
+                            sx={{
+                              height: isTopThree ? 36 : 32,
+                              fontWeight: 'bold',
+                              fontSize: isTopThree ? '0.95rem' : '0.875rem',
+                              background: isTopThree
+                                ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)'
+                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              color: 'white',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                              '& .MuiChip-label': {
+                                px: isTopThree ? 2 : 1.5,
+                              },
+                            }}
+                          />
+                        </Box>
+
+                        <CardContent sx={{ p: 2.5, pt: isTopThree ? 4 : 3.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                           {/* Creative Fighter Image */}
                           {fighter.creative_fighter_image_url && (
                             <Box 
@@ -676,7 +750,11 @@ const HomePage: React.FC = () => {
                                 mb: 2, 
                                 display: 'flex', 
                                 justifyContent: 'center',
-                                alignItems: 'center'
+                                alignItems: 'center',
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                bgcolor: 'rgba(0, 0, 0, 0.02)',
+                                p: 0.5,
                               }}
                             >
                               <Box
@@ -685,196 +763,158 @@ const HomePage: React.FC = () => {
                                 alt={`${fighter.name}'s Creative Fighter`}
                                 sx={{
                                   maxWidth: '100%',
-                                  maxHeight: '200px',
+                                  maxHeight: '180px',
                                   width: 'auto',
                                   height: 'auto',
-                                  border: '2px solid',
-                                  borderColor: index < 3 ? '#ffd700' : 'divider',
-                                  borderRadius: 2,
-                                  boxShadow: 2,
+                                  borderRadius: 1.5,
+                                  border: `2px solid ${isTopThree ? '#ffd700' : 'rgba(0, 0, 0, 0.1)'}`,
+                                  boxShadow: isTopThree ? '0 4px 12px rgba(255, 215, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                  objectFit: 'contain',
                                 }}
                               />
                             </Box>
                           )}
-                          <Box display="flex" alignItems="center" mb={2}>
-                            <Badge
-                              badgeContent={index + 1}
-                              color={index < 3 ? 'warning' : 'default'}
-                              sx={{ mr: 2 }}
+
+                          {/* Fighter Name and Handle */}
+                          <Box sx={{ mb: 2, textAlign: 'center' }}>
+                            <Typography 
+                              variant="h6" 
+                              sx={{ 
+                                fontWeight: 'bold',
+                                mb: 0.5,
+                                color: isTopThree ? '#1a1a1a' : 'text.primary',
+                                fontSize: '1.1rem',
+                                lineHeight: 1.2,
+                              }}
                             >
-                              <Avatar
-                                sx={{
-                                  width: 50,
-                                  height: 50,
-                                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)'
+                              {fighter.name}
+                            </Typography>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              @{fighter.handle}
+                            </Typography>
+                          </Box>
+
+                          {/* Stats Row */}
+                          <Box 
+                            sx={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              mb: 1.5,
+                              p: 1,
+                              borderRadius: 1.5,
+                              bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.02)',
+                            }}
+                          >
+                            <Box>
+                              <Typography variant="caption" sx={{ display: 'block', color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.7rem' }}>
+                                Points
+                              </Typography>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 'bold',
+                                  color: isTopThree ? '#1a1a1a' : 'primary.main',
+                                  fontSize: '1.25rem',
+                                  lineHeight: 1,
                                 }}
                               >
-                                {fighter.name.charAt(0)}
-                              </Avatar>
-                            </Badge>
-                            <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                {fighter.name}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                @{fighter.handle}
+                                {fighter.points}
                               </Typography>
                             </Box>
-                          </Box>
-                          <Box display="flex" justifyContent="space-between" mb={1}>
-                            <Typography variant="body2">
-                              <strong>{fighter.points}</strong> points
-                            </Typography>
                             <Chip 
                               label={fighter.tier} 
                               size="small" 
-                              color={fighter.tier === 'Diamond' ? 'primary' : 'default'}
+                              sx={{
+                                fontWeight: 'bold',
+                                bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.9)' : 'primary.main',
+                                color: isTopThree ? 'primary.main' : 'white',
+                                fontSize: '0.75rem',
+                                height: 24,
+                              }}
                             />
                           </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+
+                          {/* Record */}
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              mb: 2,
+                              textAlign: 'center',
+                              color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
+                              fontWeight: 500,
+                              fontSize: '0.875rem',
+                            }}
+                          >
                             {fighter.weight_class} • {fighter.wins}W-{fighter.losses}L-{fighter.draws}D
                           </Typography>
                           
-                          {/* Physical Information - Always Display (matches Fighter Profile format) */}
-                          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
-                              Physical Information
+                          {/* Physical Information */}
+                          <Box 
+                            sx={{ 
+                              mt: 'auto',
+                              pt: 2, 
+                              borderTop: `1px solid ${isTopThree ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.1)'}`,
+                            }}
+                          >
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                fontWeight: 'bold', 
+                                display: 'block', 
+                                mb: 1,
+                                color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                              }}
+                            >
+                              Physical Info
                             </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                              {/* Height - match Fighter Profile format exactly: {(fighterProfile as any).height_feet || 0}'{(fighterProfile as any).height_inches || 0}" */}
-                              <Typography variant="caption" color="text.secondary">
-                                <strong>Height:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
+                            <Box 
+                              sx={{ 
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: 0.75,
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
+                                <strong>H:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
                               </Typography>
-                              
-                              {/* Weight - match Fighter Profile format exactly: {fighterProfile.weight} lbs */}
-                              <Typography variant="caption" color="text.secondary">
-                                <strong>Weight:</strong> {fighter.weight || 0} lbs
+                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
+                                <strong>W:</strong> {fighter.weight || 0} lbs
                               </Typography>
-                              
-                              {/* Reach - match Fighter Profile format exactly: {fighterProfile.reach}" */}
-                              <Typography variant="caption" color="text.secondary">
-                                <strong>Reach:</strong> {fighter.reach || 0}"
+                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
+                                <strong>R:</strong> {fighter.reach || 0}"
                               </Typography>
-                              
-                              {/* Stance - match Fighter Profile format exactly: textTransform="capitalize" */}
-                              <Typography variant="caption" color="text.secondary">
-                                <strong>Stance:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'Not set'}
+                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
+                                <strong>S:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'N/A'}
                               </Typography>
-                              
-                              {/* Hometown - match Fighter Profile format exactly */}
-                              {fighter.hometown ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Hometown:</strong> {fighter.hometown}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Hometown:</strong> Not set
-                                </Typography>
-                              )}
-                              
-                              {/* Trainer - match Fighter Profile format exactly */}
-                              {fighter.trainer ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Trainer:</strong> {fighter.trainer}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Trainer:</strong> Not set
-                                </Typography>
-                              )}
-                              
-                              {/* Gym - match Fighter Profile format exactly */}
-                              {fighter.gym ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Gym:</strong> {fighter.gym}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Gym:</strong> Not set
-                                </Typography>
-                              )}
-                              
-                              {/* Platform - match Fighter Profile format exactly */}
-                              {fighter.platform ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Platform:</strong> {fighter.platform === 'PSN' ? 'PlayStation/PSN' : 
-                                                               fighter.platform === 'Xbox' ? 'Xbox' : 
-                                                               fighter.platform === 'PC' ? 'Steam/PC' : 
-                                                               fighter.platform}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Platform:</strong> Not set
-                                </Typography>
-                              )}
-                              
-                              {/* Timezone - match Fighter Profile format exactly */}
-                              {fighter.timezone ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Timezone:</strong> {getTimezoneLabel(fighter.timezone)}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Timezone:</strong> Not set
-                                </Typography>
-                              )}
-                              
-                              {/* Birthday - match Fighter Profile format exactly */}
-                              {fighter.birthday ? (
-                                <Typography variant="caption" color="text.secondary">
-                                  <strong>Birthday:</strong> {(() => {
-                                    try {
-                                      // Parse date string manually to avoid timezone issues
-                                      let dateStr: string;
-                                      if (typeof fighter.birthday === 'string') {
-                                        dateStr = fighter.birthday.split('T')[0];
-                                      } else if (fighter.birthday && typeof fighter.birthday === 'object' && 'toISOString' in fighter.birthday) {
-                                        // Handle Date object
-                                        dateStr = (fighter.birthday as Date).toISOString().split('T')[0];
-                                      } else {
-                                        dateStr = String(fighter.birthday || '');
-                                      }
-                                      
-                                      // Handle YYYY-MM-DD format
-                                      const parts = dateStr.split('-');
-                                      if (parts.length === 3) {
-                                        const year = parseInt(parts[0], 10);
-                                        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-                                        const day = parseInt(parts[2], 10);
-                                        const date = new Date(year, month, day);
-                                        
-                                        if (isNaN(date.getTime())) return 'Invalid date';
-                                        return date.toLocaleDateString('en-US', { 
-                                          year: 'numeric', 
-                                          month: 'long', 
-                                          day: 'numeric' 
-                                        });
-                                      }
-                                      
-                                      // Fallback to standard parsing
-                                      const date = new Date(dateStr);
-                                      if (isNaN(date.getTime())) return 'Invalid date';
-                                      return date.toLocaleDateString('en-US', { 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                      });
-                                    } catch {
-                                      return 'Invalid date';
-                                    }
-                                  })()}
-                                </Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">
-                                  <strong>Birthday:</strong> Not set
-                                </Typography>
-                              )}
                             </Box>
+                            {fighter.hometown && (
+                              <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                  display: 'block',
+                                  mt: 0.75,
+                                  color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                <strong>📍</strong> {fighter.hometown}
+                              </Typography>
+                            )}
                           </Box>
                         </CardContent>
                       </Card>
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Box>
               )}
             </TabPanel>

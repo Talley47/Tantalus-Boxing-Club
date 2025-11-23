@@ -676,15 +676,47 @@ const HomePage: React.FC = () => {
                   gridTemplateColumns: {
                     xs: '1fr',
                     sm: 'repeat(2, 1fr)',
-                    md: 'repeat(3, 1fr)',
-                    lg: 'repeat(4, 1fr)',
-                    xl: 'repeat(5, 1fr)'
+                    md: 'repeat(2, 1fr)',
+                    lg: 'repeat(3, 1fr)',
+                    xl: 'repeat(3, 1fr)'
                   },
                   gap: 3,
                 }}>
                   {topFighters.map((fighter, index) => {
                     const isTopThree = index < 3;
                     const rankMedals = ['🥇', '🥈', '🥉'];
+                    
+                    // Format birthday
+                    const formatBirthday = (birthday: string | undefined): string => {
+                      if (!birthday) return 'Not set';
+                      try {
+                        const dateStr = typeof birthday === 'string' 
+                          ? birthday.split('T')[0] 
+                          : String(birthday);
+                        const parts = dateStr.split('-');
+                        if (parts.length === 3) {
+                          const year = parseInt(parts[0], 10);
+                          const month = parseInt(parts[1], 10) - 1;
+                          const day = parseInt(parts[2], 10);
+                          const date = new Date(year, month, day);
+                          if (isNaN(date.getTime())) return 'Not set';
+                          return date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          });
+                        }
+                        const date = new Date(dateStr);
+                        if (isNaN(date.getTime())) return 'Not set';
+                        return date.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        });
+                      } catch {
+                        return 'Not set';
+                      }
+                    };
                     
                     return (
                       <Card
@@ -698,34 +730,75 @@ const HomePage: React.FC = () => {
                             : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
                           border: isTopThree 
                             ? '3px solid #ffd700' 
-                            : '1px solid rgba(0, 0, 0, 0.12)',
-                          borderRadius: 3,
+                            : '2px solid rgba(0, 0, 0, 0.15)',
+                          borderRadius: 4,
+                          // 3D Shadow Effect
                           boxShadow: isTopThree
-                            ? '0 8px 24px rgba(255, 215, 0, 0.4)'
-                            : '0 2px 8px rgba(0, 0, 0, 0.1)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: isTopThree
-                              ? '0 12px 32px rgba(255, 215, 0, 0.5)'
-                              : '0 4px 16px rgba(0, 0, 0, 0.15)',
-                          },
+                            ? `
+                              0 20px 60px rgba(255, 215, 0, 0.5),
+                              0 10px 30px rgba(255, 215, 0, 0.3),
+                              0 5px 15px rgba(255, 215, 0, 0.2),
+                              inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                              inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                            `
+                            : `
+                              0 15px 45px rgba(0, 0, 0, 0.2),
+                              0 8px 20px rgba(0, 0, 0, 0.15),
+                              0 3px 10px rgba(0, 0, 0, 0.1),
+                              inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                              inset 0 -1px 0 rgba(0, 0, 0, 0.05)
+                            `,
+                          transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                          transform: 'perspective(1000px) rotateX(0deg) translateZ(0)',
                           position: 'relative',
                           overflow: 'visible',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            borderRadius: 4,
+                            background: isTopThree
+                              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%)'
+                              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 1,
+                          },
+                          '&:hover': {
+                            transform: 'perspective(1000px) rotateX(-2deg) translateY(-8px) translateZ(20px)',
+                            boxShadow: isTopThree
+                              ? `
+                                0 30px 80px rgba(255, 215, 0, 0.6),
+                                0 15px 40px rgba(255, 215, 0, 0.4),
+                                0 8px 20px rgba(255, 215, 0, 0.3),
+                                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                                inset 0 -1px 0 rgba(0, 0, 0, 0.15)
+                              `
+                              : `
+                                0 25px 60px rgba(0, 0, 0, 0.3),
+                                0 12px 30px rgba(0, 0, 0, 0.2),
+                                0 5px 15px rgba(0, 0, 0, 0.15),
+                                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                                inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                              `,
+                          },
                         }}
                       >
-                        {/* Rank Badge */}
+                        {/* Rank Badge with 3D Effect */}
                         <Box
                           sx={{
                             position: 'absolute',
                             top: -12,
                             left: 16,
-                            zIndex: 2,
+                            zIndex: 3,
+                            transform: 'perspective(1000px) rotateX(5deg)',
                           }}
                         >
                           <Chip
                             icon={isTopThree ? <span style={{ fontSize: '20px' }}>{rankMedals[index]}</span> : undefined}
-                            label={isTopThree ? `#${index + 1}` : `#${index + 1}`}
+                            label={`#${index + 1}`}
                             sx={{
                               height: isTopThree ? 36 : 32,
                               fontWeight: 'bold',
@@ -734,7 +807,23 @@ const HomePage: React.FC = () => {
                                 ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)'
                                 : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                               color: 'white',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                              boxShadow: `
+                                0 8px 20px rgba(0, 0, 0, 0.4),
+                                0 4px 10px rgba(0, 0, 0, 0.3),
+                                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                                inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+                              `,
+                              border: '1px solid rgba(255, 255, 255, 0.2)',
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                transform: 'translateY(-2px) scale(1.05)',
+                                boxShadow: `
+                                  0 12px 30px rgba(0, 0, 0, 0.5),
+                                  0 6px 15px rgba(0, 0, 0, 0.4),
+                                  inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                                  inset 0 -1px 0 rgba(0, 0, 0, 0.3)
+                                `,
+                              },
                               '& .MuiChip-label': {
                                 px: isTopThree ? 2 : 1.5,
                               },
@@ -742,8 +831,16 @@ const HomePage: React.FC = () => {
                           />
                         </Box>
 
-                        <CardContent sx={{ p: 2.5, pt: isTopThree ? 4 : 3.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                          {/* Creative Fighter Image */}
+                        <CardContent sx={{ 
+                          p: 3, 
+                          pt: isTopThree ? 4.5 : 4, 
+                          flexGrow: 1, 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          position: 'relative',
+                          zIndex: 2,
+                        }}>
+                          {/* Creative Fighter Image with 3D Effect */}
                           {fighter.creative_fighter_image_url && (
                             <Box 
                               sx={{ 
@@ -752,9 +849,14 @@ const HomePage: React.FC = () => {
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 borderRadius: 2,
-                                overflow: 'hidden',
+                                overflow: 'visible',
                                 bgcolor: 'rgba(0, 0, 0, 0.02)',
-                                p: 0.5,
+                                p: 1,
+                                transform: 'perspective(1000px) rotateX(2deg)',
+                                transition: 'transform 0.3s ease',
+                                '&:hover': {
+                                  transform: 'perspective(1000px) rotateX(0deg) scale(1.02)',
+                                },
                               }}
                             >
                               <Box
@@ -763,13 +865,28 @@ const HomePage: React.FC = () => {
                                 alt={`${fighter.name}'s Creative Fighter`}
                                 sx={{
                                   maxWidth: '100%',
-                                  maxHeight: '180px',
+                                  maxHeight: '200px',
                                   width: 'auto',
                                   height: 'auto',
-                                  borderRadius: 1.5,
-                                  border: `2px solid ${isTopThree ? '#ffd700' : 'rgba(0, 0, 0, 0.1)'}`,
-                                  boxShadow: isTopThree ? '0 4px 12px rgba(255, 215, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                  borderRadius: 2,
+                                  border: `3px solid ${isTopThree ? '#ffd700' : 'rgba(0, 0, 0, 0.15)'}`,
+                                  boxShadow: isTopThree 
+                                    ? `
+                                      0 12px 30px rgba(255, 215, 0, 0.4),
+                                      0 6px 15px rgba(255, 215, 0, 0.3),
+                                      0 3px 8px rgba(255, 215, 0, 0.2),
+                                      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                                      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                                    `
+                                    : `
+                                      0 10px 25px rgba(0, 0, 0, 0.25),
+                                      0 5px 12px rgba(0, 0, 0, 0.15),
+                                      0 2px 6px rgba(0, 0, 0, 0.1),
+                                      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                                      inset 0 -1px 0 rgba(0, 0, 0, 0.05)
+                                    `,
                                   objectFit: 'contain',
+                                  transition: 'all 0.3s ease',
                                 }}
                               />
                             </Box>
@@ -783,7 +900,7 @@ const HomePage: React.FC = () => {
                                 fontWeight: 'bold',
                                 mb: 0.5,
                                 color: isTopThree ? '#1a1a1a' : 'text.primary',
-                                fontSize: '1.1rem',
+                                fontSize: '1.15rem',
                                 lineHeight: 1.2,
                               }}
                             >
@@ -793,7 +910,7 @@ const HomePage: React.FC = () => {
                               variant="body2" 
                               sx={{ 
                                 color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
-                                fontSize: '0.85rem',
+                                fontSize: '0.875rem',
                               }}
                             >
                               @{fighter.handle}
@@ -806,14 +923,14 @@ const HomePage: React.FC = () => {
                               display: 'flex', 
                               justifyContent: 'space-between', 
                               alignItems: 'center',
-                              mb: 1.5,
-                              p: 1,
+                              mb: 2,
+                              p: 1.5,
                               borderRadius: 1.5,
-                              bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.02)',
+                              bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.03)',
                             }}
                           >
                             <Box>
-                              <Typography variant="caption" sx={{ display: 'block', color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.7rem' }}>
+                              <Typography variant="caption" sx={{ display: 'block', color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.7rem', mb: 0.25 }}>
                                 Points
                               </Typography>
                               <Typography 
@@ -821,7 +938,7 @@ const HomePage: React.FC = () => {
                                 sx={{ 
                                   fontWeight: 'bold',
                                   color: isTopThree ? '#1a1a1a' : 'primary.main',
-                                  fontSize: '1.25rem',
+                                  fontSize: '1.3rem',
                                   lineHeight: 1,
                                 }}
                               >
@@ -833,10 +950,11 @@ const HomePage: React.FC = () => {
                               size="small" 
                               sx={{
                                 fontWeight: 'bold',
-                                bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.9)' : 'primary.main',
+                                bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.95)' : 'primary.main',
                                 color: isTopThree ? 'primary.main' : 'white',
-                                fontSize: '0.75rem',
-                                height: 24,
+                                fontSize: '0.8rem',
+                                height: 28,
+                                px: 1,
                               }}
                             />
                           </Box>
@@ -845,71 +963,88 @@ const HomePage: React.FC = () => {
                           <Typography 
                             variant="body2" 
                             sx={{ 
-                              mb: 2,
+                              mb: 2.5,
                               textAlign: 'center',
                               color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
                               fontWeight: 500,
-                              fontSize: '0.875rem',
+                              fontSize: '0.9rem',
                             }}
                           >
                             {fighter.weight_class} • {fighter.wins}W-{fighter.losses}L-{fighter.draws}D
                           </Typography>
                           
-                          {/* Physical Information */}
+                          {/* Physical Information - Complete */}
                           <Box 
                             sx={{ 
                               mt: 'auto',
                               pt: 2, 
-                              borderTop: `1px solid ${isTopThree ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.1)'}`,
+                              borderTop: `2px solid ${isTopThree ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.12)'}`,
                             }}
                           >
                             <Typography 
-                              variant="caption" 
+                              variant="subtitle2" 
                               sx={{ 
                                 fontWeight: 'bold', 
                                 display: 'block', 
-                                mb: 1,
-                                color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
-                                fontSize: '0.75rem',
+                                mb: 1.5,
+                                color: isTopThree ? 'rgba(0, 0, 0, 0.9)' : 'text.primary',
+                                fontSize: '0.85rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: 0.5,
                               }}
                             >
-                              Physical Info
+                              Physical Information
                             </Typography>
                             <Box 
                               sx={{ 
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
+                                display: 'flex',
+                                flexDirection: 'column',
                                 gap: 0.75,
                               }}
                             >
-                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
-                                <strong>H:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
+                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                <strong>Height:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
                               </Typography>
-                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
-                                <strong>W:</strong> {fighter.weight || 0} lbs
+                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                <strong>Weight:</strong> {fighter.weight || 0} lbs
                               </Typography>
-                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
-                                <strong>R:</strong> {fighter.reach || 0}"
+                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                <strong>Reach:</strong> {fighter.reach || 0}"
                               </Typography>
-                              <Typography variant="caption" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.75rem' }}>
-                                <strong>S:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'N/A'}
+                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                <strong>Stance:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'Not set'}
                               </Typography>
+                              {fighter.hometown && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Hometown:</strong> {fighter.hometown}
+                                </Typography>
+                              )}
+                              {fighter.trainer && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Trainer:</strong> {fighter.trainer}
+                                </Typography>
+                              )}
+                              {fighter.gym && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Gym:</strong> {fighter.gym}
+                                </Typography>
+                              )}
+                              {fighter.platform && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Platform:</strong> {fighter.platform === 'PSN' ? 'PlayStation/PSN' : fighter.platform === 'Xbox' ? 'Xbox' : fighter.platform === 'PC' ? 'Steam/PC' : fighter.platform}
+                                </Typography>
+                              )}
+                              {fighter.timezone && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Timezone:</strong> {getTimezoneLabel(fighter.timezone)}
+                                </Typography>
+                              )}
+                              {fighter.birthday && (
+                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                                  <strong>Birthday:</strong> {formatBirthday(fighter.birthday)}
+                                </Typography>
+                              )}
                             </Box>
-                            {fighter.hometown && (
-                              <Typography 
-                                variant="caption" 
-                                sx={{ 
-                                  display: 'block',
-                                  mt: 0.75,
-                                  color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
-                                  fontSize: '0.75rem',
-                                }}
-                              >
-                                <strong>📍</strong> {fighter.hometown}
-                              </Typography>
-                            )}
                           </Box>
                         </CardContent>
                       </Card>

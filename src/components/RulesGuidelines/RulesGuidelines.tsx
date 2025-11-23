@@ -64,9 +64,58 @@ const RulesGuidelines: React.FC = () => {
   }, []);
 
   return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+    <>
+      {/* Full-screen background layer */}
+      <Box
+        component="div"
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: { xs: 0, sm: '240px' },
+          right: 0,
+          bottom: 0,
+          width: { xs: '100%', sm: 'calc(100% - 240px)' },
+          height: '100vh',
+          backgroundImage: 'url("/AdobeStock_265779582.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          zIndex: -1,
+          display: 'block',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          },
+        }}
+      />
+      {/* Content layer */}
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          py: 4, 
+          position: 'relative', 
+          zIndex: 0,
+          '& .MuiAccordion-root': {
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            mb: 2,
+          },
+          '& .MuiPaper-root': {
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+          },
+        }}
+      >
         {/* Header */}
-        <Paper elevation={3} sx={{ p: 4, mb: 4, background: 'linear-gradient(135deg, #d32f2f 0%, #9a0007 100%)' }}>
+        <Paper elevation={3} sx={{ p: 4, mb: 4, background: 'linear-gradient(135deg, rgba(211, 47, 47, 0.95) 0%, rgba(154, 0, 7, 0.95) 100%)', backdropFilter: 'blur(10px)' }}>
         <Box display="flex" alignItems="center" gap={2} mb={2}>
           <Gavel sx={{ fontSize: 40, color: 'white' }} />
           <Box>
@@ -95,7 +144,7 @@ const RulesGuidelines: React.FC = () => {
       </Paper>
 
       {/* Table of Contents */}
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+      <Paper elevation={2} sx={{ p: 3, mb: 4, bgcolor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
         <Typography variant="h5" gutterBottom fontWeight="bold">
           Table of Contents
         </Typography>
@@ -783,12 +832,13 @@ const RulesGuidelines: React.FC = () => {
       </Accordion>
 
       {/* Footer */}
-      <Paper elevation={2} sx={{ p: 3, mt: 4, textAlign: 'center', bgcolor: 'background.default' }}>
+      <Paper elevation={2} sx={{ p: 3, mt: 4, textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}>
         <Typography variant="body2" color="text.secondary">
           For questions or clarifications, contact league administrators or check the News feed for updates.
         </Typography>
       </Paper>
-    </Container>
+      </Container>
+    </>
   );
 };
 

@@ -200,18 +200,31 @@ class ChampionshipBeltService {
    * Get all championship belts for a user (by user_id)
    */
   async getBeltsByUserId(userId: string): Promise<ChampionshipBelt[]> {
-    const { data, error } = await supabase
-      .from(this.TABLE_NAME)
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching championship belts:', error);
+      if (error) {
+        // If table doesn't exist, return empty array instead of throwing
+        if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('relation')) {
+          console.warn('Championship belts table does not exist yet. Run create-championship-belts-table.sql');
+          return [];
+        }
+        console.error('Error fetching championship belts:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error: any) {
+      // If it's a table doesn't exist error, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist') || error?.message?.includes('relation')) {
+        return [];
+      }
       throw error;
     }
-
-    return data || [];
   }
 
   /**
@@ -251,17 +264,34 @@ class ChampionshipBeltService {
    * Get all championship belts (admin use)
    */
   async getAllBelts(): Promise<ChampionshipBelt[]> {
-    const { data, error } = await supabase
-      .from(this.TABLE_NAME)
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching all championship belts:', error);
+      if (error) {
+        // If table doesn't exist, return empty array (feature not set up yet)
+        if (error.message?.includes('does not exist') || 
+            error.message?.includes('relation') || 
+            error.code === '42P01') {
+          console.warn('Championship belts table does not exist yet. Run create-championship-belts-table.sql');
+          return [];
+        }
+        console.error('Error fetching all championship belts:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error: any) {
+      // If table doesn't exist, return empty array (feature not set up yet)
+      if (error?.message?.includes('does not exist') || 
+          error?.message?.includes('relation') || 
+          error?.code === '42P01') {
+        return [];
+      }
       throw error;
     }
-
-    return data || [];
   }
 
   /**

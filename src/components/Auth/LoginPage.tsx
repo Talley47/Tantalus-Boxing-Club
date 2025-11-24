@@ -35,6 +35,14 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if signIn function exists
+    if (!signIn) {
+      console.error('signIn function is not available from useAuth');
+      setError('Authentication service is not available. Please refresh the page.');
+      return;
+    }
+    
     setLoading(true);
     setError('');
 
@@ -52,7 +60,9 @@ const LoginPage: React.FC = () => {
     }
 
     try {
+      console.log('Attempting to sign in...');
       await signIn(email.trim(), password);
+      console.log('Sign in successful, navigating...');
       navigate('/');
     } catch (err: any) {
       // Don't log "Invalid login credentials" as an error - it's expected and user-friendly
@@ -190,8 +200,18 @@ const LoginPage: React.FC = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
+              disabled={loading || !email.trim() || !password.trim()}
               startIcon={<LoginIcon />}
+              onClick={(e) => {
+                // Ensure form submission works even if there are issues
+                if (!email.trim() || !password.trim()) {
+                  e.preventDefault();
+                  setError('Please enter both email and password');
+                  return;
+                }
+                // Let the form handle submission normally
+                console.log('Sign In button clicked', { hasEmail: !!email.trim(), hasPassword: !!password.trim() });
+              }}
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>

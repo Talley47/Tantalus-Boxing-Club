@@ -67,8 +67,14 @@ const ChampionshipBeltManagement: React.FC<ChampionshipBeltManagementProps> = ({
   // Load fighters when dialog opens
   useEffect(() => {
     if (open) {
-      loadFighters();
-      loadAllBelts();
+      loadFighters().catch(err => {
+        console.error('Error loading fighters in ChampionshipBeltManagement:', err);
+        setError('Failed to load fighters. Please try again.');
+      });
+      loadAllBelts().catch(err => {
+        console.error('Error loading belts in ChampionshipBeltManagement:', err);
+        // Don't show error for belts - it's okay if this fails
+      });
     }
   }, [open]);
 

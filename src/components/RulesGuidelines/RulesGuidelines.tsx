@@ -124,7 +124,7 @@ const RulesGuidelines: React.FC = () => {
               Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
-              Official Rules & Guidelines (v1.1)
+              Official Rules & Guidelines (v1.1.1)
             </Typography>
           </Box>
         </Box>
@@ -409,10 +409,13 @@ const RulesGuidelines: React.FC = () => {
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>Versioning & Changelog</Typography>
           <Typography variant="body2" paragraph>
-            <strong>v1.1 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), and comprehensive feature documentation.
+            <strong>v1.1.1 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
           </Typography>
           <Typography variant="body2" paragraph>
-            <strong>v1.0 (2025‑11‑16):</strong> Initial TBC‑CFL consolidation: tiers, points, rankings, matchmaking, tournaments, camps, callouts, scheduling, promotion/demotion, sim standard, conduct, and quick reference.
+            <strong>v1.1.0 (2025-01-XX):</strong> Creative Fighter images, enhanced rankings display, fight URL and scorecard submissions, real-time updates, and visual improvements.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            <strong>v1.0.0 (2025‑11‑16):</strong> Initial TBC‑CFL consolidation: tiers, points, rankings, matchmaking, tournaments, camps, callouts, scheduling, promotion/demotion, sim standard, conduct, and quick reference.
           </Typography>
         </AccordionDetails>
       </Accordion>

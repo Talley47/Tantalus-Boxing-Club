@@ -35,6 +35,7 @@ import {
   ArrowDownward,
   CheckCircle,
   Cancel,
+  WorkspacePremium,
 } from '@mui/icons-material';
 
 const RulesGuidelines: React.FC = () => {
@@ -123,13 +124,13 @@ const RulesGuidelines: React.FC = () => {
               Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
-              Official Rules & Guidelines (v1.0)
+              Official Rules & Guidelines (v1.1)
             </Typography>
           </Box>
         </Box>
         <Box display="flex" gap={3} flexWrap="wrap" mt={2}>
           <Chip 
-            label={`Last Updated: November 16, 2025`} 
+            label={`Last Updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`} 
             sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} 
           />
           <Chip 
@@ -152,6 +153,7 @@ const RulesGuidelines: React.FC = () => {
           {[
             { id: 'introduction', text: 'Introduction', icon: <People /> },
             { id: 'quick-reference', text: 'Appendix: Quick Reference', icon: <CheckCircle /> },
+            { id: 'boxing-sanctions', text: 'Boxing Sanctions System', icon: <WorkspacePremium /> },
             { id: 'callout-rematch-system', text: 'Callout/Rematch System', icon: <SportsMma /> },
             { id: 'code-of-conduct', text: 'Code of Conduct', icon: <Gavel /> },
             { id: 'demotion-promotion-system', text: 'Demotion and Promotion System', icon: <ArrowUpward /> },
@@ -230,6 +232,137 @@ const RulesGuidelines: React.FC = () => {
         </AccordionDetails>
       </Accordion>
 
+      {/* Boxing Sanctions System */}
+      <Accordion expanded={expanded === 'boxing-sanctions'} onChange={handleChange('boxing-sanctions')} id="boxing-sanctions">
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <WorkspacePremium color="primary" />
+            <Typography variant="h5" fontWeight="bold">Boxing Sanctions System</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body1" paragraph>
+            Fighters can now join <strong>Boxing Sanctions</strong>—governing bodies that oversee different aspects of competitive boxing. Each sanction maintains its own rankings, and fighters compete for position within their chosen sanctions.
+          </Typography>
+          
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Available Sanctions</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="TBCA - Tantalus Boxing Club Amateur Association"
+                secondary="Governing amateur bouts and club-level competitions under Tantalus rules."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="TBA - Tantalus Boxing Association"
+                secondary="Oversees regional events and standardized amateur rankings."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="TBO - Tantalus Boxing Organization"
+                secondary="Professional-level sanctioning body for title fights and promotions."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="TBF - Tantalus Boxing Federation"
+                secondary="International liaison for cross-federation events and regulations."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="TBC - Tantalus Boxing Council"
+                secondary="Advisory council for rules, safety standards, and judging criteria."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="TRM - Tantalus Ring Magazine"
+                secondary="Official rankings, features, and coverage of Tantalus-sanctioned bouts."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>How to Join</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="1. Navigate to Home Page → Boxing Sanctions tab"
+                secondary="View all available sanctions and their descriptions."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Click 'Join' on any sanction card"
+                secondary="You can join multiple sanctions simultaneously."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="3. View your ranking"
+                secondary="Click 'View Fighters' to see all members ranked within that sanction."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. Leave anytime"
+                secondary="You can leave a sanction at any time if you no longer wish to participate."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Sanction Rankings</Typography>
+          <Typography variant="body2" paragraph>
+            Fighters within each sanction are ranked based on the following criteria (in priority order):
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="1. Total Points (Primary)"
+                secondary="Higher points = better rank"
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Tier (Secondary)"
+                secondary="Elite > Contender > Pro > Semi-Pro > Amateur"
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="3. Demotions (Tertiary)"
+                secondary="Fewer demotions = better rank"
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. Wins (Quaternary)"
+                secondary="More wins = better rank"
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Ranking Display</Typography>
+          <Typography variant="body2" paragraph>
+            When viewing fighters in a sanction, you'll see:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="Rank (#1, #2, etc.) - #1 ranked fighter highlighted in gold" /></ListItem>
+            <ListItem><ListItemText primary="Fighter name and handle" /></ListItem>
+            <ListItem><ListItemText primary="Tier (color-coded chips)" /></ListItem>
+            <ListItem><ListItemText primary="Total points" /></ListItem>
+            <ListItem><ListItemText primary="Win-Loss-Draw record" /></ListItem>
+            <ListItem><ListItemText primary="Number of demotions" /></ListItem>
+          </List>
+
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <strong>Note:</strong> Rankings update in real-time as fighters compete. You can join multiple sanctions to compete across different governing bodies. Each sanction maintains independent rankings.
+          </Alert>
+        </AccordionDetails>
+      </Accordion>
+
       {/* Appendix: Quick Reference */}
       <Accordion expanded={expanded === 'quick-reference'} onChange={handleChange('quick-reference')} id="quick-reference">
         <AccordionSummary expandIcon={<ExpandMore />}>
@@ -244,7 +377,7 @@ const RulesGuidelines: React.FC = () => {
               <TableBody>
                 <TableRow>
                   <TableCell><strong>Point Values</strong></TableCell>
-                  <TableCell>Win +5 | KO/TKO +8 | Loss −3 | Draw 0</TableCell>
+                  <TableCell>Win +5 | KO/TKO +8 | Loss −2 | Draw 0</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Tier Thresholds</strong></TableCell>
@@ -256,7 +389,11 @@ const RulesGuidelines: React.FC = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Demotion</strong></TableCell>
-                  <TableCell>4 consecutive losses → drop 1 tier | Re‑promotion: 5 consecutive wins</TableCell>
+                  <TableCell>5 consecutive losses → drop 1 tier | Re‑promotion: 5 consecutive wins</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>Boxing Sanctions</strong></TableCell>
+                  <TableCell>Join any of 6 active sanctions | Ranked by points, tier, demotions, wins</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Scheduling</strong></TableCell>
@@ -271,6 +408,9 @@ const RulesGuidelines: React.FC = () => {
           </TableContainer>
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>Versioning & Changelog</Typography>
+          <Typography variant="body2" paragraph>
+            <strong>v1.1 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), and comprehensive feature documentation.
+          </Typography>
           <Typography variant="body2" paragraph>
             <strong>v1.0 (2025‑11‑16):</strong> Initial TBC‑CFL consolidation: tiers, points, rankings, matchmaking, tournaments, camps, callouts, scheduling, promotion/demotion, sim standard, conduct, and quick reference.
           </Typography>
@@ -356,9 +496,9 @@ const RulesGuidelines: React.FC = () => {
           <List>
             <ListItem>
               <Cancel color="error" sx={{ mr: 1 }} />
-              <ListItemText primary="4 straight losses → demoted one tier." />
+              <ListItemText primary="5 straight losses → demoted one tier." />
             </ListItem>
-            <ListItem><ListItemText primary="Demotion is immediate after the 4th loss." /></ListItem>
+            <ListItem><ListItemText primary="Demotion is immediate after the 5th loss." /></ListItem>
             <ListItem><ListItemText primary="You keep your points but move to the lower tier." /></ListItem>
           </List>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Promotion After Demotion:</Typography>
@@ -534,7 +674,7 @@ const RulesGuidelines: React.FC = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Loss</strong></TableCell>
-                  <TableCell>−3</TableCell>
+                  <TableCell>−2</TableCell>
                   <TableCell>Deduction for defeat</TableCell>
                 </TableRow>
                 <TableRow>

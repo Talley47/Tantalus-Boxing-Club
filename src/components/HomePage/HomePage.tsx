@@ -65,6 +65,13 @@ import { fighterSanctionService, SanctionFighter } from '../../services/fighterS
 import homePageBackground from '../../FB cover Undisputed.png';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
+// Import sanction images
+import tbcaImage from '../../TBCA Tantalus Boxing Club Amateur Association.png';
+import tbfImage from '../../TBF Tantalus Boxing Federation.png';
+import tbaImage from '../../TBA Tantalus Boxing Association.png';
+import tboImage from '../../TBO Tantalus Boxing Organization.png';
+import tbcImage from '../../TBC Tantalus Boxing Council.png';
+import trmImage from '../../TRM Tantalus Ring Magazine.png';
 
 // Debug log
 console.log('HomePage background image path:', homePageBackground);
@@ -1683,6 +1690,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'Governing amateur bouts and club-level competitions under Tantalus rules.',
+                      image: tbcaImage,
                     },
                     {
                       acronym: 'TBA',
@@ -1691,6 +1699,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'Oversees regional events and standardized amateur rankings.',
+                      image: tbaImage,
                     },
                     {
                       acronym: 'TBO',
@@ -1699,6 +1708,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'Professional-level sanctioning body for title fights and promotions.',
+                      image: tboImage,
                     },
                     {
                       acronym: 'TBF',
@@ -1707,6 +1717,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'International liaison for cross-federation events and regulations.',
+                      image: tbfImage,
                     },
                     {
                       acronym: 'TBC',
@@ -1715,6 +1726,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'Advisory council for rules, safety standards, and judging criteria.',
+                      image: tbcImage,
                     },
                     {
                       acronym: 'TRM',
@@ -1723,6 +1735,7 @@ const HomePage: React.FC = () => {
                       status: 'Active',
                       statusColor: '#22c55e',
                       description: 'Official rankings, features, and coverage of Tantalus-sanctioned bouts.',
+                      image: trmImage,
                     },
                   ]
                     .filter((sanction) => {
@@ -1781,6 +1794,32 @@ const HomePage: React.FC = () => {
                             }}
                           />
                         </Box>
+                        {sanction.image && (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              maxHeight: '120px',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              mb: 1,
+                              borderRadius: 1,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={sanction.image}
+                              alt={sanction.name}
+                              sx={{
+                                width: '100%',
+                                height: 'auto',
+                                maxHeight: '120px',
+                                objectFit: 'contain',
+                              }}
+                            />
+                          </Box>
+                        )}
                         <Typography
                           variant="h6"
                           sx={{

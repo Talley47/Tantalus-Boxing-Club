@@ -21,6 +21,18 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
 } from '@mui/material';
 import {
   EmojiEvents,
@@ -48,6 +60,7 @@ import { supabase } from '../../services/supabase';
 import NotificationBell from '../Shared/NotificationBell';
 import EmojiReactions from '../News/EmojiReactions';
 import { getTimezoneLabel } from '../../utils/timezones';
+import { fighterSanctionService, SanctionFighter } from '../../services/fighterSanctionService';
 // Import FB cover Undisputed.png directly from src folder
 import homePageBackground from '../../FB cover Undisputed.png';
 // Import Logo1.png
@@ -262,6 +275,11 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sanctionSearch, setSanctionSearch] = useState('');
   const [sanctionTypeFilter, setSanctionTypeFilter] = useState<string>('');
+  const [selectedSanction, setSelectedSanction] = useState<string | null>(null);
+  const [sanctionFighters, setSanctionFighters] = useState<SanctionFighter[]>([]);
+  const [loadingFighters, setLoadingFighters] = useState(false);
+  const [joinedSanctions, setJoinedSanctions] = useState<Set<string>>(new Set());
+  const [joiningSanction, setJoiningSanction] = useState<string | null>(null);
 
   const loadDashboardData = async () => {
     try {
@@ -438,6 +456,101 @@ const HomePage: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  // Load joined sanctions for current user
+  useEffect(() => {
+    const loadJoinedSanctions = async () => {
+      if (fighterProfile?.user_id) {
+        try {
+          const sanctions = await fighterSanctionService.getSanctionsByFighter(fighterProfile.user_id);
+          setJoinedSanctions(new Set(sanctions));
+        } catch (error) {
+          console.error('Error loading joined sanctions:', error);
+        }
+      }
+    };
+
+    if (tabValue === 5) { // Boxing Sanctions tab
+      loadJoinedSanctions();
+    }
+  }, [fighterProfile?.user_id, tabValue]);
+
+  // Handle joining a sanction
+  const handleJoinSanction = async (sanctionAcronym: string) => {
+    if (!fighterProfile?.user_id) {
+      setError('You must be logged in to join a sanction');
+      return;
+    }
+
+    setJoiningSanction(sanctionAcronym);
+    try {
+      await fighterSanctionService.joinSanction(sanctionAcronym, fighterProfile.user_id);
+      setJoinedSanctions(prev => {
+        const newSet = new Set(prev);
+        newSet.add(sanctionAcronym);
+        return newSet;
+      });
+      // Refresh fighters if dialog is open
+      if (selectedSanction === sanctionAcronym) {
+        await loadSanctionFighters(sanctionAcronym);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to join sanction');
+    } finally {
+      setJoiningSanction(null);
+    }
+  };
+
+  // Handle leaving a sanction
+  const handleLeaveSanction = async (sanctionAcronym: string) => {
+    if (!fighterProfile?.user_id) {
+      return;
+    }
+
+    setJoiningSanction(sanctionAcronym);
+    try {
+      await fighterSanctionService.leaveSanction(sanctionAcronym, fighterProfile.user_id);
+      setJoinedSanctions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sanctionAcronym);
+        return newSet;
+      });
+      // Refresh fighters if dialog is open
+      if (selectedSanction === sanctionAcronym) {
+        await loadSanctionFighters(sanctionAcronym);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to leave sanction');
+    } finally {
+      setJoiningSanction(null);
+    }
+  };
+
+  // Load fighters for a sanction
+  const loadSanctionFighters = async (sanctionAcronym: string) => {
+    setLoadingFighters(true);
+    try {
+      const fighters = await fighterSanctionService.getFightersBySanction(sanctionAcronym);
+      setSanctionFighters(fighters);
+    } catch (error: any) {
+      console.error('Error loading sanction fighters:', error);
+      setError(error.message || 'Failed to load fighters');
+    } finally {
+      setLoadingFighters(false);
+    }
+  };
+
+  // Handle opening sanction details dialog
+  const handleViewSanction = async (sanctionAcronym: string) => {
+    setSelectedSanction(sanctionAcronym);
+    await loadSanctionFighters(sanctionAcronym);
+  };
+
+  // Handle closing dialog
+  const handleCloseDialog = () => {
+    setSelectedSanction(null);
+    setSanctionFighters([]);
   };
 
   const formatDate = (dateString: string) => {
@@ -1575,8 +1688,8 @@ const HomePage: React.FC = () => {
                       acronym: 'TBA',
                       name: 'Tantalus Boxing Association',
                       type: 'Association',
-                      status: 'Pending',
-                      statusColor: '#eab308',
+                      status: 'Active',
+                      statusColor: '#22c55e',
                       description: 'Oversees regional events and standardized amateur rankings.',
                     },
                     {
@@ -1591,8 +1704,8 @@ const HomePage: React.FC = () => {
                       acronym: 'TBF',
                       name: 'Tantalus Boxing Federation',
                       type: 'Federation',
-                      status: 'Not Affiliated',
-                      statusColor: '#6b7280',
+                      status: 'Active',
+                      statusColor: '#22c55e',
                       description: 'International liaison for cross-federation events and regulations.',
                     },
                     {
@@ -1607,8 +1720,8 @@ const HomePage: React.FC = () => {
                       acronym: 'TRM',
                       name: 'Tantalus Ring Magazine',
                       type: 'Magazine',
-                      status: 'Media Partner',
-                      statusColor: '#38bdf8',
+                      status: 'Active',
+                      statusColor: '#22c55e',
                       description: 'Official rankings, features, and coverage of Tantalus-sanctioned bouts.',
                     },
                   ]
@@ -1698,34 +1811,195 @@ const HomePage: React.FC = () => {
                         >
                           {sanction.description}
                         </Typography>
-                        <Button
-                          variant="contained"
-                          sx={{
-                            mt: 'auto',
-                            alignSelf: 'flex-start',
-                            borderRadius: '999px',
-                            backgroundColor: '#ff4b4b',
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                            px: 1.75,
-                            py: 1,
-                            '&:hover': {
-                              backgroundColor: '#ff6666',
-                              filter: 'brightness(1.1)',
-                            },
-                          }}
-                        >
-                          View Details
-                        </Button>
+                        <Box display="flex" gap={1} mt="auto">
+                          {joinedSanctions.has(sanction.acronym) ? (
+                            <>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleViewSanction(sanction.acronym)}
+                                sx={{
+                                  borderRadius: '999px',
+                                  borderColor: '#ff4b4b',
+                                  color: '#ff4b4b',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.08em',
+                                  textTransform: 'uppercase',
+                                  px: 1.75,
+                                  py: 1,
+                                  '&:hover': {
+                                    borderColor: '#ff6666',
+                                    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                  },
+                                }}
+                              >
+                                View Fighters
+                              </Button>
+                              <Button
+                                variant="contained"
+                                onClick={() => handleLeaveSanction(sanction.acronym)}
+                                disabled={joiningSanction === sanction.acronym}
+                                sx={{
+                                  borderRadius: '999px',
+                                  backgroundColor: '#6b7280',
+                                  color: '#fff',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.08em',
+                                  textTransform: 'uppercase',
+                                  px: 1.75,
+                                  py: 1,
+                                  '&:hover': {
+                                    backgroundColor: '#9ca3af',
+                                  },
+                                }}
+                              >
+                                {joiningSanction === sanction.acronym ? 'Leaving...' : 'Leave'}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              onClick={() => handleJoinSanction(sanction.acronym)}
+                              disabled={joiningSanction === sanction.acronym || !fighterProfile?.user_id}
+                              sx={{
+                                borderRadius: '999px',
+                                backgroundColor: '#ff4b4b',
+                                color: '#fff',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                px: 1.75,
+                                py: 1,
+                                '&:hover': {
+                                  backgroundColor: '#ff6666',
+                                  filter: 'brightness(1.1)',
+                                },
+                              }}
+                            >
+                              {joiningSanction === sanction.acronym ? 'Joining...' : 'Join'}
+                            </Button>
+                          )}
+                        </Box>
                       </Card>
                     ))}
                 </Box>
               </Box>
             </TabPanel>
           </Card>
+
+          {/* Sanction Fighters Dialog */}
+          <Dialog
+            open={selectedSanction !== null}
+            onClose={handleCloseDialog}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                  {selectedSanction && [
+                    { acronym: 'TBCA', name: 'Tantalus Boxing Club Amateur Association' },
+                    { acronym: 'TBA', name: 'Tantalus Boxing Association' },
+                    { acronym: 'TBO', name: 'Tantalus Boxing Organization' },
+                    { acronym: 'TBF', name: 'Tantalus Boxing Federation' },
+                    { acronym: 'TBC', name: 'Tantalus Boxing Council' },
+                    { acronym: 'TRM', name: 'Tantalus Ring Magazine' },
+                  ].find(s => s.acronym === selectedSanction)?.name}
+                </Typography>
+                <Chip
+                  label={`${sanctionFighters.length} Fighter${sanctionFighters.length !== 1 ? 's' : ''}`}
+                  size="small"
+                  color="primary"
+                />
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              {loadingFighters ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress />
+                </Box>
+              ) : sanctionFighters.length === 0 ? (
+                <Alert severity="info">
+                  No fighters have joined this sanction yet.
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Rank</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Fighter</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Tier</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }} align="right">Points</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }} align="right">Record</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }} align="right">Demotions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sanctionFighters.map((fighter) => (
+                        <TableRow
+                          key={fighter.id}
+                          sx={{
+                            '&:hover': { backgroundColor: 'action.hover' },
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => navigate(`/fighter/${fighter.user_id}`)}
+                        >
+                          <TableCell>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: fighter.rank === 1 ? '#ffd700' : 'inherit' }}>
+                              #{fighter.rank}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                {fighter.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                @{fighter.handle}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={fighter.tier}
+                              size="small"
+                              color={
+                                fighter.tier === 'Elite' ? 'error' :
+                                fighter.tier === 'Contender' ? 'warning' :
+                                fighter.tier === 'Pro' ? 'info' :
+                                fighter.tier === 'Semi-Pro' ? 'success' : 'default'
+                              }
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {fighter.points}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2">
+                              {fighter.wins}-{fighter.losses}-{fighter.draws}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" color={(fighter.demotions || 0) > 0 ? 'error' : 'text.secondary'}>
+                              {fighter.demotions || 0}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Close</Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Container>
     </>

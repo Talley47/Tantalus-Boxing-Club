@@ -5,7 +5,7 @@ export type GoverningBody =
   | 'TBA_ASSOCIATION'  // TBA Tantalus Boxing Association
   | 'TBC_COUNCIL'      // TBC Tantalus Boxing Council
   | 'TBF_FEDERATION'   // TBF Tantalus Boxing Federation
-  | 'TBO_WORLD'        // TBO Tantalus World Boxing Organization
+  | 'TBO_WORLD'        // TBO Tantalus Boxing Organization
   | 'RING_MAGAZINE';   // Tantalus Ring Magazine
 
 export interface ChampionshipBelt {
@@ -31,7 +31,7 @@ export const GOVERNING_BODY_LABELS: Record<GoverningBody, string> = {
   TBA_ASSOCIATION: 'TBA Tantalus Boxing Association',
   TBC_COUNCIL: 'TBC Tantalus Boxing Council',
   TBF_FEDERATION: 'TBF Tantalus Boxing Federation',
-  TBO_WORLD: 'TBO Tantalus World Boxing Organization',
+  TBO_WORLD: 'TBO Tantalus Boxing Organization',
   RING_MAGAZINE: 'Tantalus Ring Magazine',
 };
 

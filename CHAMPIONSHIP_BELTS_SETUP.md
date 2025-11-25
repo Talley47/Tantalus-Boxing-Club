@@ -74,7 +74,7 @@ The following championship belts can be assigned:
 2. **TBA Tantalus Boxing Association** (TBA_ASSOCIATION)
 3. **TBC Tantalus Boxing Council** (TBC_COUNCIL)
 4. **TBF Tantalus Boxing Federation** (TBF_FEDERATION)
-5. **TBO Tantalus World Boxing Organization** (TBO_WORLD)
+5. **TBO Tantalus Boxing Organization** (TBO_WORLD)
 6. **Tantalus Ring Magazine** (RING_MAGAZINE)
 
 ## Notes

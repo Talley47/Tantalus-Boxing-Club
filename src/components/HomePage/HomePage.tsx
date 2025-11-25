@@ -915,8 +915,8 @@ const HomePage: React.FC = () => {
                                       src={belt.belt_image_url}
                                       alt="Championship Belt"
                                       sx={{
-                                        width: 28,
-                                        height: 28,
+                                        width: 40,
+                                        height: 40,
                                         objectFit: 'contain',
                                         borderRadius: '4px',
                                       }}

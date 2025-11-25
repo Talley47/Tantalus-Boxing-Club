@@ -2085,7 +2085,7 @@ const FighterProfile: React.FC = () => {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          maxWidth: '150px',
+                          maxWidth: '200px',
                         }}
                       >
                         <Box
@@ -2094,7 +2094,7 @@ const FighterProfile: React.FC = () => {
                           alt={GOVERNING_BODY_LABELS[belt.governing_body]}
                           sx={{
                             width: '100%',
-                            maxWidth: '120px',
+                            maxWidth: '160px',
                             height: 'auto',
                             objectFit: 'contain',
                             borderRadius: 1,

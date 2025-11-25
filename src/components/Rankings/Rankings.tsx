@@ -497,8 +497,8 @@ const Rankings: React.FC = () => {
                                                   src={belt.belt_image_url}
                                                   alt="Championship Belt"
                                                   sx={{
-                                                    width: 24,
-                                                    height: 24,
+                                                    width: 36,
+                                                    height: 36,
                                                     objectFit: 'contain',
                                                     borderRadius: '4px',
                                                   }}

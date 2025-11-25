@@ -37,6 +37,9 @@ BEGIN
     DROP POLICY IF EXISTS "Public can view all championship belts" ON public.championship_belts;
     DROP POLICY IF EXISTS "Admins can manage championship belts" ON public.championship_belts;
     DROP POLICY IF EXISTS "Fighters can view their own belts" ON public.championship_belts;
+    DROP POLICY IF EXISTS "Admins can insert championship belts" ON public.championship_belts;
+    DROP POLICY IF EXISTS "Admins can update championship belts" ON public.championship_belts;
+    DROP POLICY IF EXISTS "Admins can delete championship belts" ON public.championship_belts;
 EXCEPTION
     WHEN undefined_object THEN NULL;
 END $$;
@@ -47,9 +50,23 @@ CREATE POLICY "Public can view all championship belts"
     ON public.championship_belts FOR SELECT
     USING (true);
 
--- Admins can insert, update, and delete championship belts
-CREATE POLICY "Admins can manage championship belts"
-    ON public.championship_belts FOR ALL
+-- Admin policies - Separate policies for each operation to avoid conflicts
+-- Admins can insert championship belts
+CREATE POLICY "Admins can insert championship belts"
+    ON public.championship_belts FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    );
+
+-- Admins can update championship belts
+CREATE POLICY "Admins can update championship belts"
+    ON public.championship_belts FOR UPDATE
+    TO authenticated
     USING (
         EXISTS (
             SELECT 1 FROM public.profiles
@@ -65,10 +82,17 @@ CREATE POLICY "Admins can manage championship belts"
         )
     );
 
--- Fighters can view their own belts
-CREATE POLICY "Fighters can view their own belts"
-    ON public.championship_belts FOR SELECT
-    USING (auth.uid() = user_id);
+-- Admins can delete championship belts
+CREATE POLICY "Admins can delete championship belts"
+    ON public.championship_belts FOR DELETE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'admin'
+        )
+    );
 
 -- Add updated_at trigger
 -- Drop trigger if it exists

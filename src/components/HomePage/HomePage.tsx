@@ -16,6 +16,11 @@ import {
   Container,
   Stack,
   Divider,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   EmojiEvents,
@@ -255,6 +260,8 @@ const HomePage: React.FC = () => {
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sanctionSearch, setSanctionSearch] = useState('');
+  const [sanctionTypeFilter, setSanctionTypeFilter] = useState<string>('');
 
   const loadDashboardData = async () => {
     try {
@@ -643,6 +650,7 @@ const HomePage: React.FC = () => {
                 <Tab label="Training Camps" />
                 <Tab label="Scheduled Rematches" />
                 <Tab label="News & Announcements" />
+                <Tab label="Boxing Sanctions" />
               </Tabs>
             </Box>
 
@@ -1464,6 +1472,258 @@ const HomePage: React.FC = () => {
                   ))}
                 </Stack>
               )}
+            </TabPanel>
+
+            {/* Boxing Sanctions Tab */}
+            <TabPanel value={tabValue} index={5}>
+              <Box sx={{ mb: 4 }}>
+                <Box display="flex" alignItems="center" gap={2} mb={2}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      border: '2px solid #ff4b4b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      fontSize: '0.9rem',
+                      color: '#ff4b4b',
+                    }}
+                  >
+                    TBC
+                  </Box>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                      Tantalus Boxing Club
+                    </Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Boxing Sanctions Management Panel
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Filters */}
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    gap: 2, 
+                    mb: 3,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <TextField
+                    placeholder="Search by name or acronym…"
+                    value={sanctionSearch}
+                    onChange={(e) => setSanctionSearch(e.target.value)}
+                    size="small"
+                    sx={{ 
+                      flex: 1,
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '999px',
+                      },
+                    }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Type</InputLabel>
+                    <Select
+                      value={sanctionTypeFilter}
+                      label="Type"
+                      onChange={(e) => setSanctionTypeFilter(e.target.value)}
+                      sx={{
+                        borderRadius: '999px',
+                      }}
+                    >
+                      <MenuItem value="">All Types</MenuItem>
+                      <MenuItem value="Association">Association</MenuItem>
+                      <MenuItem value="Organization">Organization</MenuItem>
+                      <MenuItem value="Federation">Federation</MenuItem>
+                      <MenuItem value="Council">Council</MenuItem>
+                      <MenuItem value="Magazine">Magazine</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Sanctions Grid */}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, 1fr)',
+                      md: 'repeat(2, 1fr)',
+                      lg: 'repeat(3, 1fr)',
+                    },
+                    gap: 2.5,
+                  }}
+                >
+                  {[
+                    {
+                      acronym: 'TBCA',
+                      name: 'Tantalus Boxing Club Amateur Association',
+                      type: 'Association',
+                      status: 'Active',
+                      statusColor: '#22c55e',
+                      description: 'Governing amateur bouts and club-level competitions under Tantalus rules.',
+                    },
+                    {
+                      acronym: 'TBA',
+                      name: 'Tantalus Boxing Association',
+                      type: 'Association',
+                      status: 'Pending',
+                      statusColor: '#eab308',
+                      description: 'Oversees regional events and standardized amateur rankings.',
+                    },
+                    {
+                      acronym: 'TBO',
+                      name: 'Tantalus Boxing Organization',
+                      type: 'Organization',
+                      status: 'Active',
+                      statusColor: '#22c55e',
+                      description: 'Professional-level sanctioning body for title fights and promotions.',
+                    },
+                    {
+                      acronym: 'TBF',
+                      name: 'Tantalus Boxing Federation',
+                      type: 'Federation',
+                      status: 'Not Affiliated',
+                      statusColor: '#6b7280',
+                      description: 'International liaison for cross-federation events and regulations.',
+                    },
+                    {
+                      acronym: 'TBC',
+                      name: 'Tantalus Boxing Council',
+                      type: 'Council',
+                      status: 'Active',
+                      statusColor: '#22c55e',
+                      description: 'Advisory council for rules, safety standards, and judging criteria.',
+                    },
+                    {
+                      acronym: 'TRM',
+                      name: 'Tantalus Ring Magazine',
+                      type: 'Magazine',
+                      status: 'Media Partner',
+                      statusColor: '#38bdf8',
+                      description: 'Official rankings, features, and coverage of Tantalus-sanctioned bouts.',
+                    },
+                  ]
+                    .filter((sanction) => {
+                      const matchesSearch = 
+                        sanctionSearch === '' ||
+                        sanction.acronym.toLowerCase().includes(sanctionSearch.toLowerCase()) ||
+                        sanction.name.toLowerCase().includes(sanctionSearch.toLowerCase());
+                      const matchesType = 
+                        sanctionTypeFilter === '' || sanction.type === sanctionTypeFilter;
+                      return matchesSearch && matchesType;
+                    })
+                    .map((sanction) => (
+                      <Card
+                        key={sanction.acronym}
+                        sx={{
+                          background: 'radial-gradient(circle at top left, #13131f, #050509)',
+                          borderRadius: 2,
+                          border: '1px solid #20202a',
+                          p: 2,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1,
+                          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
+                          transition: 'all 150ms ease-out',
+                          '&:hover': {
+                            borderColor: '#ff4b4b',
+                            transform: 'translateY(-2px)',
+                          },
+                        }}
+                      >
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography
+                            variant="h5"
+                            sx={{
+                              fontWeight: 800,
+                              letterSpacing: '0.12em',
+                              textTransform: 'uppercase',
+                              color: '#f5f5f5',
+                            }}
+                          >
+                            {sanction.acronym}
+                          </Typography>
+                          <Chip
+                            label={sanction.status}
+                            size="small"
+                            sx={{
+                              fontSize: '0.7rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.12em',
+                              height: 24,
+                              borderColor: sanction.statusColor,
+                              color: sanction.statusColor,
+                              border: '1px solid',
+                              backgroundColor: 'transparent',
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            color: '#f5f5f5',
+                            fontSize: '1.05rem',
+                          }}
+                        >
+                          {sanction.name}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: '#bbbbbb',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          Type: {sanction.type}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: '#cccccc',
+                            fontSize: '0.9rem',
+                            mt: 0.5,
+                            mb: 1,
+                          }}
+                        >
+                          {sanction.description}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          sx={{
+                            mt: 'auto',
+                            alignSelf: 'flex-start',
+                            borderRadius: '999px',
+                            backgroundColor: '#ff4b4b',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            px: 1.75,
+                            py: 1,
+                            '&:hover': {
+                              backgroundColor: '#ff6666',
+                              filter: 'brightness(1.1)',
+                            },
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </Card>
+                    ))}
+                </Box>
+              </Box>
             </TabPanel>
           </Card>
         </Box>

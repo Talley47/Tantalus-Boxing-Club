@@ -518,13 +518,26 @@ const HomePage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error joining sanction:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      
       const errorMessage = error.message || 'Failed to join sanction';
       
-      // If it's a fighter profile error, provide helpful guidance
+      // Provide specific error messages based on error type
       if (errorMessage.includes('Fighter profile not found')) {
         setError('Fighter profile not found. Please complete your fighter profile in "My Profile" first, then try joining again.');
+      } else if (error.code === '42P01' || errorMessage.includes('does not exist')) {
+        setError('The sanctions database table has not been set up yet. Please contact an administrator to run the database migration script: create-fighter-sanctions-table.sql');
+      } else if (error.code === '42501' || errorMessage.includes('permission denied') || errorMessage.includes('policy')) {
+        setError('Permission denied. The database permissions may not be set up correctly. Please contact an administrator.');
+      } else if (error.code === '23505') {
+        setError('You have already joined this sanction.');
       } else {
-        setError(errorMessage);
+        setError(`Failed to join sanction: ${errorMessage}. If this persists, please contact an administrator.`);
       }
     } finally {
       setJoiningSanction(null);
@@ -2084,13 +2097,16 @@ const HomePage: React.FC = () => {
                               }
                               arrow
                             >
-                              <span>
+                              <span style={{ width: '100%' }}>
                                 <Button
                                   variant="contained"
-                                  onClick={() => handleJoinSanction(sanction.acronym)}
+                                  onClick={() => {
+                                    console.log('Join button clicked for:', sanction.acronym);
+                                    handleJoinSanction(sanction.acronym);
+                                  }}
                                   disabled={authLoading || joiningSanction === sanction.acronym || !(user?.id || fighterProfile?.user_id)}
                                   fullWidth
-                              sx={{
+                                  sx={{
                                 borderRadius: '12px',
                                 background: `linear-gradient(135deg, ${sanction.statusColor} 0%, ${sanction.statusColor}dd 100%)`,
                                 color: '#fff',

@@ -31,6 +31,15 @@ class FighterSanctionService {
    */
   async joinSanction(sanctionAcronym: string, userId: string): Promise<void> {
     try {
+      // Validate inputs
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      if (!sanctionAcronym) {
+        throw new Error('Sanction acronym is required');
+      }
+
       // Get fighter profile ID
       const { data: fighterProfile, error: profileError } = await supabase
         .from('fighter_profiles')
@@ -40,11 +49,11 @@ class FighterSanctionService {
 
       if (profileError) {
         console.error('Error fetching fighter profile:', profileError);
-        throw profileError;
+        throw new Error(`Failed to fetch fighter profile: ${profileError.message}`);
       }
 
-      if (!fighterProfile) {
-        throw new Error('Fighter profile not found');
+      if (!fighterProfile || !fighterProfile.id) {
+        throw new Error('Fighter profile not found. Please complete your fighter profile first.');
       }
 
       // Check if already joined
@@ -55,32 +64,73 @@ class FighterSanctionService {
         .eq('sanction_acronym', sanctionAcronym)
         .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
+      if (checkError) {
+        // If table doesn't exist, provide helpful error
+        if (checkError.code === '42P01' || checkError.message?.includes('does not exist')) {
+          throw new Error('Sanctions feature not available yet. Please contact admin to set up the database.');
+        }
+        // If it's just "not found", that's fine - continue
+        if (checkError.code !== 'PGRST116') {
+          console.error('Error checking existing membership:', checkError);
+          throw new Error(`Failed to check membership: ${checkError.message}`);
+        }
       }
 
       if (existing) {
-        throw new Error('Already joined this sanction');
+        throw new Error('You have already joined this sanction');
       }
 
       // Join the sanction
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from(this.TABLE_NAME)
         .insert({
           fighter_id: fighterProfile.id,
           user_id: userId,
           sanction_acronym: sanctionAcronym,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error('Error joining sanction:', insertError);
-        throw insertError;
+        
+        // Handle specific error codes
+        if (insertError.code === '23505') {
+          // Unique constraint violation - already joined
+          throw new Error('You have already joined this sanction');
+        }
+        
+        if (insertError.code === '42501' || insertError.message?.includes('permission denied') || insertError.message?.includes('policy')) {
+          throw new Error('Permission denied. Please ensure you are logged in and have a fighter profile.');
+        }
+        
+        if (insertError.code === '42P01' || insertError.message?.includes('does not exist')) {
+          throw new Error('Sanctions feature not available yet. Please contact admin to set up the database.');
+        }
+        
+        if (insertError.code === '23503') {
+          // Foreign key violation
+          throw new Error('Invalid sanction or fighter profile. Please contact admin.');
+        }
+
+        throw new Error(`Failed to join sanction: ${insertError.message || 'Unknown error'}`);
+      }
+
+      if (!insertedData) {
+        throw new Error('Failed to join sanction: No data returned');
       }
     } catch (error: any) {
+      // Re-throw with better error message if it's already a user-friendly error
+      if (error.message && !error.message.includes('contact admin')) {
+        throw error;
+      }
+      
+      // Handle table doesn't exist
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
         console.warn('Fighter sanctions table does not exist yet. Run create-fighter-sanctions-table.sql');
-        throw new Error('Sanctions feature not available yet. Please contact admin.');
+        throw new Error('Sanctions feature not available yet. Please contact admin to set up the database.');
       }
+      
       throw error;
     }
   }

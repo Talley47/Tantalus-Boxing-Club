@@ -33,6 +33,7 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Tooltip,
 } from '@mui/material';
 import {
   EmojiEvents,
@@ -232,7 +233,7 @@ const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string
 };
 
 const HomePage: React.FC = () => {
-  const { fighterProfile, isAdmin } = useAuth();
+  const { fighterProfile, isAdmin, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [tabValue, setTabValue] = useState(0);
@@ -468,9 +469,10 @@ const HomePage: React.FC = () => {
   // Load joined sanctions for current user
   useEffect(() => {
     const loadJoinedSanctions = async () => {
-      if (fighterProfile?.user_id) {
+      const userId = user?.id || fighterProfile?.user_id;
+      if (userId) {
         try {
-          const sanctions = await fighterSanctionService.getSanctionsByFighter(fighterProfile.user_id);
+          const sanctions = await fighterSanctionService.getSanctionsByFighter(userId);
           setJoinedSanctions(new Set(sanctions));
         } catch (error) {
           console.error('Error loading joined sanctions:', error);
@@ -481,18 +483,30 @@ const HomePage: React.FC = () => {
     if (tabValue === 5) { // Boxing Sanctions tab
       loadJoinedSanctions();
     }
-  }, [fighterProfile?.user_id, tabValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id ?? null, fighterProfile?.user_id ?? null, tabValue]);
 
   // Handle joining a sanction
   const handleJoinSanction = async (sanctionAcronym: string) => {
-    if (!fighterProfile?.user_id) {
-      setError('You must be logged in to join a sanction');
+    const userId = user?.id || fighterProfile?.user_id;
+    
+    // Debug logging
+    console.log('Join sanction attempt:', {
+      sanctionAcronym,
+      userId,
+      user: user?.id,
+      fighterProfile: fighterProfile?.user_id,
+      authLoading,
+    });
+    
+    if (!userId) {
+      setError('You must be logged in to join a sanction. Please refresh the page if you are already logged in.');
       return;
     }
 
     setJoiningSanction(sanctionAcronym);
     try {
-      await fighterSanctionService.joinSanction(sanctionAcronym, fighterProfile.user_id);
+      await fighterSanctionService.joinSanction(sanctionAcronym, userId);
       setJoinedSanctions(prev => {
         const newSet = new Set(prev);
         newSet.add(sanctionAcronym);
@@ -503,7 +517,15 @@ const HomePage: React.FC = () => {
         await loadSanctionFighters(sanctionAcronym);
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to join sanction');
+      console.error('Error joining sanction:', error);
+      const errorMessage = error.message || 'Failed to join sanction';
+      
+      // If it's a fighter profile error, provide helpful guidance
+      if (errorMessage.includes('Fighter profile not found')) {
+        setError('Fighter profile not found. Please complete your fighter profile in "My Profile" first, then try joining again.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setJoiningSanction(null);
     }
@@ -511,13 +533,14 @@ const HomePage: React.FC = () => {
 
   // Handle leaving a sanction
   const handleLeaveSanction = async (sanctionAcronym: string) => {
-    if (!fighterProfile?.user_id) {
+    const userId = user?.id || fighterProfile?.user_id;
+    if (!userId) {
       return;
     }
 
     setJoiningSanction(sanctionAcronym);
     try {
-      await fighterSanctionService.leaveSanction(sanctionAcronym, fighterProfile.user_id);
+      await fighterSanctionService.leaveSanction(sanctionAcronym, userId);
       setJoinedSanctions(prev => {
         const newSet = new Set(prev);
         newSet.delete(sanctionAcronym);
@@ -1597,6 +1620,24 @@ const HomePage: React.FC = () => {
             {/* Boxing Sanctions Tab */}
             <TabPanel value={tabValue} index={5}>
               <Box sx={{ mb: 4 }}>
+                {/* Error Display */}
+                {error && (
+                  <Alert 
+                    severity="error" 
+                    sx={{ mb: 3 }}
+                    onClose={() => setError(null)}
+                  >
+                    {error}
+                  </Alert>
+                )}
+                
+                {/* Debug Info (remove in production) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Alert severity="info" sx={{ mb: 2, fontSize: '0.75rem' }}>
+                    Debug: User ID: {user?.id || 'Not loaded'}, Fighter Profile: {fighterProfile?.user_id || 'Not loaded'}, Auth Loading: {authLoading ? 'Yes' : 'No'}
+                  </Alert>
+                )}
+                
                 {/* Enhanced Header */}
                 <Box
                   sx={{
@@ -2033,11 +2074,22 @@ const HomePage: React.FC = () => {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              variant="contained"
-                              onClick={() => handleJoinSanction(sanction.acronym)}
-                              disabled={joiningSanction === sanction.acronym || !fighterProfile?.user_id}
-                              fullWidth
+                            <Tooltip 
+                              title={
+                                !(user?.id || fighterProfile?.user_id) 
+                                  ? 'Please log in to join a sanction' 
+                                  : joiningSanction === sanction.acronym 
+                                    ? 'Joining...' 
+                                    : ''
+                              }
+                              arrow
+                            >
+                              <span>
+                                <Button
+                                  variant="contained"
+                                  onClick={() => handleJoinSanction(sanction.acronym)}
+                                  disabled={authLoading || joiningSanction === sanction.acronym || !(user?.id || fighterProfile?.user_id)}
+                                  fullWidth
                               sx={{
                                 borderRadius: '12px',
                                 background: `linear-gradient(135deg, ${sanction.statusColor} 0%, ${sanction.statusColor}dd 100%)`,
@@ -2061,8 +2113,10 @@ const HomePage: React.FC = () => {
                                 },
                               }}
                             >
-                              {joiningSanction === sanction.acronym ? 'Joining...' : 'Join'}
-                            </Button>
+                                  {joiningSanction === sanction.acronym ? 'Joining...' : 'Join'}
+                                </Button>
+                              </span>
+                            </Tooltip>
                           )}
                         </Box>
                       </Card>

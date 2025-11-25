@@ -1,0 +1,41 @@
+-- Fix News Announcements Timeout Error
+-- This script optimizes the news_announcements table for the common query pattern
+-- Query: SELECT * FROM news_announcements WHERE is_published = true ORDER BY created_at DESC LIMIT 20
+
+-- Drop existing indexes that might not be optimal
+DROP INDEX IF EXISTS idx_news_announcements_published;
+DROP INDEX IF EXISTS idx_news_announcements_created;
+
+-- Create optimized composite index for the exact query pattern
+-- This index covers: is_published filter + created_at ordering
+CREATE INDEX IF NOT EXISTS idx_news_announcements_published_created 
+ON news_announcements(is_published, created_at DESC)
+WHERE is_published = TRUE;
+
+-- Also create a general index on created_at for other queries
+CREATE INDEX IF NOT EXISTS idx_news_announcements_created_at 
+ON news_announcements(created_at DESC);
+
+-- Create index on is_published for filtering
+CREATE INDEX IF NOT EXISTS idx_news_announcements_is_published 
+ON news_announcements(is_published)
+WHERE is_published = TRUE;
+
+-- Recreate other useful indexes
+CREATE INDEX IF NOT EXISTS idx_news_announcements_type ON news_announcements(type);
+CREATE INDEX IF NOT EXISTS idx_news_announcements_featured ON news_announcements(is_featured);
+
+-- Analyze the table to update statistics
+ANALYZE news_announcements;
+
+-- Success message
+DO $$
+BEGIN
+    RAISE NOTICE '✅ News announcements indexes optimized!';
+    RAISE NOTICE '   - Created composite index: (is_published, created_at DESC)';
+    RAISE NOTICE '   - Created partial index for published items only';
+    RAISE NOTICE '   - This should resolve the timeout error';
+    RAISE NOTICE '';
+    RAISE NOTICE '⚠️  The query should now execute much faster.';
+END $$;
+

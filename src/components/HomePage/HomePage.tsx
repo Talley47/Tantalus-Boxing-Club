@@ -894,18 +894,37 @@ const HomePage: React.FC = () => {
 
                           {/* Fighter Name and Handle */}
                           <Box sx={{ mb: 2, textAlign: 'center' }}>
-                            <Typography 
-                              variant="h6" 
-                              sx={{ 
-                                fontWeight: 'bold',
-                                mb: 0.5,
-                                color: isTopThree ? '#1a1a1a' : 'text.primary',
-                                fontSize: '1.15rem',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              {fighter.name}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 'bold',
+                                  color: isTopThree ? '#1a1a1a' : 'text.primary',
+                                  fontSize: '1.15rem',
+                                  lineHeight: 1.2,
+                                }}
+                              >
+                                {fighter.name}
+                              </Typography>
+                              {fighter.belts && fighter.belts.length > 0 && (
+                                <Box display="flex" gap={0.5} alignItems="center">
+                                  {fighter.belts.map((belt) => (
+                                    <Box
+                                      key={belt.id}
+                                      component="img"
+                                      src={belt.belt_image_url}
+                                      alt="Championship Belt"
+                                      sx={{
+                                        width: 28,
+                                        height: 28,
+                                        objectFit: 'contain',
+                                        borderRadius: '4px',
+                                      }}
+                                    />
+                                  ))}
+                                </Box>
+                              )}
+                            </Box>
                             <Typography 
                               variant="body2" 
                               sx={{ 

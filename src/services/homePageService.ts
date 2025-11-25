@@ -2,6 +2,12 @@ import { supabase } from './supabase';
 import { filterAdminFighters } from '../utils/filterAdmins';
 
 // Types for the HomePage data
+export interface ChampionshipBelt {
+  id: string;
+  belt_image_url: string;
+  governing_body: string;
+}
+
 export interface Fighter {
   id: string;
   name: string;
@@ -25,6 +31,7 @@ export interface Fighter {
   platform?: string;
   timezone?: string;
   creative_fighter_image_url?: string;
+  belts?: ChampionshipBelt[]; // Championship belts assigned to the fighter
 }
 
 export interface ScheduledFight {
@@ -112,6 +119,55 @@ export class HomePageService {
       // Filter out admin users from raw data before mapping
       const filteredData = await filterAdminFighters(data);
 
+      // Fetch championship belts for all fighters
+      const fighterUserIds = filteredData.map(f => f.user_id).filter(Boolean);
+      const beltsByUserId = new Map<string, ChampionshipBelt[]>();
+      
+      if (fighterUserIds.length > 0) {
+        try {
+          // Get fighter profile IDs from user IDs
+          const { data: fighterProfiles } = await supabase
+            .from('fighter_profiles')
+            .select('id, user_id')
+            .in('user_id', fighterUserIds);
+
+          if (fighterProfiles && fighterProfiles.length > 0) {
+            const fighterProfileIds = fighterProfiles.map(fp => fp.id);
+            
+            // Fetch belts by fighter_id (profile ID)
+            const { data: belts } = await supabase
+              .from('championship_belts')
+              .select('id, fighter_id, belt_image_url, governing_body')
+              .in('fighter_id', fighterProfileIds);
+
+            if (belts && belts.length > 0) {
+              // Create a map from fighter profile ID to user ID
+              const profileIdToUserId = new Map(
+                fighterProfiles.map(fp => [fp.id, fp.user_id])
+              );
+
+              // Group belts by user_id
+              belts.forEach(belt => {
+                const userId = profileIdToUserId.get(belt.fighter_id);
+                if (userId) {
+                  if (!beltsByUserId.has(userId)) {
+                    beltsByUserId.set(userId, []);
+                  }
+                  beltsByUserId.get(userId)!.push({
+                    id: belt.id,
+                    belt_image_url: belt.belt_image_url,
+                    governing_body: belt.governing_body,
+                  });
+                }
+              });
+            }
+          }
+        } catch (error) {
+          // If championship_belts table doesn't exist or there's an error, continue without belts
+          console.warn('Error fetching championship belts for home page:', error);
+        }
+      }
+
       let fighters = filteredData.map(fighter => ({
         id: fighter.user_id,
         name: fighter.name || 'Unknown Fighter',
@@ -134,7 +190,8 @@ export class HomePageService {
         gym: fighter.gym,
         platform: (fighter as any).platform,
         timezone: (fighter as any).timezone,
-        creative_fighter_image_url: (fighter as any).creative_fighter_image_url
+        creative_fighter_image_url: (fighter as any).creative_fighter_image_url,
+        belts: beltsByUserId.get(fighter.user_id) || []
       }));
 
       console.log('Mapped fighters (after admin filter):', fighters);

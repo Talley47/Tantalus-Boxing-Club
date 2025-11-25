@@ -484,9 +484,29 @@ const Rankings: React.FC = () => {
                                         {entry.name.charAt(0).toUpperCase()}
                                       </Avatar>
                                       <Box>
-                                        <Typography variant="body2" sx={{ fontWeight: isCurrentFighter ? 'bold' : 'normal' }}>
-                                          {entry.name}
-                                        </Typography>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                          <Typography variant="body2" sx={{ fontWeight: isCurrentFighter ? 'bold' : 'normal' }}>
+                                            {entry.name}
+                                          </Typography>
+                                          {entry.belts && entry.belts.length > 0 && (
+                                            <Box display="flex" gap={0.5} alignItems="center">
+                                              {entry.belts.map((belt) => (
+                                                <Box
+                                                  key={belt.id}
+                                                  component="img"
+                                                  src={belt.belt_image_url}
+                                                  alt="Championship Belt"
+                                                  sx={{
+                                                    width: 24,
+                                                    height: 24,
+                                                    objectFit: 'contain',
+                                                    borderRadius: '4px',
+                                                  }}
+                                                />
+                                              ))}
+                                            </Box>
+                                          )}
+                                        </Box>
                                         <Typography variant="caption" color="text.secondary">
                                           @{entry.handle}
                                         </Typography>
@@ -639,9 +659,29 @@ const Rankings: React.FC = () => {
                               {entry.name.charAt(0).toUpperCase()}
                             </Avatar>
                             <Box>
-                              <Typography variant="body2" sx={{ fontWeight: isCurrentFighter ? 'bold' : 'normal' }}>
-                                {entry.name}
-                              </Typography>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="body2" sx={{ fontWeight: isCurrentFighter ? 'bold' : 'normal' }}>
+                                  {entry.name}
+                                </Typography>
+                                {entry.belts && entry.belts.length > 0 && (
+                                  <Box display="flex" gap={0.5} alignItems="center">
+                                    {entry.belts.map((belt) => (
+                                      <Box
+                                        key={belt.id}
+                                        component="img"
+                                        src={belt.belt_image_url}
+                                        alt="Championship Belt"
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          objectFit: 'contain',
+                                          borderRadius: '4px',
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
                               <Typography variant="caption" color="text.secondary">
                                 @{entry.handle}
                               </Typography>

@@ -1597,43 +1597,77 @@ const HomePage: React.FC = () => {
             {/* Boxing Sanctions Tab */}
             <TabPanel value={tabValue} index={5}>
               <Box sx={{ mb: 4 }}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      border: '2px solid #ff4b4b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      fontSize: '0.9rem',
-                      color: '#ff4b4b',
-                    }}
-                  >
-                    TBC
-                  </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                      Tantalus Boxing Club
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary">
-                      Boxing Sanctions Management Panel
-                    </Typography>
+                {/* Enhanced Header */}
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, rgba(255, 75, 75, 0.1) 0%, rgba(255, 75, 75, 0.05) 100%)',
+                    borderRadius: 3,
+                    p: 3,
+                    mb: 4,
+                    border: '1px solid rgba(255, 75, 75, 0.2)',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={3}>
+                    <Box
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6666 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        fontSize: '1.1rem',
+                        color: '#fff',
+                        boxShadow: '0 4px 15px rgba(255, 75, 75, 0.4)',
+                      }}
+                    >
+                      TBC
+                    </Box>
+                    <Box flex={1}>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          fontWeight: 800, 
+                          mb: 0.5,
+                          background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6666 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                        }}
+                      >
+                        Tantalus Boxing Club
+                      </Typography>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        Boxing Sanctions Management Panel
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
 
-                {/* Filters */}
+                {/* Enhanced Filters */}
                 <Box 
                   sx={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     gap: 2, 
-                    mb: 3,
+                    mb: 4,
                     flexWrap: 'wrap',
+                    p: 2,
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
                   }}
                 >
                   <TextField
@@ -1645,18 +1679,45 @@ const HomePage: React.FC = () => {
                       flex: 1,
                       minWidth: 200,
                       '& .MuiOutlinedInput-root': {
-                        borderRadius: '999px',
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        },
+                        '&.Mui-focused': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          borderColor: '#ff4b4b',
+                        },
+                      },
+                      '& .MuiOutlinedInput-input': {
+                        color: '#f5f5f5',
                       },
                     }}
                   />
-                  <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Type</InputLabel>
+                  <FormControl 
+                    size="small" 
+                    sx={{ 
+                      minWidth: 180,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        },
+                        '&.Mui-focused': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      },
+                    }}
+                  >
+                    <InputLabel sx={{ color: 'text.secondary' }}>Type</InputLabel>
                     <Select
                       value={sanctionTypeFilter}
                       label="Type"
                       onChange={(e) => setSanctionTypeFilter(e.target.value)}
                       sx={{
-                        borderRadius: '999px',
+                        borderRadius: '12px',
+                        color: '#f5f5f5',
                       }}
                     >
                       <MenuItem value="">All Types</MenuItem>
@@ -1751,59 +1812,88 @@ const HomePage: React.FC = () => {
                       <Card
                         key={sanction.acronym}
                         sx={{
-                          background: 'radial-gradient(circle at top left, #13131f, #050509)',
-                          borderRadius: 2,
-                          border: '1px solid #20202a',
-                          p: 2,
+                          background: 'linear-gradient(135deg, rgba(19, 19, 31, 0.95) 0%, rgba(5, 5, 9, 0.95) 100%)',
+                          borderRadius: 3,
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          p: 3,
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: 1,
-                          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6)',
-                          transition: 'all 150ms ease-out',
+                          gap: 2,
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '4px',
+                            background: `linear-gradient(90deg, ${sanction.statusColor} 0%, transparent 100%)`,
+                            opacity: 0,
+                            transition: 'opacity 0.3s ease',
+                          },
                           '&:hover': {
-                            borderColor: '#ff4b4b',
-                            transform: 'translateY(-2px)',
+                            borderColor: sanction.statusColor,
+                            transform: 'translateY(-8px)',
+                            boxShadow: `0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px ${sanction.statusColor}40`,
+                            '&::before': {
+                              opacity: 1,
+                            },
                           },
                         }}
                       >
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Typography
-                            variant="h5"
-                            sx={{
-                              fontWeight: 800,
-                              letterSpacing: '0.12em',
-                              textTransform: 'uppercase',
-                              color: '#f5f5f5',
-                            }}
-                          >
-                            {sanction.acronym}
-                          </Typography>
-                          <Chip
-                            label={sanction.status}
-                            size="small"
-                            sx={{
-                              fontSize: '0.7rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.12em',
-                              height: 24,
-                              borderColor: sanction.statusColor,
-                              color: sanction.statusColor,
-                              border: '1px solid',
-                              backgroundColor: 'transparent',
-                              fontWeight: 600,
-                            }}
-                          />
+                        {/* Header with Acronym and Status */}
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                          <Box>
+                            <Typography
+                              variant="h4"
+                              sx={{
+                                fontWeight: 900,
+                                letterSpacing: '0.15em',
+                                textTransform: 'uppercase',
+                                background: `linear-gradient(135deg, ${sanction.statusColor} 0%, #fff 100%)`,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text',
+                                fontSize: '2rem',
+                                lineHeight: 1,
+                                mb: 0.5,
+                              }}
+                            >
+                              {sanction.acronym}
+                            </Typography>
+                            <Chip
+                              label={sanction.status}
+                              size="small"
+                              sx={{
+                                fontSize: '0.65rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.15em',
+                                height: 22,
+                                backgroundColor: `${sanction.statusColor}20`,
+                                color: sanction.statusColor,
+                                border: `1px solid ${sanction.statusColor}40`,
+                                fontWeight: 700,
+                                px: 1,
+                              }}
+                            />
+                          </Box>
                         </Box>
+
+                        {/* Image */}
                         {sanction.image && (
                           <Box
                             sx={{
                               width: '100%',
-                              maxHeight: '120px',
+                              maxHeight: '140px',
                               display: 'flex',
                               justifyContent: 'center',
                               alignItems: 'center',
-                              mb: 1,
-                              borderRadius: 1,
+                              my: 1,
+                              backgroundColor: 'transparent',
+                              borderRadius: 2,
                               overflow: 'hidden',
                             }}
                           >
@@ -1814,61 +1904,99 @@ const HomePage: React.FC = () => {
                               sx={{
                                 width: '100%',
                                 height: 'auto',
-                                maxHeight: '120px',
+                                maxHeight: '140px',
                                 objectFit: 'contain',
+                                backgroundColor: 'transparent',
+                                filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))',
+                                transition: 'transform 0.3s ease',
+                                '&:hover': {
+                                  transform: 'scale(1.05)',
+                                },
                               }}
                             />
                           </Box>
                         )}
+
+                        {/* Sanction Name */}
                         <Typography
                           variant="h6"
                           sx={{
-                            fontWeight: 600,
-                            color: '#f5f5f5',
-                            fontSize: '1.05rem',
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontSize: '1.1rem',
+                            lineHeight: 1.3,
+                            mb: 0.5,
                           }}
                         >
                           {sanction.name}
                         </Typography>
+
+                        {/* Type Badge */}
+                        <Box display="flex" alignItems="center" gap={1} mb={1}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'rgba(255, 255, 255, 0.6)',
+                              fontSize: '0.75rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.1em',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Type:
+                          </Typography>
+                          <Chip
+                            label={sanction.type}
+                            size="small"
+                            sx={{
+                              fontSize: '0.7rem',
+                              height: 20,
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              color: '#fff',
+                              fontWeight: 600,
+                            }}
+                          />
+                        </Box>
+
+                        {/* Description */}
                         <Typography
                           variant="body2"
                           sx={{
-                            color: '#bbbbbb',
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          Type: {sanction.type}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: '#cccccc',
-                            fontSize: '0.9rem',
-                            mt: 0.5,
-                            mb: 1,
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.6,
+                            mb: 2,
+                            flex: 1,
                           }}
                         >
                           {sanction.description}
                         </Typography>
-                        <Box display="flex" gap={1} mt="auto">
+                        {/* Action Buttons */}
+                        <Box display="flex" gap={1.5} mt="auto" pt={2} borderTop="1px solid rgba(255, 255, 255, 0.1)">
                           {joinedSanctions.has(sanction.acronym) ? (
                             <>
                               <Button
                                 variant="outlined"
                                 onClick={() => handleViewSanction(sanction.acronym)}
+                                fullWidth
                                 sx={{
-                                  borderRadius: '999px',
-                                  borderColor: '#ff4b4b',
-                                  color: '#ff4b4b',
-                                  fontSize: '0.85rem',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.08em',
+                                  borderRadius: '12px',
+                                  borderColor: sanction.statusColor,
+                                  color: sanction.statusColor,
+                                  fontSize: '0.875rem',
+                                  fontWeight: 700,
+                                  letterSpacing: '0.05em',
                                   textTransform: 'uppercase',
-                                  px: 1.75,
-                                  py: 1,
+                                  px: 2,
+                                  py: 1.25,
+                                  borderWidth: 2,
+                                  transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    borderColor: '#ff6666',
-                                    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                    borderColor: sanction.statusColor,
+                                    backgroundColor: `${sanction.statusColor}15`,
+                                    borderWidth: 2,
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: `0 4px 12px ${sanction.statusColor}30`,
                                   },
                                 }}
                               >
@@ -1879,17 +2007,25 @@ const HomePage: React.FC = () => {
                                 onClick={() => handleLeaveSanction(sanction.acronym)}
                                 disabled={joiningSanction === sanction.acronym}
                                 sx={{
-                                  borderRadius: '999px',
-                                  backgroundColor: '#6b7280',
+                                  borderRadius: '12px',
+                                  background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
                                   color: '#fff',
-                                  fontSize: '0.85rem',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.08em',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 700,
+                                  letterSpacing: '0.05em',
                                   textTransform: 'uppercase',
-                                  px: 1.75,
-                                  py: 1,
+                                  px: 2,
+                                  py: 1.25,
+                                  minWidth: 100,
+                                  boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)',
+                                  transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    backgroundColor: '#9ca3af',
+                                    background: 'linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 6px 16px rgba(107, 114, 128, 0.4)',
+                                  },
+                                  '&:disabled': {
+                                    background: 'rgba(107, 114, 128, 0.5)',
                                   },
                                 }}
                               >
@@ -1901,19 +2037,27 @@ const HomePage: React.FC = () => {
                               variant="contained"
                               onClick={() => handleJoinSanction(sanction.acronym)}
                               disabled={joiningSanction === sanction.acronym || !fighterProfile?.user_id}
+                              fullWidth
                               sx={{
-                                borderRadius: '999px',
-                                backgroundColor: '#ff4b4b',
+                                borderRadius: '12px',
+                                background: `linear-gradient(135deg, ${sanction.statusColor} 0%, ${sanction.statusColor}dd 100%)`,
                                 color: '#fff',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                letterSpacing: '0.08em',
+                                fontSize: '0.875rem',
+                                fontWeight: 700,
+                                letterSpacing: '0.05em',
                                 textTransform: 'uppercase',
-                                px: 1.75,
-                                py: 1,
+                                px: 2,
+                                py: 1.5,
+                                boxShadow: `0 4px 16px ${sanction.statusColor}40`,
+                                transition: 'all 0.2s ease',
                                 '&:hover': {
-                                  backgroundColor: '#ff6666',
-                                  filter: 'brightness(1.1)',
+                                  background: `linear-gradient(135deg, ${sanction.statusColor}dd 0%, ${sanction.statusColor} 100%)`,
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: `0 6px 20px ${sanction.statusColor}60`,
+                                },
+                                '&:disabled': {
+                                  background: 'rgba(255, 75, 75, 0.3)',
+                                  boxShadow: 'none',
                                 },
                               }}
                             >

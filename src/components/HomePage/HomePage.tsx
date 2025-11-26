@@ -866,10 +866,10 @@ const HomePage: React.FC = () => {
         sx={{
           backgroundImage: homePageBackground ? `url("${homePageBackground}")` : 'url("/TBC Homepage.png")',
           backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
-          minHeight: '100vh',
+          height: '100vh',
           width: '100vw',
           position: 'fixed',
           top: 0,

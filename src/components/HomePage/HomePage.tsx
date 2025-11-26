@@ -63,8 +63,8 @@ import EmojiReactions from '../News/EmojiReactions';
 import { getTimezoneLabel } from '../../utils/timezones';
 import { fighterSanctionService, SanctionFighter, SanctionUnlockInfo } from '../../services/fighterSanctionService';
 import { notificationService } from '../../services/notificationService';
-// Import FB cover Undisputed.png directly from src folder
-import homePageBackground from '../../FB cover Undisputed.png';
+// Import TBC Homepage.png directly from src folder
+import homePageBackground from '../../TBC Homepage.png';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
 // Import sanction images
@@ -864,8 +864,8 @@ const HomePage: React.FC = () => {
       <Box
         component="div"
         sx={{
-          backgroundImage: homePageBackground ? `url("${homePageBackground}")` : 'url("/FB cover Undisputed.png")',
-          backgroundSize: 'cover',
+          backgroundImage: homePageBackground ? `url("${homePageBackground}")` : 'url("/TBC Homepage.png")',
+          backgroundSize: '100% 100%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',

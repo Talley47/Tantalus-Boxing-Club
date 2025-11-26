@@ -124,7 +124,7 @@ const RulesGuidelines: React.FC = () => {
               Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
-              Official Rules & Guidelines (v1.1.1)
+              Official Rules & Guidelines (v1.2.0)
             </Typography>
           </Box>
         </Box>
@@ -228,6 +228,67 @@ const RulesGuidelines: React.FC = () => {
                 secondary="Rankings, points, and match outcomes are visible to the community."
               />
             </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Tiered Progression"
+                secondary="Boxing Sanctions unlock based on your points, rewarding consistent performance and advancement."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>How the Application Works</Typography>
+          <Typography variant="body2" paragraph>
+            The Tantalus Boxing Club application is a comprehensive platform for managing your boxing career:
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="1. Create Your Fighter Profile"
+                secondary="Set up your fighter with stats, weight class, platform, and timezone. Complete your profile to access all features."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Earn Points Through Fights"
+                secondary="Win fights to earn points (+5 for win, +8 for KO/TKO). Points determine your tier and unlock Boxing Sanctions."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="3. Advance Through Tiers"
+                secondary="Start at Amateur (0-29 pts), progress to Semi-Pro (30-69), Pro (70-139), Contender (140-279), and Elite (280+)."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. Unlock Boxing Sanctions"
+                secondary="As you earn points, new Boxing Sanctions become available. Join sanctions to compete for rankings within each governing body."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="5. Compete in Tournaments"
+                secondary="Enter tournaments based on your tier and weight class. Win tournaments to earn recognition and advance your career."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="6. Use Training Camps"
+                secondary="Practice with other fighters in training camps. No points at stake, perfect for skill development and strategy testing."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="7. Track Your Progress"
+                secondary="View your rankings, fight history, analytics, and progress through the tier system. Monitor your position in each Boxing Sanction."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="8. Stay Connected"
+                secondary="Receive notifications for pending sanctions, active sanctions, fight requests, tournaments, and important updates."
+              />
+            </ListItem>
           </List>
         </AccordionDetails>
       </Accordion>
@@ -242,45 +303,92 @@ const RulesGuidelines: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Typography variant="body1" paragraph>
-            Fighters can now join <strong>Boxing Sanctions</strong>—governing bodies that oversee different aspects of competitive boxing. Each sanction maintains its own rankings, and fighters compete for position within their chosen sanctions.
+            The <strong>Boxing Sanctions System</strong> is a tiered unlock system where fighters must earn points to unlock access to different governing bodies. Each sanction maintains its own rankings, and fighters compete for position within their chosen sanctions.
           </Typography>
+
+          <Alert severity="info" sx={{ mt: 2, mb: 3 }}>
+            <strong>New in v1.2.0:</strong> Sanctions are now unlocked based on your fighter's points. You'll receive notifications when new sanctions become available!
+          </Alert>
           
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Available Sanctions</Typography>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Sanction Unlock System</Typography>
+          <Typography variant="body2" paragraph>
+            Sanctions are unlocked progressively as you advance through tiers. Each sanction has specific point requirements:
+          </Typography>
+          <TableContainer component={Paper} sx={{ mt: 2, mb: 3 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Sanction</strong></TableCell>
+                  <TableCell><strong>Points Required</strong></TableCell>
+                  <TableCell><strong>Tier</strong></TableCell>
+                  <TableCell><strong>Description</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell><strong>TBCA</strong></TableCell>
+                  <TableCell>0-29 pts</TableCell>
+                  <TableCell>Amateur</TableCell>
+                  <TableCell>Tantalus Boxing Club Amateur Association - Governing amateur bouts and club-level competitions</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>TBA</strong></TableCell>
+                  <TableCell>30-69 pts</TableCell>
+                  <TableCell>Semi-Pro</TableCell>
+                  <TableCell>Tantalus Boxing Association - Oversees regional events and standardized amateur rankings</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>TBO</strong></TableCell>
+                  <TableCell>70-139 pts</TableCell>
+                  <TableCell>Pro</TableCell>
+                  <TableCell>Tantalus Boxing Organization - Professional-level sanctioning body for title fights and promotions</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>TBF</strong></TableCell>
+                  <TableCell>140-279 pts</TableCell>
+                  <TableCell>Contender</TableCell>
+                  <TableCell>Tantalus Boxing Federation - International liaison for cross-federation events and regulations</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>TBC</strong></TableCell>
+                  <TableCell>280-559 pts</TableCell>
+                  <TableCell>Elite</TableCell>
+                  <TableCell>Tantalus Boxing Council - Advisory council for rules, safety standards, and judging criteria</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>TRM</strong></TableCell>
+                  <TableCell>560+ pts</TableCell>
+                  <TableCell>Elite+</TableCell>
+                  <TableCell>Tantalus Ring Magazine - Official rankings, features, and coverage of Tantalus-sanctioned bouts</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Sanction Status</Typography>
+          <Typography variant="body2" paragraph>
+            Each sanction displays one of three statuses:
+          </Typography>
           <List>
             <ListItem>
+              <Chip label="Active" size="small" sx={{ bgcolor: '#22c55e', color: 'white', mr: 1 }} />
               <ListItemText 
-                primary="TBCA - Tantalus Boxing Club Amateur Association"
-                secondary="Governing amateur bouts and club-level competitions under Tantalus rules."
+                primary="Active"
+                secondary="You have enough points to join this sanction. Click 'Join' to become a member."
               />
             </ListItem>
             <ListItem>
+              <Chip label="Pending" size="small" sx={{ bgcolor: '#f59e0b', color: 'white', mr: 1 }} />
               <ListItemText 
-                primary="TBA - Tantalus Boxing Association"
-                secondary="Oversees regional events and standardized amateur rankings."
+                primary="Pending"
+                secondary="You're halfway through the previous tier. This sanction will unlock soon! You'll receive a notification when it becomes available."
               />
             </ListItem>
             <ListItem>
+              <Chip label="Locked" size="small" sx={{ bgcolor: '#6b7280', color: 'white', mr: 1 }} />
               <ListItemText 
-                primary="TBO - Tantalus Boxing Organization"
-                secondary="Professional-level sanctioning body for title fights and promotions."
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="TBF - Tantalus Boxing Federation"
-                secondary="International liaison for cross-federation events and regulations."
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="TBC - Tantalus Boxing Council"
-                secondary="Advisory council for rules, safety standards, and judging criteria."
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="TRM - Tantalus Ring Magazine"
-                secondary="Official rankings, features, and coverage of Tantalus-sanctioned bouts."
+                primary="Locked"
+                secondary="You need more points to unlock this sanction. Keep fighting to advance!"
               />
             </ListItem>
           </List>
@@ -290,25 +398,50 @@ const RulesGuidelines: React.FC = () => {
             <ListItem>
               <ListItemText 
                 primary="1. Navigate to Home Page → Boxing Sanctions tab"
-                secondary="View all available sanctions and their descriptions."
+                secondary="View all available sanctions, their unlock status, and point requirements."
               />
             </ListItem>
             <ListItem>
               <ListItemText 
-                primary="2. Click 'Join' on any sanction card"
-                secondary="You can join multiple sanctions simultaneously."
+                primary="2. Check your sanction status"
+                secondary="Each sanction card shows if it's Active (green), Pending (orange), or Locked (gray)."
               />
             </ListItem>
             <ListItem>
               <ListItemText 
-                primary="3. View your ranking"
+                primary="3. Click 'Join' on Active sanctions"
+                secondary="Only Active sanctions can be joined. Locked sanctions will show the required points."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. View your ranking"
                 secondary="Click 'View Fighters' to see all members ranked within that sanction."
               />
             </ListItem>
             <ListItem>
               <ListItemText 
-                primary="4. Leave anytime"
+                primary="5. Leave anytime"
                 secondary="You can leave a sanction at any time if you no longer wish to participate."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Notifications</Typography>
+          <Typography variant="body2" paragraph>
+            You'll automatically receive notifications when:
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="A sanction becomes Pending"
+                secondary="When you reach the halfway point of your current tier, the next sanction will show as 'Pending' and you'll be notified."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="A sanction becomes Active"
+                secondary="When you unlock a new sanction by reaching the required points, you'll receive a notification that it's available to join."
               />
             </ListItem>
           </List>
@@ -320,29 +453,20 @@ const RulesGuidelines: React.FC = () => {
           <List>
             <ListItem>
               <ListItemText 
-                primary="1. Total Points (Primary)"
-                secondary="Higher points = better rank"
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="2. Tier (Secondary)"
-                secondary="Elite > Contender > Pro > Semi-Pro > Amateur"
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="3. Demotions (Tertiary)"
-                secondary="Fewer demotions = better rank"
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemText 
-                primary="4. Wins (Quaternary)"
+                primary="1. Wins (Primary)"
                 secondary="More wins = better rank"
               />
             </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Losses (Secondary)"
+                secondary="Fewer losses = better rank (when wins are equal)"
+              />
+            </ListItem>
           </List>
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <strong>Note:</strong> Sanction rankings prioritize win-loss records to reward consistent performance. Points, tier, and demotions are still tracked but don't affect sanction rankings.
+          </Alert>
 
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Ranking Display</Typography>
           <Typography variant="body2" paragraph>
@@ -393,7 +517,7 @@ const RulesGuidelines: React.FC = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Boxing Sanctions</strong></TableCell>
-                  <TableCell>Join any of 6 active sanctions | Ranked by points, tier, demotions, wins</TableCell>
+                  <TableCell>Unlock based on points (0-29, 30-69, 70-139, 140-279, 280-559, 560+) | Ranked by wins/losses | Notifications for pending/active</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Scheduling</strong></TableCell>
@@ -409,7 +533,10 @@ const RulesGuidelines: React.FC = () => {
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>Versioning & Changelog</Typography>
           <Typography variant="body2" paragraph>
-            <strong>v1.1.1 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
+            <strong>v1.2.0 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Major Boxing Sanctions System Update - Implemented tiered unlock system where sanctions are unlocked based on fighter points. Sanctions now display as Active, Pending, or Locked. Fighters receive notifications when sanctions become pending or active. Updated ranking system to prioritize wins and losses within sanctions. Enhanced UI with status badges, tooltips, and improved accessibility. Performance optimizations for faster loading and smoother interactions.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            <strong>v1.1.1 (2025-01-XX):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
           </Typography>
           <Typography variant="body2" paragraph>
             <strong>v1.1.0 (2025-01-XX):</strong> Creative Fighter images, enhanced rankings display, fight URL and scorecard submissions, real-time updates, and visual improvements.

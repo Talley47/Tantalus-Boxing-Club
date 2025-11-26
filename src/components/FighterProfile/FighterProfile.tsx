@@ -78,6 +78,8 @@ import { COMMON_TIMEZONES, getTimezoneLabel } from '../../utils/timezones';
 import wbcBlack from '../../wbc-black.jpg';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
+// Import Profile Page.png
+import profilePageBackground from '../../Profile Page.png';
 
 interface FightRecord {
   id: string;
@@ -1358,15 +1360,16 @@ const FighterProfile: React.FC = () => {
         sx={{
           position: 'fixed',
           top: 0,
-          left: { xs: 0, sm: '240px' },
+          left: { xs: 0, sm: '200px' },
           right: 0,
           bottom: 0,
-          width: { xs: '100%', sm: 'calc(100% - 240px)' },
+          width: { xs: '100%', sm: 'calc(100% - 200px)' },
           height: '100vh',
-          backgroundImage: `url(${wbcBlack})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundImage: profilePageBackground ? `url("${profilePageBackground}")` : 'url("/Profile Page.png")',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
           zIndex: 0,
           '&::before': {
             content: '""',

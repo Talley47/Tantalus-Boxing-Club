@@ -44,11 +44,12 @@ import {
 } from '../../services/rankingsService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealtime } from '../../contexts/RealtimeContext';
-// Import UBL Rankings.png directly from src folder
-import rankingsBackground from '../../UBL Rankings.png';
+// Import RBC Rankings page.png directly from src folder
+import rankingsBackground from '../../RBC Rankings page.png';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
 
+// Debug: Log the imported image path
 // Debug: Log the imported image path
 console.log('Rankings background image imported:', rankingsBackground);
 console.log('Image type:', typeof rankingsBackground);
@@ -204,20 +205,20 @@ const Rankings: React.FC = () => {
 
   return (
     <>
-      {/* Full-screen background layer with UBL Rankings.png */}
+      {/* Full-screen background layer with RBC Rankings page.png */}
       <Box
         component="div"
         sx={{
           position: 'fixed',
           top: 0,
-          left: { xs: 0, sm: '240px' },
+          left: { xs: 0, sm: '200px' },
           right: 0,
           bottom: 0,
-          width: { xs: '100%', sm: 'calc(100% - 240px)' },
+          width: { xs: '100%', sm: 'calc(100% - 200px)' },
           height: '100vh',
-          backgroundImage: rankingsBackground ? `url("${rankingsBackground}")` : 'url("/UBL Rankings.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundImage: rankingsBackground ? `url("${rankingsBackground}")` : 'url("/RBC Rankings page.png")',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
           zIndex: -1,

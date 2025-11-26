@@ -21,11 +21,11 @@ import { useRealtime } from '../../contexts/RealtimeContext';
 import { AnalyticsService, FighterAnalytics } from '../../services/analyticsService';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
-// Import Canelo undisputed.png background
-import caneloBackground from '../../Canelo undisputed.png';
+// Import Analytics page.png background
+import analyticsBackground from '../../Analytics page.png';
 
 // Debug log
-console.log('Analytics background image path:', caneloBackground);
+console.log('Analytics background image path:', analyticsBackground);
 
 const Analytics: React.FC = () => {
   const { fighterProfile } = useAuth();
@@ -119,14 +119,14 @@ const Analytics: React.FC = () => {
         sx={{
           position: 'fixed',
           top: 0,
-          left: { xs: 0, sm: '240px' },
+          left: { xs: 0, sm: '200px' },
           right: 0,
           bottom: 0,
-          width: { xs: '100%', sm: 'calc(100% - 240px)' },
+          width: { xs: '100%', sm: 'calc(100% - 200px)' },
           height: '100vh',
-          backgroundImage: caneloBackground ? `url("${caneloBackground}")` : 'url("/Canelo undisputed.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundImage: analyticsBackground ? `url("${analyticsBackground}")` : 'url("/Analytics page.png")',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
           zIndex: -1,

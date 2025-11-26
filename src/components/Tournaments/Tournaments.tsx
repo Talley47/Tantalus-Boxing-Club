@@ -43,8 +43,8 @@ import { useRealtime } from '../../contexts/RealtimeContext';
 import { useNavigate } from 'react-router-dom';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
-// Import KOTH Tournament.png background image
-import tournamentBackground from '../../KOTH Tournament.png';
+// Import TBC Tournamement page.png background image
+import tournamentBackground from '../../TBC Tournamement page.png';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -179,20 +179,20 @@ const Tournaments: React.FC = () => {
 
   return (
     <>
-      {/* Full-screen background layer with KOTH Tournament.png */}
+      {/* Full-screen background layer with TBC Tournamement page.png */}
       <Box
         component="div"
         sx={{
           position: 'fixed',
           top: 0,
-          left: { xs: 0, sm: '240px' },
+          left: { xs: 0, sm: '200px' },
           right: 0,
           bottom: 0,
-          width: { xs: '100%', sm: 'calc(100% - 240px)' },
+          width: { xs: '100%', sm: 'calc(100% - 200px)' },
           height: '100vh',
-          backgroundImage: tournamentBackground ? `url("${tournamentBackground}")` : 'url("/KOTH Tournament.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundImage: tournamentBackground ? `url("${tournamentBackground}")` : 'url("/TBC Tournamement page.png")',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
           zIndex: -1,

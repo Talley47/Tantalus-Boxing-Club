@@ -23,8 +23,97 @@ export interface SanctionFighter {
   demotions?: number; // Number of demotions (can be calculated from fight records)
 }
 
+export type SanctionStatus = 'active' | 'pending' | 'locked';
+
+export interface SanctionUnlockInfo {
+  status: SanctionStatus;
+  minPoints: number;
+  maxPoints?: number;
+  requiredPoints: number;
+  currentPoints: number;
+}
+
 class FighterSanctionService {
   private readonly TABLE_NAME = 'fighter_sanctions';
+
+  // Sanction unlock requirements based on points
+  private readonly SANCTION_REQUIREMENTS = [
+    { acronym: 'TBCA', minPoints: 0, maxPoints: 29, name: 'Tantalus Boxing Club Amateur Association' },
+    { acronym: 'TBA', minPoints: 30, maxPoints: 69, name: 'Tantalus Boxing Association' },
+    { acronym: 'TBO', minPoints: 70, maxPoints: 139, name: 'Tantalus Boxing Organization' },
+    { acronym: 'TBF', minPoints: 140, maxPoints: 279, name: 'Tantalus Boxing Federation' },
+    { acronym: 'TBC', minPoints: 280, maxPoints: 559, name: 'Tantalus Boxing Council' },
+    { acronym: 'TRM', minPoints: 560, maxPoints: undefined, name: 'Tantalus Ring Magazine' },
+  ];
+
+  /**
+   * Get sanction unlock status for a fighter
+   */
+  getSanctionStatus(sanctionAcronym: string, fighterPoints: number): SanctionUnlockInfo {
+    const requirement = this.SANCTION_REQUIREMENTS.find(s => s.acronym === sanctionAcronym);
+    
+    if (!requirement) {
+      return {
+        status: 'locked',
+        minPoints: 0,
+        requiredPoints: 0,
+        currentPoints: fighterPoints,
+      };
+    }
+
+    // Check if fighter has enough points to unlock
+    if (fighterPoints >= requirement.minPoints) {
+      // Fighter has unlocked this sanction
+      return {
+        status: 'active',
+        minPoints: requirement.minPoints,
+        maxPoints: requirement.maxPoints,
+        requiredPoints: requirement.minPoints,
+        currentPoints: fighterPoints,
+      };
+    }
+
+    // Check if fighter is at halfway point of previous tier (pending status)
+    const currentIndex = this.SANCTION_REQUIREMENTS.findIndex(r => r.acronym === sanctionAcronym);
+    if (currentIndex > 0) {
+      const previousRequirement = this.SANCTION_REQUIREMENTS[currentIndex - 1];
+      
+      if (previousRequirement) {
+        const previousTierRange = previousRequirement.maxPoints !== undefined
+          ? previousRequirement.maxPoints - previousRequirement.minPoints
+          : Infinity;
+        const previousHalfwayPoint = previousRequirement.minPoints + (previousTierRange / 2);
+        
+        // If fighter is at or past halfway point of previous tier, show as pending
+        if (fighterPoints >= previousHalfwayPoint && fighterPoints < requirement.minPoints) {
+          return {
+            status: 'pending',
+            minPoints: requirement.minPoints,
+            maxPoints: requirement.maxPoints,
+            requiredPoints: requirement.minPoints,
+            currentPoints: fighterPoints,
+          };
+        }
+      }
+    }
+
+    // Fighter hasn't reached the unlock point yet
+    return {
+      status: 'locked',
+      minPoints: requirement.minPoints,
+      maxPoints: requirement.maxPoints,
+      requiredPoints: requirement.minPoints,
+      currentPoints: fighterPoints,
+    };
+  }
+
+  /**
+   * Check if a sanction is unlocked for a fighter
+   */
+  isSanctionUnlocked(sanctionAcronym: string, fighterPoints: number): boolean {
+    const status = this.getSanctionStatus(sanctionAcronym, fighterPoints);
+    return status.status === 'active';
+  }
 
   /**
    * Join a sanction
@@ -78,6 +167,23 @@ class FighterSanctionService {
 
       if (existing) {
         throw new Error('You have already joined this sanction');
+      }
+
+      // Check if sanction is unlocked for this fighter
+      const { data: profileWithPoints, error: pointsError } = await supabase
+        .from('fighter_profiles')
+        .select('points')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (pointsError || !profileWithPoints) {
+        throw new Error('Failed to fetch fighter points');
+      }
+
+      const fighterPoints = profileWithPoints.points || 0;
+      if (!this.isSanctionUnlocked(sanctionAcronym, fighterPoints)) {
+        const status = this.getSanctionStatus(sanctionAcronym, fighterPoints);
+        throw new Error(`This sanction is locked. You need ${status.requiredPoints} points to unlock it. You currently have ${fighterPoints} points.`);
       }
 
       // Join the sanction
@@ -313,33 +419,14 @@ class FighterSanctionService {
         demotions: demotionsMap.get(fighter.id) || 0,
       }));
 
-      // Sort by: points (desc), tier (desc), demotions (asc), wins (desc)
-      const tierOrder: { [key: string]: number } = {
-        'Elite': 5,
-        'Contender': 4,
-        'Pro': 3,
-        'Semi-Pro': 2,
-        'Amateur': 1,
-      };
-
+      // Sort by: wins (desc), then losses (asc - fewer losses is better)
       sanctionFighters.sort((a, b) => {
-        // Primary: Points (descending)
-        if (b.points !== a.points) {
-          return b.points - a.points;
+        // Primary: Wins (descending)
+        if (b.wins !== a.wins) {
+          return b.wins - a.wins;
         }
-        // Secondary: Tier (descending)
-        const tierDiff = (tierOrder[b.tier] || 0) - (tierOrder[a.tier] || 0);
-        if (tierDiff !== 0) {
-          return tierDiff;
-        }
-        // Tertiary: Demotions (ascending - fewer demotions is better)
-        const aDemotions = a.demotions || 0;
-        const bDemotions = b.demotions || 0;
-        if (aDemotions !== bDemotions) {
-          return aDemotions - bDemotions;
-        }
-        // Quaternary: Wins (descending)
-        return b.wins - a.wins;
+        // Secondary: Losses (ascending - fewer losses is better)
+        return a.losses - b.losses;
       });
 
       // Assign ranks

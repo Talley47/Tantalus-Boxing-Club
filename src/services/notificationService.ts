@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'Match' | 'Tournament' | 'Tier' | 'Dispute' | 'Award' | 'General' | 'FightRequest' | 'TrainingCamp' | 'Callout' | 'FightUrlSubmission' | 'Event' | 'News' | 'NewFighter';
+  type: 'Match' | 'Tournament' | 'Tier' | 'Dispute' | 'Award' | 'General' | 'FightRequest' | 'TrainingCamp' | 'Callout' | 'FightUrlSubmission' | 'Event' | 'News' | 'NewFighter' | 'Sanction';
   title: string;
   message: string;
   is_read: boolean;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -61,7 +61,8 @@ import { supabase } from '../../services/supabase';
 import NotificationBell from '../Shared/NotificationBell';
 import EmojiReactions from '../News/EmojiReactions';
 import { getTimezoneLabel } from '../../utils/timezones';
-import { fighterSanctionService, SanctionFighter } from '../../services/fighterSanctionService';
+import { fighterSanctionService, SanctionFighter, SanctionUnlockInfo } from '../../services/fighterSanctionService';
+import { notificationService } from '../../services/notificationService';
 // Import FB cover Undisputed.png directly from src folder
 import homePageBackground from '../../FB cover Undisputed.png';
 // Import Logo1.png
@@ -95,8 +96,9 @@ function TabPanel(props: TabPanelProps) {
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
       {...other}
+      style={{ display: value === index ? 'block' : 'none' }}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: 3, minHeight: '400px' }}>{children}</Box>}
     </div>
   );
 }
@@ -288,6 +290,71 @@ const HomePage: React.FC = () => {
   const [loadingFighters, setLoadingFighters] = useState(false);
   const [joinedSanctions, setJoinedSanctions] = useState<Set<string>>(new Set());
   const [joiningSanction, setJoiningSanction] = useState<string | null>(null);
+  const [sanctionStatuses, setSanctionStatuses] = useState<Map<string, SanctionUnlockInfo>>(new Map());
+
+  // Memoize sanctions list and filtered results for performance (must be before any returns)
+  const allSanctions = useMemo(() => [
+    {
+      acronym: 'TBCA',
+      name: 'Tantalus Boxing Club Amateur Association',
+      type: 'Association',
+      description: 'Governing amateur bouts and club-level competitions under Tantalus rules. (Amateur: 0-29 pts)',
+      image: tbcaImage,
+    },
+    {
+      acronym: 'TBA',
+      name: 'Tantalus Boxing Association',
+      type: 'Association',
+      description: 'Oversees regional events and standardized amateur rankings. (Semi-Pro: 30-69 pts)',
+      image: tbaImage,
+    },
+    {
+      acronym: 'TBO',
+      name: 'Tantalus Boxing Organization',
+      type: 'Organization',
+      description: 'Professional-level sanctioning body for title fights and promotions. (Pro: 70-139 pts)',
+      image: tboImage,
+    },
+    {
+      acronym: 'TBF',
+      name: 'Tantalus Boxing Federation',
+      type: 'Federation',
+      description: 'International liaison for cross-federation events and regulations. (Contender: 140-279 pts)',
+      image: tbfImage,
+    },
+    {
+      acronym: 'TBC',
+      name: 'Tantalus Boxing Council',
+      type: 'Council',
+      description: 'Advisory council for rules, safety standards, and judging criteria. (Elite: 280+ pts)',
+      image: tbcImage,
+    },
+    {
+      acronym: 'TRM',
+      name: 'Tantalus Ring Magazine',
+      type: 'Magazine',
+      description: 'Official rankings, features, and coverage of Tantalus-sanctioned bouts. (560+ pts)',
+      image: trmImage,
+    },
+  ], []);
+
+  const filteredSanctions = useMemo(() => {
+    return allSanctions.filter((sanction) => {
+      if (sanctionSearch) {
+        const searchLower = sanctionSearch.toLowerCase();
+        if (!sanction.acronym.toLowerCase().includes(searchLower) && 
+            !sanction.name.toLowerCase().includes(searchLower)) {
+          return false;
+        }
+      }
+      if (sanctionTypeFilter && sanction.type !== sanctionTypeFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [allSanctions, sanctionSearch, sanctionTypeFilter]);
+
+  const fighterPoints = useMemo(() => fighterProfile?.points || 0, [fighterProfile?.points]);
 
   const loadDashboardData = async () => {
     try {
@@ -466,38 +533,171 @@ const HomePage: React.FC = () => {
     setTabValue(newValue);
   };
 
-  // Load joined sanctions for current user
+  // Load joined sanctions and calculate statuses for current user
   useEffect(() => {
-    const loadJoinedSanctions = async () => {
+    const loadSanctionData = async () => {
       const userId = user?.id || fighterProfile?.user_id;
-      if (userId) {
+      
+      // Enhanced debug logging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Debug: Loading sanction data', {
+          userId,
+          user_id: user?.id,
+          fighterProfile_user_id: fighterProfile?.user_id,
+          fighterProfile_id: fighterProfile?.id,
+          fighterProfile_points: fighterProfile?.points,
+          hasFighterProfile: !!fighterProfile,
+          authLoading,
+          tabValue,
+        });
+      }
+      
+      // More defensive check - ensure we have both user ID and fighter profile
+      if (userId && fighterProfile && !authLoading) {
         try {
           const sanctions = await fighterSanctionService.getSanctionsByFighter(userId);
-          setJoinedSanctions(new Set(sanctions));
+          const joinedSet = new Set(sanctions);
+          setJoinedSanctions(joinedSet);
+
+          // Calculate status for each sanction
+          const fighterPoints = fighterProfile.points || 0;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Debug: Fighter points:', fighterPoints, 'Joined sanctions:', Array.from(joinedSet));
+          }
+          
+          const statusMap = new Map<string, SanctionUnlockInfo>();
+          const sanctionAcronyms = ['TBCA', 'TBA', 'TBO', 'TBF', 'TBC', 'TRM'];
+          
+          let previousPendingSanction: string | null = null;
+          
+          sanctionAcronyms.forEach(acronym => {
+            const status = fighterSanctionService.getSanctionStatus(acronym, fighterPoints);
+            statusMap.set(acronym, status);
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Debug: Sanction ${acronym} status:`, {
+                status: status.status,
+                requiredPoints: status.requiredPoints,
+                currentPoints: status.currentPoints,
+                isJoined: joinedSet.has(acronym),
+              });
+            }
+            
+            // Check if this sanction just became pending (halfway through previous tier)
+            if (status.status === 'pending' && !previousPendingSanction) {
+              previousPendingSanction = acronym;
+              // Check if we should send a notification (only once)
+              checkAndNotifyPendingSanction(userId, acronym, status, 'pending');
+            }
+            
+            // Check if this sanction just became active (unlocked) and fighter hasn't joined yet
+            if (status.status === 'active' && !joinedSet.has(acronym)) {
+              checkAndNotifyPendingSanction(userId, acronym, status, 'active');
+            }
+          });
+          
+          setSanctionStatuses(statusMap);
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Debug: Sanction statuses set:', Array.from(statusMap.entries()));
+          }
         } catch (error) {
-          console.error('Error loading joined sanctions:', error);
+          console.error('Error loading sanction data:', error);
         }
+      } else {
+        console.log('Debug: Cannot load sanction data - missing userId or fighterProfile', {
+          userId: !!userId,
+          hasFighterProfile: !!fighterProfile,
+        });
       }
     };
 
-    if (tabValue === 5) { // Boxing Sanctions tab
-      loadJoinedSanctions();
+    const checkAndNotifyPendingSanction = async (userId: string, sanctionAcronym: string, status: SanctionUnlockInfo, notificationType: 'pending' | 'active') => {
+      try {
+        const sanctionNames: { [key: string]: string } = {
+          'TBCA': 'Tantalus Boxing Club Amateur Association',
+          'TBA': 'Tantalus Boxing Association',
+          'TBO': 'Tantalus Boxing Organization',
+          'TBF': 'Tantalus Boxing Federation',
+          'TBC': 'Tantalus Boxing Council',
+          'TRM': 'Tantalus Ring Magazine',
+        };
+
+        // Check if we've already notified about this sanction in this state
+        const notificationMessage = notificationType === 'pending'
+          ? `You're halfway to unlocking ${sanctionNames[sanctionAcronym]}!`
+          : `${sanctionNames[sanctionAcronym]} is now available!`;
+        
+        const { data: existingNotifications } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('type', 'Sanction')
+          .like('message', `%${sanctionAcronym}%`)
+          .limit(1);
+
+        // Only notify if:
+        // 1. For pending: no existing notification for this sanction
+        // 2. For active: no existing notification AND fighter hasn't joined yet
+        const shouldNotify = !existingNotifications || existingNotifications.length === 0;
+        
+        if (shouldNotify) {
+          const message = notificationType === 'pending'
+            ? `You're halfway to unlocking ${sanctionNames[sanctionAcronym]}! Keep fighting to unlock this sanction at ${status.requiredPoints} points.`
+            : `${sanctionNames[sanctionAcronym]} is now available! You can now join this sanction.`;
+          
+          const title = notificationType === 'pending'
+            ? 'New Boxing Sanction Pending'
+            : 'New Boxing Sanction Available';
+
+          try {
+            await notificationService.createNotification(
+              userId,
+              'Sanction',
+              title,
+              message,
+              '/home?tab=sanctions'
+            );
+          } catch (notificationError: any) {
+            // If the error is about the notification type not being allowed,
+            // log a helpful message but don't break the app
+            if (notificationError?.message?.includes('type') || notificationError?.code === '23514') {
+              console.warn('Sanction notification type not yet added to database. Please run add-sanction-notification-type.sql in Supabase SQL Editor.');
+            } else {
+              console.error('Error creating sanction notification:', notificationError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/creating sanction notification:', error);
+      }
+    };
+
+    // Load data when:
+    // 1. Boxing Sanctions tab is open (tabValue === 5)
+    // 2. Auth is not loading
+    // 3. User and fighter profile are available
+    if (tabValue === 5 && !authLoading) {
+      if (user?.id && fighterProfile) {
+        loadSanctionData();
+      } else {
+        // If tab is open but data isn't ready, log for debugging (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Debug: Tab open but waiting for user/fighter profile', {
+            hasUser: !!user?.id,
+            hasFighterProfile: !!fighterProfile,
+            authLoading,
+          });
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id ?? null, fighterProfile?.user_id ?? null, tabValue]);
+  }, [user?.id, fighterProfile?.user_id, fighterProfile?.points, fighterProfile?.id, tabValue, authLoading]);
 
-  // Handle joining a sanction
-  const handleJoinSanction = async (sanctionAcronym: string) => {
+  // Handle joining a sanction - memoized with useCallback
+  const handleJoinSanction = useCallback(async (sanctionAcronym: string) => {
     const userId = user?.id || fighterProfile?.user_id;
-    
-    // Debug logging
-    console.log('Join sanction attempt:', {
-      sanctionAcronym,
-      userId,
-      user: user?.id,
-      fighterProfile: fighterProfile?.user_id,
-      authLoading,
-    });
     
     if (!userId) {
       setError('You must be logged in to join a sanction. Please refresh the page if you are already logged in.');
@@ -516,6 +716,7 @@ const HomePage: React.FC = () => {
       if (selectedSanction === sanctionAcronym) {
         await loadSanctionFighters(sanctionAcronym);
       }
+      // Statuses don't need to be recalculated - they're based on points, not membership
     } catch (error: any) {
       console.error('Error joining sanction:', error);
       console.error('Error details:', {
@@ -542,10 +743,10 @@ const HomePage: React.FC = () => {
     } finally {
       setJoiningSanction(null);
     }
-  };
+  }, [user?.id, fighterProfile?.user_id, selectedSanction]);
 
-  // Handle leaving a sanction
-  const handleLeaveSanction = async (sanctionAcronym: string) => {
+  // Handle leaving a sanction - memoized with useCallback
+  const handleLeaveSanction = useCallback(async (sanctionAcronym: string) => {
     const userId = user?.id || fighterProfile?.user_id;
     if (!userId) {
       return;
@@ -568,10 +769,10 @@ const HomePage: React.FC = () => {
     } finally {
       setJoiningSanction(null);
     }
-  };
+  }, [user?.id, fighterProfile?.user_id, selectedSanction]);
 
-  // Load fighters for a sanction
-  const loadSanctionFighters = async (sanctionAcronym: string) => {
+  // Load fighters for a sanction - memoized with useCallback
+  const loadSanctionFighters = useCallback(async (sanctionAcronym: string) => {
     setLoadingFighters(true);
     try {
       const fighters = await fighterSanctionService.getFightersBySanction(sanctionAcronym);
@@ -582,19 +783,19 @@ const HomePage: React.FC = () => {
     } finally {
       setLoadingFighters(false);
     }
-  };
+  }, []);
 
-  // Handle opening sanction details dialog
-  const handleViewSanction = async (sanctionAcronym: string) => {
+  // Handle opening sanction details dialog - memoized with useCallback
+  const handleViewSanction = useCallback(async (sanctionAcronym: string) => {
     setSelectedSanction(sanctionAcronym);
     await loadSanctionFighters(sanctionAcronym);
-  };
+  }, [loadSanctionFighters]);
 
-  // Handle closing dialog
-  const handleCloseDialog = () => {
+  // Handle closing dialog - memoized with useCallback
+  const handleCloseDialog = useCallback(() => {
     setSelectedSanction(null);
     setSanctionFighters([]);
-  };
+  }, []);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown date';
@@ -1644,64 +1845,87 @@ const HomePage: React.FC = () => {
                   </Alert>
                 )}
                 
-                {/* Debug Info (remove in production) */}
-                {process.env.NODE_ENV === 'development' && (
-                  <Alert severity="info" sx={{ mb: 2, fontSize: '0.75rem' }}>
-                    Debug: User ID: {user?.id || 'Not loaded'}, Fighter Profile: {fighterProfile?.user_id || 'Not loaded'}, Auth Loading: {authLoading ? 'Yes' : 'No'}
-                  </Alert>
-                )}
-                
                 {/* Enhanced Header */}
                 <Box
                   sx={{
-                    background: 'linear-gradient(135deg, rgba(255, 75, 75, 0.1) 0%, rgba(255, 75, 75, 0.05) 100%)',
+                    background: 'linear-gradient(135deg, rgba(255, 75, 75, 0.2) 0%, rgba(255, 75, 75, 0.1) 100%)',
                     borderRadius: 3,
-                    p: 3,
+                    p: { xs: 2.5, sm: 3, md: 4 },
                     mb: 4,
-                    border: '1px solid rgba(255, 75, 75, 0.2)',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                    border: '2px solid rgba(255, 75, 75, 0.4)',
+                    boxShadow: '0 6px 24px rgba(255, 75, 75, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)',
+                    width: '100%',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, #ff4b4b 0%, #ff6666 50%, #ff4b4b 100%)',
+                    },
                   }}
                 >
-                  <Box display="flex" alignItems="center" gap={3}>
+                  <Box 
+                    display="flex" 
+                    alignItems="center" 
+                    gap={{ xs: 2, sm: 3, md: 4 }}
+                    flexWrap={{ xs: 'wrap', sm: 'nowrap' }}
+                    sx={{ width: '100%', position: 'relative', zIndex: 1 }}
+                  >
                     <Box
                       sx={{
-                        width: 64,
-                        height: 64,
+                        width: { xs: 60, sm: 72, md: 80 },
+                        height: { xs: 60, sm: 72, md: 80 },
+                        minWidth: { xs: 60, sm: 72, md: 80 },
                         borderRadius: '50%',
                         background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6666 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 800,
-                        letterSpacing: '0.1em',
+                        fontWeight: 900,
+                        letterSpacing: '0.2em',
                         textTransform: 'uppercase',
-                        fontSize: '1.1rem',
+                        fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.3rem' },
                         color: '#fff',
-                        boxShadow: '0 4px 15px rgba(255, 75, 75, 0.4)',
+                        boxShadow: '0 6px 20px rgba(255, 75, 75, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
+                        flexShrink: 0,
+                        border: '3px solid rgba(255, 255, 255, 0.4)',
                       }}
                     >
                       TBC
                     </Box>
-                    <Box flex={1}>
+                    <Box flex={1} minWidth={0} sx={{ width: '100%' }}>
                       <Typography 
                         variant="h4" 
+                        component="h2"
                         sx={{ 
-                          fontWeight: 800, 
+                          fontWeight: 900, 
                           mb: 0.5,
-                          background: 'linear-gradient(135deg, #ff4b4b 0%, #ff6666 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          backgroundClip: 'text',
+                          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                          color: '#ff4b4b',
+                          lineHeight: 1.1,
+                          wordBreak: 'break-word',
+                          textShadow: '0 2px 8px rgba(255, 75, 75, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2)',
+                          letterSpacing: '-0.02em',
                         }}
                       >
                         Tantalus Boxing Club
                       </Typography>
                       <Typography 
                         variant="h6" 
+                        component="h3"
                         sx={{ 
-                          color: 'text.secondary',
-                          fontWeight: 500,
-                          letterSpacing: '0.05em',
+                          color: 'rgba(0, 0, 0, 0.75)',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          fontSize: { xs: '1rem', sm: '1.15rem', md: '1.35rem' },
+                          wordBreak: 'break-word',
+                          lineHeight: 1.4,
+                          mt: 0.75,
+                          textTransform: 'uppercase',
                         }}
                       >
                         Boxing Sanctions Management Panel
@@ -1725,6 +1949,9 @@ const HomePage: React.FC = () => {
                   }}
                 >
                   <TextField
+                    id="sanction-search-input"
+                    name="sanction-search"
+                    label="Search Sanctions"
                     placeholder="Search by name or acronym…"
                     value={sanctionSearch}
                     onChange={(e) => setSanctionSearch(e.target.value)}
@@ -1746,6 +1973,9 @@ const HomePage: React.FC = () => {
                       '& .MuiOutlinedInput-input': {
                         color: '#f5f5f5',
                       },
+                      '& .MuiInputLabel-root': {
+                        color: 'text.secondary',
+                      },
                     }}
                   />
                   <FormControl 
@@ -1764,8 +1994,11 @@ const HomePage: React.FC = () => {
                       },
                     }}
                   >
-                    <InputLabel sx={{ color: 'text.secondary' }}>Type</InputLabel>
+                    <InputLabel id="sanction-type-label" sx={{ color: 'text.secondary' }}>Type</InputLabel>
                     <Select
+                      id="sanction-type-select"
+                      name="sanction-type"
+                      labelId="sanction-type-label"
                       value={sanctionTypeFilter}
                       label="Type"
                       onChange={(e) => setSanctionTypeFilter(e.target.value)}
@@ -1785,6 +2018,15 @@ const HomePage: React.FC = () => {
                 </Box>
 
                 {/* Sanctions Grid */}
+                {!user?.id || authLoading ? (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Please log in to view boxing sanctions.
+                  </Alert>
+                ) : !fighterProfile ? (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Please complete your fighter profile to view and join boxing sanctions.
+                  </Alert>
+                ) : (
                 <Box
                   sx={{
                     display: 'grid',
@@ -1797,78 +2039,27 @@ const HomePage: React.FC = () => {
                     gap: 2.5,
                   }}
                 >
-                  {[
-                    {
-                      acronym: 'TBCA',
-                      name: 'Tantalus Boxing Club Amateur Association',
-                      type: 'Association',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'Governing amateur bouts and club-level competitions under Tantalus rules.',
-                      image: tbcaImage,
-                    },
-                    {
-                      acronym: 'TBA',
-                      name: 'Tantalus Boxing Association',
-                      type: 'Association',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'Oversees regional events and standardized amateur rankings.',
-                      image: tbaImage,
-                    },
-                    {
-                      acronym: 'TBO',
-                      name: 'Tantalus Boxing Organization',
-                      type: 'Organization',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'Professional-level sanctioning body for title fights and promotions.',
-                      image: tboImage,
-                    },
-                    {
-                      acronym: 'TBF',
-                      name: 'Tantalus Boxing Federation',
-                      type: 'Federation',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'International liaison for cross-federation events and regulations.',
-                      image: tbfImage,
-                    },
-                    {
-                      acronym: 'TBC',
-                      name: 'Tantalus Boxing Council',
-                      type: 'Council',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'Advisory council for rules, safety standards, and judging criteria.',
-                      image: tbcImage,
-                    },
-                    {
-                      acronym: 'TRM',
-                      name: 'Tantalus Ring Magazine',
-                      type: 'Magazine',
-                      status: 'Active',
-                      statusColor: '#22c55e',
-                      description: 'Official rankings, features, and coverage of Tantalus-sanctioned bouts.',
-                      image: trmImage,
-                    },
-                  ]
-                    .filter((sanction) => {
-                      const matchesSearch = 
-                        sanctionSearch === '' ||
-                        sanction.acronym.toLowerCase().includes(sanctionSearch.toLowerCase()) ||
-                        sanction.name.toLowerCase().includes(sanctionSearch.toLowerCase());
-                      const matchesType = 
-                        sanctionTypeFilter === '' || sanction.type === sanctionTypeFilter;
-                      return matchesSearch && matchesType;
-                    })
-                    .map((sanction) => (
+                  {filteredSanctions.map((sanction) => {
+                      // Get status for this sanction - use memoized calculation
+                      const statusInfo = sanctionStatuses.get(sanction.acronym) || 
+                        fighterSanctionService.getSanctionStatus(sanction.acronym, fighterPoints);
+                      
+                      // Pre-calculate derived values once (optimized)
+                      const { status } = statusInfo;
+                      const statusColor = status === 'active' ? '#22c55e' : status === 'pending' ? '#f59e0b' : '#6b7280';
+                      const statusLabel = status === 'active' ? 'Active' : status === 'pending' ? 'Pending' : 'Locked';
+                      const isLocked = status === 'locked';
+                      const isPending = status === 'pending';
+                      const isJoined = joinedSanctions.has(sanction.acronym);
+                      const isJoining = joiningSanction === sanction.acronym;
+                      
+                      return (
                       <Card
                         key={sanction.acronym}
                         sx={{
                           background: 'linear-gradient(135deg, rgba(19, 19, 31, 0.95) 0%, rgba(5, 5, 9, 0.95) 100%)',
                           borderRadius: 3,
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          border: `1px solid ${isLocked ? 'rgba(107, 114, 128, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
                           p: 3,
                           display: 'flex',
                           flexDirection: 'column',
@@ -1877,6 +2068,7 @@ const HomePage: React.FC = () => {
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                           position: 'relative',
                           overflow: 'hidden',
+                          opacity: isLocked ? 0.6 : 1,
                           '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -1884,16 +2076,16 @@ const HomePage: React.FC = () => {
                             left: 0,
                             right: 0,
                             height: '4px',
-                            background: `linear-gradient(90deg, ${sanction.statusColor} 0%, transparent 100%)`,
-                            opacity: 0,
+                            background: `linear-gradient(90deg, ${statusColor} 0%, transparent 100%)`,
+                            opacity: isLocked ? 0 : 1,
                             transition: 'opacity 0.3s ease',
                           },
                           '&:hover': {
-                            borderColor: sanction.statusColor,
-                            transform: 'translateY(-8px)',
-                            boxShadow: `0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px ${sanction.statusColor}40`,
+                            borderColor: statusColor,
+                            transform: isLocked ? 'none' : 'translateY(-8px)',
+                            boxShadow: isLocked ? '0 8px 32px rgba(0, 0, 0, 0.4)' : `0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px ${statusColor}40`,
                             '&::before': {
-                              opacity: 1,
+                              opacity: isLocked ? 0 : 1,
                             },
                           },
                         }}
@@ -1907,7 +2099,7 @@ const HomePage: React.FC = () => {
                                 fontWeight: 900,
                                 letterSpacing: '0.15em',
                                 textTransform: 'uppercase',
-                                background: `linear-gradient(135deg, ${sanction.statusColor} 0%, #fff 100%)`,
+                                background: `linear-gradient(135deg, ${statusColor} 0%, #fff 100%)`,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 backgroundClip: 'text',
@@ -1919,16 +2111,16 @@ const HomePage: React.FC = () => {
                               {sanction.acronym}
                             </Typography>
                             <Chip
-                              label={sanction.status}
+                              label={statusLabel}
                               size="small"
                               sx={{
                                 fontSize: '0.65rem',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.15em',
                                 height: 22,
-                                backgroundColor: `${sanction.statusColor}20`,
-                                color: sanction.statusColor,
-                                border: `1px solid ${sanction.statusColor}40`,
+                                backgroundColor: `${statusColor}20`,
+                                color: statusColor,
+                                border: `1px solid ${statusColor}40`,
                                 fontWeight: 700,
                                 px: 1,
                               }}
@@ -2019,12 +2211,41 @@ const HomePage: React.FC = () => {
                             color: 'rgba(255, 255, 255, 0.7)',
                             fontSize: '0.875rem',
                             lineHeight: 1.6,
-                            mb: 2,
+                            mb: 1,
                             flex: 1,
                           }}
                         >
                           {sanction.description}
                         </Typography>
+                        
+                        {/* Points Requirement */}
+                        {isLocked && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#f59e0b',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              mb: 1,
+                            }}
+                          >
+                            Requires {statusInfo.requiredPoints} points (You have {statusInfo.currentPoints})
+                          </Typography>
+                        )}
+                        {isPending && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#f59e0b',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              mb: 1,
+                            }}
+                          >
+                            Unlocks at {statusInfo.requiredPoints} points (You have {statusInfo.currentPoints})
+                          </Typography>
+                        )}
+                        
                         {/* Action Buttons */}
                         <Box display="flex" gap={1.5} mt="auto" pt={2} borderTop="1px solid rgba(255, 255, 255, 0.1)">
                           {joinedSanctions.has(sanction.acronym) ? (
@@ -2033,10 +2254,11 @@ const HomePage: React.FC = () => {
                                 variant="outlined"
                                 onClick={() => handleViewSanction(sanction.acronym)}
                                 fullWidth
+                                aria-label={`View fighters in ${sanction.name}`}
                                 sx={{
                                   borderRadius: '12px',
-                                  borderColor: sanction.statusColor,
-                                  color: sanction.statusColor,
+                                  borderColor: statusColor,
+                                  color: statusColor,
                                   fontSize: '0.875rem',
                                   fontWeight: 700,
                                   letterSpacing: '0.05em',
@@ -2046,11 +2268,11 @@ const HomePage: React.FC = () => {
                                   borderWidth: 2,
                                   transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    borderColor: sanction.statusColor,
-                                    backgroundColor: `${sanction.statusColor}15`,
+                                    borderColor: statusColor,
+                                    backgroundColor: `${statusColor}15`,
                                     borderWidth: 2,
                                     transform: 'translateY(-2px)',
-                                    boxShadow: `0 4px 12px ${sanction.statusColor}30`,
+                                    boxShadow: `0 4px 12px ${statusColor}30`,
                                   },
                                 }}
                               >
@@ -2059,7 +2281,8 @@ const HomePage: React.FC = () => {
                               <Button
                                 variant="contained"
                                 onClick={() => handleLeaveSanction(sanction.acronym)}
-                                disabled={joiningSanction === sanction.acronym}
+                                disabled={isJoining}
+                                aria-label={`Leave ${sanction.name}`}
                                 sx={{
                                   borderRadius: '12px',
                                   background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
@@ -2083,7 +2306,7 @@ const HomePage: React.FC = () => {
                                   },
                                 }}
                               >
-                                {joiningSanction === sanction.acronym ? 'Leaving...' : 'Leave'}
+                                {isJoining ? 'Leaving...' : 'Leave'}
                               </Button>
                             </>
                           ) : (
@@ -2091,6 +2314,10 @@ const HomePage: React.FC = () => {
                               title={
                                 !(user?.id || fighterProfile?.user_id) 
                                   ? 'Please log in to join a sanction' 
+                                  : isLocked
+                                    ? `This sanction requires ${statusInfo.requiredPoints} points. You currently have ${statusInfo.currentPoints} points.`
+                                  : isPending
+                                    ? `This sanction will unlock at ${statusInfo.requiredPoints} points. You currently have ${statusInfo.currentPoints} points.`
                                   : joiningSanction === sanction.acronym 
                                     ? 'Joining...' 
                                     : ''
@@ -2100,15 +2327,15 @@ const HomePage: React.FC = () => {
                               <span style={{ width: '100%' }}>
                                 <Button
                                   variant="contained"
-                                  onClick={() => {
-                                    console.log('Join button clicked for:', sanction.acronym);
-                                    handleJoinSanction(sanction.acronym);
-                                  }}
-                                  disabled={authLoading || joiningSanction === sanction.acronym || !(user?.id || fighterProfile?.user_id)}
+                                  onClick={() => handleJoinSanction(sanction.acronym)}
+                                  disabled={authLoading || isJoining || !(user?.id || fighterProfile?.user_id) || isLocked}
+                                  aria-label={`Join ${sanction.name}`}
                                   fullWidth
                                   sx={{
                                 borderRadius: '12px',
-                                background: `linear-gradient(135deg, ${sanction.statusColor} 0%, ${sanction.statusColor}dd 100%)`,
+                                background: isLocked 
+                                  ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+                                  : `linear-gradient(135deg, ${statusColor} 0%, ${statusColor}dd 100%)`,
                                 color: '#fff',
                                 fontSize: '0.875rem',
                                 fontWeight: 700,
@@ -2116,28 +2343,39 @@ const HomePage: React.FC = () => {
                                 textTransform: 'uppercase',
                                 px: 2,
                                 py: 1.5,
-                                boxShadow: `0 4px 16px ${sanction.statusColor}40`,
+                                boxShadow: isLocked ? 'none' : `0 4px 16px ${statusColor}40`,
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
-                                  background: `linear-gradient(135deg, ${sanction.statusColor}dd 0%, ${sanction.statusColor} 100%)`,
-                                  transform: 'translateY(-2px)',
-                                  boxShadow: `0 6px 20px ${sanction.statusColor}60`,
+                                  background: isLocked 
+                                    ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+                                    : `linear-gradient(135deg, ${statusColor}dd 0%, ${statusColor} 100%)`,
+                                  transform: isLocked ? 'none' : 'translateY(-2px)',
+                                  boxShadow: isLocked ? 'none' : `0 6px 20px ${statusColor}60`,
                                 },
                                 '&:disabled': {
-                                  background: 'rgba(255, 75, 75, 0.3)',
+                                  background: 'rgba(107, 114, 128, 0.3)',
                                   boxShadow: 'none',
+                                  cursor: 'not-allowed',
                                 },
                               }}
                             >
-                                  {joiningSanction === sanction.acronym ? 'Joining...' : 'Join'}
+                                  {isJoining 
+                                    ? 'Joining...' 
+                                    : isLocked 
+                                      ? 'Locked' 
+                                      : isPending
+                                        ? 'Pending'
+                                        : 'Join'}
                                 </Button>
                               </span>
                             </Tooltip>
                           )}
                         </Box>
                       </Card>
-                    ))}
+                      );
+                    })}
                 </Box>
+                )}
               </Box>
             </TabPanel>
           </Card>

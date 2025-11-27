@@ -68,6 +68,8 @@ import { smartMatchmakingService } from '../../services/smartMatchmakingService'
 import { trainingCampService, TrainingCampInvitation } from '../../services/trainingCampService';
 import { calloutService, CalloutRequest } from '../../services/calloutService';
 import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from '../../services/championshipBeltService';
+import { mediaService } from '../../services/mediaService';
+import { SocialLink } from '../../types';
 import { 
   getAllowedWeightClasses, 
   isWeightClassAllowed, 
@@ -333,9 +335,66 @@ const FighterProfile: React.FC = () => {
     gym: fighterProfile?.gym || '',
     birthday: (fighterProfile as any)?.birthday || '',
     weight_class: normalizeWeightClass(fighterProfile?.weight_class) || '',
+    social_media_bio: (fighterProfile as any)?.social_media_bio || '',
   });
+  const [socialLinks, setSocialLinks] = useState<Array<{ id?: string; platform: string; url: string; handle: string }>>([]);
+  const [newSocialLink, setNewSocialLink] = useState({ platform: 'Twitter', url: '', handle: '' });
+  const [loadingSocialLinks, setLoadingSocialLinks] = useState(false);
 
   const { subscribeToFightRecords, subscribeToScheduledFights, subscribeToFighterProfiles } = useRealtime();
+
+  const loadSocialLinks = useCallback(async (fighterId: string) => {
+    try {
+      setLoadingSocialLinks(true);
+      const links = await mediaService.getSocialLinks(fighterId);
+      setSocialLinks(links.map(link => ({
+        id: link.id,
+        platform: link.platform,
+        url: link.url,
+        handle: link.handle || ''
+      })));
+    } catch (error) {
+      console.error('Error loading social links:', error);
+    } finally {
+      setLoadingSocialLinks(false);
+    }
+  }, []);
+
+  const handleAddSocialLink = async () => {
+    if (!fighterProfile?.id || !newSocialLink.url.trim()) {
+      alert('Please enter a valid URL');
+      return;
+    }
+    try {
+      const link = await mediaService.addSocialLink({
+        fighter_id: fighterProfile.id,
+        platform: newSocialLink.platform as SocialLink['platform'],
+        url: newSocialLink.url.trim(),
+        handle: newSocialLink.handle.trim() || undefined
+      });
+      setSocialLinks([...socialLinks, {
+        id: link.id,
+        platform: link.platform,
+        url: link.url,
+        handle: link.handle || ''
+      }]);
+      setNewSocialLink({ platform: 'Twitter', url: '', handle: '' });
+    } catch (error) {
+      console.error('Error adding social link:', error);
+      alert('Failed to add social link');
+    }
+  };
+
+  const handleRemoveSocialLink = async (linkId: string) => {
+    if (!window.confirm('Are you sure you want to remove this social link?')) return;
+    try {
+      await mediaService.deleteSocialLink(linkId);
+      setSocialLinks(socialLinks.filter(link => link.id !== linkId));
+    } catch (error) {
+      console.error('Error removing social link:', error);
+      alert('Failed to remove social link');
+    }
+  };
 
   const loadFightRecords = useCallback(async () => {
     if (!fighterProfile?.user_id) return;
@@ -578,7 +637,13 @@ const FighterProfile: React.FC = () => {
               : new Date((fighterProfile as any).birthday).toISOString().split('T')[0])
           : '',
         weight_class: normalizeWeightClass(fighterProfile?.weight_class) || '',
+        social_media_bio: (fighterProfile as any)?.social_media_bio || '',
       });
+      
+      // Load social links
+      if (fighterProfile?.id && !isViewingOtherFighter) {
+        loadSocialLinks(fighterProfile.id);
+      }
     }
 
     // Subscribe to real-time changes in fight_url_submissions table
@@ -797,6 +862,8 @@ const FighterProfile: React.FC = () => {
     subscribeToFightRecords,
     subscribeToFighterProfiles,
     subscribeToScheduledFights,
+    loadSocialLinks,
+    isViewingOtherFighter,
   ]);
 
   const handleAcceptTrainingCamp = async (invitationId: string) => {
@@ -1137,6 +1204,7 @@ const FighterProfile: React.FC = () => {
         birthday: editForm.birthday,
         weight_class: editForm.weight_class,
         creative_fighter_image_url: creativeFighterImageUrl,
+        social_media_bio: editForm.social_media_bio,
       } as any);
       
       // Refresh the fighter profile to get the updated image URL
@@ -1172,6 +1240,7 @@ const FighterProfile: React.FC = () => {
             : new Date((fighterProfile as any).birthday).toISOString().split('T')[0])
         : '',
       weight_class: normalizeWeightClass(fighterProfile?.weight_class) || '',
+      social_media_bio: (fighterProfile as any)?.social_media_bio || '',
     });
     setCreativeFighterImageFile(null);
     setIsEditing(false);
@@ -1911,6 +1980,88 @@ const FighterProfile: React.FC = () => {
                       Upload a picture of your Creative Fighter (PNG, JPG, or GIF, max 10MB)
                     </Typography>
                   </Box>
+                  
+                  {/* Social Media Bio */}
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    Tantalus Ring Magazine Media
+                  </Typography>
+                  <TextField
+                    label="Social Media Bio"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={editForm.social_media_bio || ''}
+                    onChange={(e) => setEditForm({ ...editForm, social_media_bio: e.target.value })}
+                    helperText="Write a bio for your Tantalus Ring Magazine Media profile (max 500 characters)"
+                    inputProps={{ maxLength: 500 }}
+                    placeholder="Tell the world about your fighting journey, achievements, and what makes you unique..."
+                  />
+                  
+                  {/* Social Media Links */}
+                  <Box>
+                    <Typography variant="body2" mb={1} sx={{ fontWeight: 'medium' }}>
+                      Social Media Links
+                    </Typography>
+                    {socialLinks.map((link) => (
+                      <Box key={link.id} display="flex" alignItems="center" gap={1} mb={1} p={1} sx={{ bgcolor: 'background.default', borderRadius: 1 }}>
+                        <Chip label={link.platform} size="small" />
+                        <Typography variant="body2" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {link.handle || link.url}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => link.id && handleRemoveSocialLink(link.id)}
+                          disabled={loadingSocialLinks}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    ))}
+                    <Box display="flex" gap={1} mt={1}>
+                      <FormControl sx={{ minWidth: 120 }}>
+                        <InputLabel>Platform</InputLabel>
+                        <Select
+                          value={newSocialLink.platform}
+                          onChange={(e) => setNewSocialLink({ ...newSocialLink, platform: e.target.value })}
+                          label="Platform"
+                          size="small"
+                        >
+                          <MenuItem value="Twitter">Twitter</MenuItem>
+                          <MenuItem value="Instagram">Instagram</MenuItem>
+                          <MenuItem value="YouTube">YouTube</MenuItem>
+                          <MenuItem value="Twitch">Twitch</MenuItem>
+                          <MenuItem value="TikTok">TikTok</MenuItem>
+                          <MenuItem value="Facebook">Facebook</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <TextField
+                        placeholder="URL"
+                        value={newSocialLink.url}
+                        onChange={(e) => setNewSocialLink({ ...newSocialLink, url: e.target.value })}
+                        size="small"
+                        sx={{ flex: 1 }}
+                      />
+                      <TextField
+                        placeholder="Handle (optional)"
+                        value={newSocialLink.handle}
+                        onChange={(e) => setNewSocialLink({ ...newSocialLink, handle: e.target.value })}
+                        size="small"
+                        sx={{ flex: 1 }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleAddSocialLink}
+                        disabled={loadingSocialLinks || !newSocialLink.url.trim()}
+                        startIcon={<Add />}
+                      >
+                        Add
+                      </Button>
+                    </Box>
+                  </Box>
+                  
                   <Box display="flex" gap={2}>
                     <Button
                       variant="contained"
@@ -1935,6 +2086,7 @@ const FighterProfile: React.FC = () => {
                 </Stack>
               ) : (
                 /* When NOT editing: Show two-column layout with image on right */
+                <>
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
                   {/* Left Column: Physical Information */}
                   <Box sx={{ flex: 1 }}>
@@ -2141,6 +2293,63 @@ const FighterProfile: React.FC = () => {
                     </Box>
                   )}
                 </Box>
+                
+                {/* Social Media Bio and Links Display */}
+                {((fighterProfile as any)?.social_media_bio || socialLinks.length > 0) && (
+                  <Box mt={3}>
+                    <Divider sx={{ mb: 2 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Tantalus Ring Magazine Media
+                    </Typography>
+                    {(fighterProfile as any)?.social_media_bio && (
+                      <Box mb={2}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Bio
+                        </Typography>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {(fighterProfile as any).social_media_bio}
+                        </Typography>
+                      </Box>
+                    )}
+                    {socialLinks.length > 0 && (
+                      <Box mb={2}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Social Media Links
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                          {socialLinks.map((link) => (
+                            <Chip
+                              key={link.id}
+                              label={`${link.platform}: ${link.handle || link.url}`}
+                              component="a"
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              clickable
+                              icon={<LinkIcon />}
+                              sx={{ mb: 1 }}
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+                    {!isViewingOtherFighter && (
+                      <Button
+                        variant="outlined"
+                        startIcon={<LinkIcon />}
+                        onClick={() => {
+                          const shareableUrl = `${window.location.origin}/media/${fighterProfile?.user_id}`;
+                          navigator.clipboard.writeText(shareableUrl);
+                          alert('Shareable link copied to clipboard!');
+                        }}
+                        sx={{ mt: 1 }}
+                      >
+                        Copy Shareable Link
+                      </Button>
+                    )}
+                  </Box>
+                )}
+                </>
               )}
             </CardContent>
           </Card>

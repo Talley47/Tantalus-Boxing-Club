@@ -11,6 +11,7 @@ import RegisterPage from './components/Auth/RegisterPage';
 import DiagnosticPage from './components/Auth/DiagnosticPage';
 import HomePage from './components/HomePage/HomePage';
 import FighterProfile from './components/FighterProfile/FighterProfile';
+import FighterMedia from './components/FighterMedia/FighterMedia';
 import Rankings from './components/Rankings/Rankings';
 import Matchmaking from './components/Matchmaking/Matchmaking';
 import Scheduling from './components/Scheduling/Scheduling';
@@ -160,6 +161,10 @@ const AppContent: React.FC = () => {
                 <FighterProfile />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/media/:userId"
+            element={<FighterMedia />}
           />
           <Route
             path="/rankings"

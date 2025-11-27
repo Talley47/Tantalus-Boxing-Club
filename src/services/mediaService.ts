@@ -93,6 +93,15 @@ class MediaService {
     return data;
   }
 
+  async deleteSocialLink(linkId: string): Promise<void> {
+    const { error } = await supabase
+      .from('social_links')
+      .delete()
+      .eq('id', linkId);
+    
+    if (error) throw error;
+  }
+
   // Training Camps
   async getTrainingCamps(fighterId: string): Promise<TrainingCamp[]> {
     const { data, error } = await supabase

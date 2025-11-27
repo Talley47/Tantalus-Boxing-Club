@@ -28,7 +28,10 @@ import {
   InsertLink,
   EmojiEmotions,
   KeyboardArrowDown,
+  Article,
+  Person,
 } from '@mui/icons-material';
+import { Tabs, Tab } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatService, ChatMessage } from '../../services/chatService';
 import { supabase } from '../../services/supabase';
@@ -37,9 +40,12 @@ import boxingGymBg from '../../bxr-boxinggym-hd-4.jpg';
 
 const Social: React.FC = () => {
   const { user, fighterProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [mediaFighters, setMediaFighters] = useState<any[]>([]);
+  const [loadingMediaFighters, setLoadingMediaFighters] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [sending, setSending] = useState(false);
@@ -143,6 +149,34 @@ const Social: React.FC = () => {
       loadOlderMessages();
     }
   }, [hasMoreMessages, loadingOlder, loadOlderMessages]);
+
+  // Load media fighters (fighters with social media profiles)
+  const loadMediaFighters = useCallback(async () => {
+    try {
+      setLoadingMediaFighters(true);
+      const { data, error } = await supabase
+        .from('fighter_profiles')
+        .select('id, user_id, name, handle, tier, points, social_media_bio, creative_fighter_image_url')
+        .not('social_media_bio', 'is', null)
+        .order('points', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setMediaFighters(data || []);
+    } catch (error) {
+      console.error('Error loading media fighters:', error);
+      setMediaFighters([]);
+    } finally {
+      setLoadingMediaFighters(false);
+    }
+  }, []);
+
+  // Load media fighters when tab is switched to Media Following
+  useEffect(() => {
+    if (activeTab === 1 && mediaFighters.length === 0) {
+      loadMediaFighters();
+    }
+  }, [activeTab, loadMediaFighters, mediaFighters.length]);
 
   // Load initial messages
   const loadMessages = async () => {
@@ -1075,28 +1109,39 @@ const Social: React.FC = () => {
           }}
         >
         <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0, minHeight: 0 }}>
-          {/* Header */}
-          <Box
-            sx={{
-              p: 2,
-              borderBottom: 1,
-              borderColor: 'divider',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <Forum color="primary" />
-            <Typography variant="h5" component="h1">
-              Club Chat Room
-            </Typography>
-            <Chip
-              label={`${messages.length} messages`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+              <Tab icon={<Forum />} label="Club Chat" iconPosition="start" />
+              <Tab icon={<Article />} label="Tantalus Ring Magazine Media Following" iconPosition="start" />
+            </Tabs>
           </Box>
+
+          {/* Club Chat Tab */}
+          {activeTab === 0 && (
+            <>
+              {/* Header */}
+              <Box
+                sx={{
+                  p: 2,
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <Forum color="primary" />
+                <Typography variant="h5" component="h1">
+                  Club Chat Room
+                </Typography>
+                <Chip
+                  label={`${messages.length} messages`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              </Box>
 
           {/* Messages Container */}
           <Box
@@ -1512,6 +1557,128 @@ const Social: React.FC = () => {
               ))}
             </Box>
           </Popover>
+            </>
+          )}
+
+          {/* Tantalus Ring Magazine Media Following Tab */}
+          {activeTab === 1 && (
+            <>
+              <Box
+                sx={{
+                  p: 2,
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <Article color="primary" />
+                <Typography variant="h5" component="h1">
+                  Tantalus Ring Magazine Media Following
+                </Typography>
+              </Box>
+
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  p: 2,
+                }}
+              >
+                {loadingMediaFighters ? (
+                  <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress />
+                  </Box>
+                ) : mediaFighters.length === 0 ? (
+                  <Alert severity="info">
+                    No fighters have set up their Tantalus Ring Magazine Media profiles yet.
+                  </Alert>
+                ) : (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {mediaFighters.map((fighter) => (
+                      <Box key={fighter.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' } }}>
+                        <Card
+                          sx={{
+                            height: '100%',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              boxShadow: 6,
+                              transform: 'translateY(-2px)',
+                              transition: 'all 0.2s',
+                            },
+                          }}
+                          onClick={() => window.open(`/media/${fighter.user_id}`, '_blank')}
+                        >
+                          <CardContent>
+                            <Box display="flex" gap={2} mb={2}>
+                              {fighter.creative_fighter_image_url ? (
+                                <Box
+                                  component="img"
+                                  src={fighter.creative_fighter_image_url}
+                                  alt={fighter.name}
+                                  sx={{
+                                    width: 80,
+                                    height: 80,
+                                    objectFit: 'cover',
+                                    borderRadius: 1,
+                                  }}
+                                />
+                              ) : (
+                                <Avatar sx={{ width: 80, height: 80, bgcolor: 'primary.main' }}>
+                                  {fighter.name?.charAt(0) || '?'}
+                                </Avatar>
+                              )}
+                              <Box flex={1}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                  {fighter.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  @{fighter.handle}
+                                </Typography>
+                                <Chip label={fighter.tier || 'Amateur'} size="small" sx={{ mt: 0.5 }} />
+                              </Box>
+                            </Box>
+                            {fighter.social_media_bio && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  mb: 1,
+                                }}
+                              >
+                                {fighter.social_media_bio}
+                              </Typography>
+                            )}
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+                              <Typography variant="caption" color="text.secondary">
+                                {fighter.points || 0} pts
+                              </Typography>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<Person />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`/media/${fighter.user_id}`, '_blank');
+                                }}
+                              >
+                                View Profile
+                              </Button>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            </>
+          )}
         </CardContent>
       </Card>
     </Box>

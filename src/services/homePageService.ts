@@ -317,14 +317,38 @@ export class HomePageService {
   // Get news and announcements
   static async getNewsAndAnnouncements(limit: number = 10): Promise<NewsItem[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('news_announcements')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
 
+      // Filter by is_published if column exists
+      // This matches the pattern used in NewsService
+      query = query.eq('is_published', true);
+
+      const { data, error } = await query;
+
       if (error) {
         console.error('Error fetching news and announcements:', error);
+        
+        // If error is related to is_published column, try without it
+        if (error.message?.includes('is_published') || error.code === '42703' || error.code === 'PGRST116') {
+          console.warn('is_published column may not exist or RLS issue, retrying without filter');
+          const { data: retryData, error: retryError } = await supabase
+            .from('news_announcements')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+          
+          if (retryError) {
+            console.error('Error fetching news (retry without filter):', retryError);
+            return [];
+          }
+          
+          return retryData || [];
+        }
+        
         return [];
       }
 

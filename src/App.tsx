@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -114,6 +114,10 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Main App Content
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  
+  // Check if we're on the public media page
+  const isPublicMediaPage = location.pathname.startsWith('/media/');
 
   if (loading) {
     return <LoadingSpinner />;
@@ -121,14 +125,15 @@ const AppContent: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {user && <Navigation />}
+      {/* Hide navigation on public media pages */}
+      {user && !isPublicMediaPage && <Navigation />}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - 200px)` },
-          ml: { sm: '200px' },
+          p: isPublicMediaPage ? 0 : 3, // Remove padding on media page
+          width: { sm: isPublicMediaPage ? '100%' : `calc(100% - 200px)` },
+          ml: { sm: isPublicMediaPage ? 0 : '200px' },
         }}
       >
         <Routes>

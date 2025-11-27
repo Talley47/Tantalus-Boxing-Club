@@ -117,11 +117,25 @@ const FighterMedia: React.FC = () => {
 
   if (error || !fighterProfile) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error || 'Fighter profile not found'}</Alert>
-        <Button sx={{ mt: 2 }} onClick={() => navigate('/')}>
-          Go to Home
-        </Button>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          p: 3,
+        }}
+      >
+        <Box sx={{ maxWidth: 600, width: '100%' }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error || 'Fighter profile not found'}
+          </Alert>
+          <Typography variant="body2" color="white" textAlign="center">
+            This fighter's media profile is not available or has been removed.
+          </Typography>
+        </Box>
       </Box>
     );
   }

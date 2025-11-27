@@ -175,6 +175,7 @@ if (typeof window !== 'undefined') {
       lowerErrorMessage.includes('cannot find menu item') ||
       lowerErrorMessage.includes('no tab with id') ||
       lowerErrorMessage.includes('background-redux') ||
+      (lowerErrorMessage.includes('no tab with id') && lowerErrorMessage.includes('background-redux')) ||
       lowerErrorString.includes('listener indicated') ||
       lowerErrorString.includes('asynchronous response') ||
       lowerErrorString.includes('message channel') ||
@@ -220,6 +221,8 @@ if (typeof window !== 'undefined') {
       allErrorText.includes('no tab with id') ||
       allErrorText.includes('background-redux') ||
       allErrorText.includes('background-redux-new.js') ||
+      (allErrorText.includes('no tab with id') && allErrorText.includes('background-redux')) ||
+      (allErrorText.includes('no tab with id') && allErrorText.includes('background-redux-new')) ||
       allErrorText.includes('chrome-extension://') ||
       allErrorText.includes('lastpass') ||
       (isFromRoute && (lowerErrorMessage.includes('listener') || lowerErrorMessage.includes('message channel') || 

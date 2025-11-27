@@ -169,7 +169,13 @@ const RulesGuidelines: React.FC = () => {
             { id: 'tier-system', text: 'Tier System', icon: <TrendingUp /> },
             { id: 'tournament-rules', text: 'Tournament Rules', icon: <Sports /> },
             { id: 'training-camp-system', text: 'Training Camp System', icon: <FitnessCenter /> },
-          ].map((item) => (
+          ].sort((a, b) => {
+            // Keep Introduction at the top
+            if (a.id === 'introduction') return -1;
+            if (b.id === 'introduction') return 1;
+            // Sort all others alphabetically by text
+            return a.text.localeCompare(b.text);
+          }).map((item) => (
             <ListItem 
               key={item.id}
               disablePadding

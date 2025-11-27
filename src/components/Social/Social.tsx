@@ -933,13 +933,12 @@ const Social: React.FC = () => {
           const updates = [...updateQueue];
           updateQueue = [];
           
-          // Defer processing to next event loop tick to avoid blocking
-          // This ensures the handler returns quickly
-          setTimeout(() => {
-            // Use startTransition to mark this as non-urgent
-            startTransition(() => {
-              // Process updates asynchronously to avoid blocking
-              (async () => {
+          // Process updates asynchronously to avoid blocking
+          // Use startTransition to mark this as non-urgent
+          startTransition(() => {
+            // Process updates asynchronously to avoid blocking
+            (async () => {
+              try {
                 // Batch profile fetches for INSERT operations
                 const insertUpdates = updates.filter(u => u.type === 'INSERT');
                 const otherUpdates = updates.filter(u => u.type !== 'INSERT');
@@ -1016,9 +1015,11 @@ const Social: React.FC = () => {
                 for (const update of otherUpdates) {
                   await processUpdate(update.type, update.payload);
                 }
-              })();
-            });
-          }, 0);
+              } catch (error) {
+                console.error('Error processing update queue:', error);
+              }
+            })();
+          });
         };
 
         const channel = supabase
@@ -1033,20 +1034,18 @@ const Social: React.FC = () => {
             (payload) => {
               // Queue the update instead of processing immediately
               // This batches rapid updates and reduces performance warnings
-              // Use requestAnimationFrame to ensure handler returns immediately
-              requestAnimationFrame(() => {
-                updateQueue.push({ type: payload.eventType, payload });
-                
-                // Clear existing timer and set a new one
-                if (debounceTimer) {
-                  clearTimeout(debounceTimer);
-                }
-                
-                // Process queue after debounce delay
-                debounceTimer = setTimeout(() => {
-                  processUpdateQueue();
-                }, DEBOUNCE_DELAY);
-              });
+              // Queue synchronously to avoid async issues
+              updateQueue.push({ type: payload.eventType, payload });
+              
+              // Clear existing timer and set a new one
+              if (debounceTimer) {
+                clearTimeout(debounceTimer);
+              }
+              
+              // Process queue after debounce delay
+              debounceTimer = setTimeout(() => {
+                processUpdateQueue();
+              }, DEBOUNCE_DELAY);
             }
           )
           .subscribe();

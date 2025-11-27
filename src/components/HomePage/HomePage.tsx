@@ -277,18 +277,26 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const hash = window.location.hash;
     const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get('tab');
     
     // Check for #news hash or ?tab=news query param
-    if (hash === '#news' || searchParams.get('tab') === 'news') {
+    if (hash === '#news' || tabParam === 'news') {
       setTabValue(4); // News & Announcements tab is index 4
       // Clear the hash/query param after setting tab
       if (hash === '#news') {
         window.history.replaceState(null, '', window.location.pathname);
-      } else if (searchParams.get('tab') === 'news') {
+      } else if (tabParam === 'news') {
         // Remove the query param but keep the pathname
         const newUrl = window.location.pathname;
         window.history.replaceState(null, '', newUrl);
       }
+    }
+    // Check for ?tab=sanctions query param
+    else if (tabParam === 'sanctions') {
+      setTabValue(5); // Boxing Sanctions tab is index 5
+      // Remove the query param but keep the pathname
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, '', newUrl);
     }
   }, [location]); // Re-run when location changes
   const [topFighters, setTopFighters] = useState<Fighter[]>([]);
@@ -700,7 +708,7 @@ const HomePage: React.FC = () => {
               'Sanction',
               title,
               message,
-              '/home?tab=sanctions'
+              '/?tab=sanctions'
             );
           } catch (notificationError: any) {
             // If the error is about the notification type not being allowed,

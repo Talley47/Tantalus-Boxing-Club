@@ -273,6 +273,17 @@ const NotificationBell: React.FC = () => {
         navigate('/?tab=news');
       }
       handleClose();
+    } else if (notification.type === 'Sanction') {
+      // Navigate to home page with Boxing Sanctions tab selected
+      if (window.location.pathname === '/') {
+        // If already on home page, update the URL to trigger the useEffect
+        window.history.replaceState(null, '', '/?tab=sanctions');
+        // Force a re-render by triggering location change
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        navigate('/?tab=sanctions');
+      }
+      handleClose();
     } else if (notification.type === 'NewFighter') {
       // Navigate to the new fighter's profile page
       console.log('NewFighter notification clicked:', notification);

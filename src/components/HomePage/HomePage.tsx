@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import {
   Box,
   Typography,
@@ -79,14 +79,46 @@ import trmImage from '../../TRM Tantalus Ring Magazine.png';
 console.log('HomePage background image path:', homePageBackground);
 console.log('HomePage background type:', typeof homePageBackground);
 
-// Tab Panel Component
+// Utility function for formatting birthdays - extracted outside component to prevent recreation
+const formatBirthday = (birthday: string | undefined): string => {
+  if (!birthday) return 'Not set';
+  try {
+    const dateStr = typeof birthday === 'string' 
+      ? birthday.split('T')[0] 
+      : String(birthday);
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const date = new Date(year, month, day);
+      if (isNaN(date.getTime())) return 'Not set';
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Not set';
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch {
+    return 'Not set';
+  }
+};
+
+// Tab Panel Component - Memoized for performance
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
+const TabPanel = memo(function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -101,7 +133,7 @@ function TabPanel(props: TabPanelProps) {
       {value === index && <Box sx={{ p: 3, minHeight: '400px' }}>{children}</Box>}
     </div>
   );
-}
+});
 
 // Component to handle image loading errors (CORS, etc.)
 const ImageWithFallback: React.FC<{ src: string; alt: string; maxHeight?: string }> = ({ src, alt, maxHeight = '200px' }) => {
@@ -284,7 +316,17 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sanctionSearch, setSanctionSearch] = useState('');
+  const [sanctionSearchDebounced, setSanctionSearchDebounced] = useState('');
   const [sanctionTypeFilter, setSanctionTypeFilter] = useState<string>('');
+  
+  // Debounce search input to reduce input delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSanctionSearchDebounced(sanctionSearch);
+    }, 300); // 300ms debounce delay
+    
+    return () => clearTimeout(timer);
+  }, [sanctionSearch]);
   const [selectedSanction, setSelectedSanction] = useState<string | null>(null);
   const [sanctionFighters, setSanctionFighters] = useState<SanctionFighter[]>([]);
   const [loadingFighters, setLoadingFighters] = useState(false);
@@ -340,8 +382,8 @@ const HomePage: React.FC = () => {
 
   const filteredSanctions = useMemo(() => {
     return allSanctions.filter((sanction) => {
-      if (sanctionSearch) {
-        const searchLower = sanctionSearch.toLowerCase();
+      if (sanctionSearchDebounced) {
+        const searchLower = sanctionSearchDebounced.toLowerCase();
         if (!sanction.acronym.toLowerCase().includes(searchLower) && 
             !sanction.name.toLowerCase().includes(searchLower)) {
           return false;
@@ -352,7 +394,7 @@ const HomePage: React.FC = () => {
       }
       return true;
     });
-  }, [allSanctions, sanctionSearch, sanctionTypeFilter]);
+  }, [allSanctions, sanctionSearchDebounced, sanctionTypeFilter]);
 
   const fighterPoints = useMemo(() => fighterProfile?.points || 0, [fighterProfile?.points]);
 
@@ -529,9 +571,10 @@ const HomePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  // Memoize handleTabChange to prevent unnecessary re-renders
+  const handleTabChange = useCallback((event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-  };
+  }, []);
 
   // Load joined sanctions and calculate statuses for current user
   useEffect(() => {
@@ -797,6 +840,364 @@ const HomePage: React.FC = () => {
     setSanctionFighters([]);
   }, []);
 
+  // Memoize fighter cards to prevent unnecessary re-renders
+  const fighterCards = useMemo(() => {
+    const rankMedals = ['🥇', '🥈', '🥉'];
+    return topFighters.map((fighter, index) => {
+      const isTopThree = index < 3;
+      
+      return (
+        <Card
+          key={fighter.id}
+          sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            background: isTopThree
+              ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+            border: isTopThree 
+              ? '3px solid #ffd700' 
+              : '2px solid rgba(0, 0, 0, 0.15)',
+            borderRadius: 4,
+            boxShadow: isTopThree
+              ? `
+                0 20px 60px rgba(255, 215, 0, 0.5),
+                0 10px 30px rgba(255, 215, 0, 0.3),
+                0 5px 15px rgba(255, 215, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+              `
+              : `
+                0 15px 45px rgba(0, 0, 0, 0.2),
+                0 8px 20px rgba(0, 0, 0, 0.15),
+                0 3px 10px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05)
+              `,
+            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            transform: 'perspective(1000px) rotateX(0deg) translateZ(0)',
+            position: 'relative',
+            overflow: 'visible',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: 4,
+              background: isTopThree
+                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            },
+            '&:hover': {
+              transform: 'perspective(1000px) rotateX(-2deg) translateY(-8px) translateZ(20px)',
+              boxShadow: isTopThree
+                ? `
+                  0 30px 80px rgba(255, 215, 0, 0.6),
+                  0 15px 40px rgba(255, 215, 0, 0.4),
+                  0 8px 20px rgba(255, 215, 0, 0.3),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.15)
+                `
+                : `
+                  0 25px 60px rgba(0, 0, 0, 0.3),
+                  0 12px 30px rgba(0, 0, 0, 0.2),
+                  0 5px 15px rgba(0, 0, 0, 0.15),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                `,
+            },
+          }}
+        >
+          {/* Rank Badge with 3D Effect */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -12,
+              left: 16,
+              zIndex: 3,
+              transform: 'perspective(1000px) rotateX(5deg)',
+            }}
+          >
+            <Chip
+              icon={isTopThree ? <span style={{ fontSize: '20px' }}>{rankMedals[index]}</span> : undefined}
+              label={`#${index + 1}`}
+              sx={{
+                height: isTopThree ? 36 : 32,
+                fontWeight: 'bold',
+                fontSize: isTopThree ? '0.95rem' : '0.875rem',
+                background: isTopThree
+                  ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                boxShadow: `
+                  0 8px 20px rgba(0, 0, 0, 0.4),
+                  0 4px 10px rgba(0, 0, 0, 0.3),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+                `,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px) scale(1.05)',
+                  boxShadow: `
+                    0 12px 30px rgba(0, 0, 0, 0.5),
+                    0 6px 15px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.3)
+                  `,
+                },
+                '& .MuiChip-label': {
+                  px: isTopThree ? 2 : 1.5,
+                },
+              }}
+            />
+          </Box>
+
+          <CardContent sx={{ 
+            p: 3, 
+            pt: isTopThree ? 4.5 : 4, 
+            flexGrow: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            position: 'relative',
+            zIndex: 2,
+          }}>
+            {/* Creative Fighter Image with 3D Effect */}
+            {fighter.creative_fighter_image_url && (
+              <Box 
+                sx={{ 
+                  mb: 2, 
+                  display: 'flex', 
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: 2,
+                  overflow: 'visible',
+                  bgcolor: 'rgba(0, 0, 0, 0.02)',
+                  p: 1,
+                  transform: 'perspective(1000px) rotateX(2deg)',
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'perspective(1000px) rotateX(0deg) scale(1.02)',
+                  },
+                }}
+              >
+                <Box
+                  component="img"
+                  src={fighter.creative_fighter_image_url}
+                  alt={`${fighter.name}'s Creative Fighter`}
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: '200px',
+                    width: 'auto',
+                    height: 'auto',
+                    borderRadius: 2,
+                    border: `3px solid ${isTopThree ? '#ffd700' : 'rgba(0, 0, 0, 0.15)'}`,
+                    boxShadow: isTopThree 
+                      ? `
+                        0 12px 30px rgba(255, 215, 0, 0.4),
+                        0 6px 15px rgba(255, 215, 0, 0.3),
+                        0 3px 8px rgba(255, 215, 0, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                        inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                      `
+                      : `
+                        0 10px 25px rgba(0, 0, 0, 0.25),
+                        0 5px 12px rgba(0, 0, 0, 0.15),
+                        0 2px 6px rgba(0, 0, 0, 0.1),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                        inset 0 -1px 0 rgba(0, 0, 0, 0.05)
+                      `,
+                    objectFit: 'contain',
+                    transition: 'all 0.3s ease',
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Fighter Name and Handle */}
+            <Box sx={{ mb: 2, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 'bold',
+                    color: isTopThree ? '#1a1a1a' : 'text.primary',
+                    fontSize: '1.15rem',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {fighter.name}
+                </Typography>
+                {fighter.belts && fighter.belts.length > 0 && (
+                  <Box display="flex" gap={0.5} alignItems="center">
+                    {fighter.belts.map((belt) => (
+                      <Box
+                        key={belt.id}
+                        component="img"
+                        src={belt.belt_image_url}
+                        alt="Championship Belt"
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          objectFit: 'contain',
+                          borderRadius: '4px',
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
+                  fontSize: '0.875rem',
+                }}
+              >
+                @{fighter.handle}
+              </Typography>
+            </Box>
+
+            {/* Stats Row */}
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                mb: 2,
+                p: 1.5,
+                borderRadius: 1.5,
+                bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <Box>
+                <Typography variant="caption" sx={{ display: 'block', color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.7rem', mb: 0.25 }}>
+                  Points
+                </Typography>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 'bold',
+                    color: isTopThree ? '#1a1a1a' : 'primary.main',
+                    fontSize: '1.3rem',
+                    lineHeight: 1,
+                  }}
+                >
+                  {fighter.points}
+                </Typography>
+              </Box>
+              <Chip 
+                label={fighter.tier} 
+                size="small" 
+                sx={{
+                  fontWeight: 'bold',
+                  bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.95)' : 'primary.main',
+                  color: isTopThree ? 'primary.main' : 'white',
+                  fontSize: '0.8rem',
+                  height: 28,
+                  px: 1,
+                }}
+              />
+            </Box>
+
+            {/* Record */}
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mb: 2.5,
+                textAlign: 'center',
+                color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.9rem',
+              }}
+            >
+              {fighter.weight_class} • {fighter.wins}W-{fighter.losses}L-{fighter.draws}D
+            </Typography>
+            
+            {/* Physical Information - Complete */}
+            <Box 
+              sx={{ 
+                mt: 'auto',
+                pt: 2, 
+                borderTop: `2px solid ${isTopThree ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.12)'}`,
+              }}
+            >
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  fontWeight: 'bold', 
+                  display: 'block', 
+                  mb: 1.5,
+                  color: isTopThree ? 'rgba(0, 0, 0, 0.9)' : 'text.primary',
+                  fontSize: '0.85rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Physical Information
+              </Typography>
+              <Box 
+                sx={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.75,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  <strong>Height:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
+                </Typography>
+                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  <strong>Weight:</strong> {fighter.weight || 0} lbs
+                </Typography>
+                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  <strong>Reach:</strong> {fighter.reach || 0}"
+                </Typography>
+                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                  <strong>Stance:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'Not set'}
+                </Typography>
+                {fighter.hometown && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Hometown:</strong> {fighter.hometown}
+                  </Typography>
+                )}
+                {fighter.trainer && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Trainer:</strong> {fighter.trainer}
+                  </Typography>
+                )}
+                {fighter.gym && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Gym:</strong> {fighter.gym}
+                  </Typography>
+                )}
+                {fighter.platform && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Platform:</strong> {fighter.platform === 'PSN' ? 'PlayStation/PSN' : fighter.platform === 'Xbox' ? 'Xbox' : fighter.platform === 'PC' ? 'Steam/PC' : fighter.platform}
+                  </Typography>
+                )}
+                {fighter.timezone && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Timezone:</strong> {getTimezoneLabel(fighter.timezone)}
+                  </Typography>
+                )}
+                {fighter.birthday && (
+                  <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
+                    <strong>Birthday:</strong> {formatBirthday(fighter.birthday)}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    });
+  }, [topFighters]);
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
@@ -1002,12 +1403,12 @@ const HomePage: React.FC = () => {
                 aria-label="homepage tabs"
                 sx={{ '& .MuiTab-root': { color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' } }}
               >
-                <Tab label="Top Fighters" />
-                <Tab label="Scheduled Fights" />
-                <Tab label="Training Camps" />
-                <Tab label="Scheduled Rematches" />
-                <Tab label="News & Announcements" />
-                <Tab label="Boxing Sanctions" />
+                <Tab label="Top Fighters" value={0} />
+                <Tab label="Scheduled Fights" value={1} />
+                <Tab label="Training Camps" value={2} />
+                <Tab label="Scheduled Rematches" value={3} />
+                <Tab label="News & Announcements" value={4} />
+                <Tab label="Boxing Sanctions" value={5} />
               </Tabs>
             </Box>
 
@@ -1047,393 +1448,7 @@ const HomePage: React.FC = () => {
                   },
                   gap: 3,
                 }}>
-                  {topFighters.map((fighter, index) => {
-                    const isTopThree = index < 3;
-                    const rankMedals = ['🥇', '🥈', '🥉'];
-                    
-                    // Format birthday
-                    const formatBirthday = (birthday: string | undefined): string => {
-                      if (!birthday) return 'Not set';
-                      try {
-                        const dateStr = typeof birthday === 'string' 
-                          ? birthday.split('T')[0] 
-                          : String(birthday);
-                        const parts = dateStr.split('-');
-                        if (parts.length === 3) {
-                          const year = parseInt(parts[0], 10);
-                          const month = parseInt(parts[1], 10) - 1;
-                          const day = parseInt(parts[2], 10);
-                          const date = new Date(year, month, day);
-                          if (isNaN(date.getTime())) return 'Not set';
-                          return date.toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          });
-                        }
-                        const date = new Date(dateStr);
-                        if (isNaN(date.getTime())) return 'Not set';
-                        return date.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        });
-                      } catch {
-                        return 'Not set';
-                      }
-                    };
-                    
-                    return (
-                      <Card
-                        key={fighter.id}
-                        sx={{
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          background: isTopThree
-                            ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%)'
-                            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-                          border: isTopThree 
-                            ? '3px solid #ffd700' 
-                            : '2px solid rgba(0, 0, 0, 0.15)',
-                          borderRadius: 4,
-                          // 3D Shadow Effect
-                          boxShadow: isTopThree
-                            ? `
-                              0 20px 60px rgba(255, 215, 0, 0.5),
-                              0 10px 30px rgba(255, 215, 0, 0.3),
-                              0 5px 15px rgba(255, 215, 0, 0.2),
-                              inset 0 1px 0 rgba(255, 255, 255, 0.6),
-                              inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-                            `
-                            : `
-                              0 15px 45px rgba(0, 0, 0, 0.2),
-                              0 8px 20px rgba(0, 0, 0, 0.15),
-                              0 3px 10px rgba(0, 0, 0, 0.1),
-                              inset 0 1px 0 rgba(255, 255, 255, 0.8),
-                              inset 0 -1px 0 rgba(0, 0, 0, 0.05)
-                            `,
-                          transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                          transform: 'perspective(1000px) rotateX(0deg) translateZ(0)',
-                          position: 'relative',
-                          overflow: 'visible',
-                          '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            borderRadius: 4,
-                            background: isTopThree
-                              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%)'
-                              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%, rgba(0, 0, 0, 0.05) 100%)',
-                            pointerEvents: 'none',
-                            zIndex: 1,
-                          },
-                          '&:hover': {
-                            transform: 'perspective(1000px) rotateX(-2deg) translateY(-8px) translateZ(20px)',
-                            boxShadow: isTopThree
-                              ? `
-                                0 30px 80px rgba(255, 215, 0, 0.6),
-                                0 15px 40px rgba(255, 215, 0, 0.4),
-                                0 8px 20px rgba(255, 215, 0, 0.3),
-                                inset 0 1px 0 rgba(255, 255, 255, 0.7),
-                                inset 0 -1px 0 rgba(0, 0, 0, 0.15)
-                              `
-                              : `
-                                0 25px 60px rgba(0, 0, 0, 0.3),
-                                0 12px 30px rgba(0, 0, 0, 0.2),
-                                0 5px 15px rgba(0, 0, 0, 0.15),
-                                inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                                inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-                              `,
-                          },
-                        }}
-                      >
-                        {/* Rank Badge with 3D Effect */}
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: -12,
-                            left: 16,
-                            zIndex: 3,
-                            transform: 'perspective(1000px) rotateX(5deg)',
-                          }}
-                        >
-                          <Chip
-                            icon={isTopThree ? <span style={{ fontSize: '20px' }}>{rankMedals[index]}</span> : undefined}
-                            label={`#${index + 1}`}
-                            sx={{
-                              height: isTopThree ? 36 : 32,
-                              fontWeight: 'bold',
-                              fontSize: isTopThree ? '0.95rem' : '0.875rem',
-                              background: isTopThree
-                                ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)'
-                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              color: 'white',
-                              boxShadow: `
-                                0 8px 20px rgba(0, 0, 0, 0.4),
-                                0 4px 10px rgba(0, 0, 0, 0.3),
-                                inset 0 1px 0 rgba(255, 255, 255, 0.3),
-                                inset 0 -1px 0 rgba(0, 0, 0, 0.2)
-                              `,
-                              border: '1px solid rgba(255, 255, 255, 0.2)',
-                              transition: 'all 0.3s ease',
-                              '&:hover': {
-                                transform: 'translateY(-2px) scale(1.05)',
-                                boxShadow: `
-                                  0 12px 30px rgba(0, 0, 0, 0.5),
-                                  0 6px 15px rgba(0, 0, 0, 0.4),
-                                  inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                                  inset 0 -1px 0 rgba(0, 0, 0, 0.3)
-                                `,
-                              },
-                              '& .MuiChip-label': {
-                                px: isTopThree ? 2 : 1.5,
-                              },
-                            }}
-                          />
-                        </Box>
-
-                        <CardContent sx={{ 
-                          p: 3, 
-                          pt: isTopThree ? 4.5 : 4, 
-                          flexGrow: 1, 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          position: 'relative',
-                          zIndex: 2,
-                        }}>
-                          {/* Creative Fighter Image with 3D Effect */}
-                          {fighter.creative_fighter_image_url && (
-                            <Box 
-                              sx={{ 
-                                mb: 2, 
-                                display: 'flex', 
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 2,
-                                overflow: 'visible',
-                                bgcolor: 'rgba(0, 0, 0, 0.02)',
-                                p: 1,
-                                transform: 'perspective(1000px) rotateX(2deg)',
-                                transition: 'transform 0.3s ease',
-                                '&:hover': {
-                                  transform: 'perspective(1000px) rotateX(0deg) scale(1.02)',
-                                },
-                              }}
-                            >
-                              <Box
-                                component="img"
-                                src={fighter.creative_fighter_image_url}
-                                alt={`${fighter.name}'s Creative Fighter`}
-                                sx={{
-                                  maxWidth: '100%',
-                                  maxHeight: '200px',
-                                  width: 'auto',
-                                  height: 'auto',
-                                  borderRadius: 2,
-                                  border: `3px solid ${isTopThree ? '#ffd700' : 'rgba(0, 0, 0, 0.15)'}`,
-                                  boxShadow: isTopThree 
-                                    ? `
-                                      0 12px 30px rgba(255, 215, 0, 0.4),
-                                      0 6px 15px rgba(255, 215, 0, 0.3),
-                                      0 3px 8px rgba(255, 215, 0, 0.2),
-                                      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                                      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-                                    `
-                                    : `
-                                      0 10px 25px rgba(0, 0, 0, 0.25),
-                                      0 5px 12px rgba(0, 0, 0, 0.15),
-                                      0 2px 6px rgba(0, 0, 0, 0.1),
-                                      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-                                      inset 0 -1px 0 rgba(0, 0, 0, 0.05)
-                                    `,
-                                  objectFit: 'contain',
-                                  transition: 'all 0.3s ease',
-                                }}
-                              />
-                            </Box>
-                          )}
-
-                          {/* Fighter Name and Handle */}
-                          <Box sx={{ mb: 2, textAlign: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                  fontWeight: 'bold',
-                                  color: isTopThree ? '#1a1a1a' : 'text.primary',
-                                  fontSize: '1.15rem',
-                                  lineHeight: 1.2,
-                                }}
-                              >
-                                {fighter.name}
-                              </Typography>
-                              {fighter.belts && fighter.belts.length > 0 && (
-                                <Box display="flex" gap={0.5} alignItems="center">
-                                  {fighter.belts.map((belt) => (
-                                    <Box
-                                      key={belt.id}
-                                      component="img"
-                                      src={belt.belt_image_url}
-                                      alt="Championship Belt"
-                                      sx={{
-                                        width: 40,
-                                        height: 40,
-                                        objectFit: 'contain',
-                                        borderRadius: '4px',
-                                      }}
-                                    />
-                                  ))}
-                                </Box>
-                              )}
-                            </Box>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary',
-                                fontSize: '0.875rem',
-                              }}
-                            >
-                              @{fighter.handle}
-                            </Typography>
-                          </Box>
-
-                          {/* Stats Row */}
-                          <Box 
-                            sx={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              alignItems: 'center',
-                              mb: 2,
-                              p: 1.5,
-                              borderRadius: 1.5,
-                              bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.03)',
-                            }}
-                          >
-                            <Box>
-                              <Typography variant="caption" sx={{ display: 'block', color: isTopThree ? 'rgba(0, 0, 0, 0.7)' : 'text.secondary', fontSize: '0.7rem', mb: 0.25 }}>
-                                Points
-                              </Typography>
-                              <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                  fontWeight: 'bold',
-                                  color: isTopThree ? '#1a1a1a' : 'primary.main',
-                                  fontSize: '1.3rem',
-                                  lineHeight: 1,
-                                }}
-                              >
-                                {fighter.points}
-                              </Typography>
-                            </Box>
-                            <Chip 
-                              label={fighter.tier} 
-                              size="small" 
-                              sx={{
-                                fontWeight: 'bold',
-                                bgcolor: isTopThree ? 'rgba(255, 255, 255, 0.95)' : 'primary.main',
-                                color: isTopThree ? 'primary.main' : 'white',
-                                fontSize: '0.8rem',
-                                height: 28,
-                                px: 1,
-                              }}
-                            />
-                          </Box>
-
-                          {/* Record */}
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              mb: 2.5,
-                              textAlign: 'center',
-                              color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary',
-                              fontWeight: 500,
-                              fontSize: '0.9rem',
-                            }}
-                          >
-                            {fighter.weight_class} • {fighter.wins}W-{fighter.losses}L-{fighter.draws}D
-                          </Typography>
-                          
-                          {/* Physical Information - Complete */}
-                          <Box 
-                            sx={{ 
-                              mt: 'auto',
-                              pt: 2, 
-                              borderTop: `2px solid ${isTopThree ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.12)'}`,
-                            }}
-                          >
-                            <Typography 
-                              variant="subtitle2" 
-                              sx={{ 
-                                fontWeight: 'bold', 
-                                display: 'block', 
-                                mb: 1.5,
-                                color: isTopThree ? 'rgba(0, 0, 0, 0.9)' : 'text.primary',
-                                fontSize: '0.85rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5,
-                              }}
-                            >
-                              Physical Information
-                            </Typography>
-                            <Box 
-                              sx={{ 
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.75,
-                              }}
-                            >
-                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                <strong>Height:</strong> {fighter.height_feet || 0}'{fighter.height_inches || 0}"
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                <strong>Weight:</strong> {fighter.weight || 0} lbs
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                <strong>Reach:</strong> {fighter.reach || 0}"
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                <strong>Stance:</strong> {fighter.stance ? (fighter.stance.charAt(0).toUpperCase() + fighter.stance.slice(1).toLowerCase()) : 'Not set'}
-                              </Typography>
-                              {fighter.hometown && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Hometown:</strong> {fighter.hometown}
-                                </Typography>
-                              )}
-                              {fighter.trainer && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Trainer:</strong> {fighter.trainer}
-                                </Typography>
-                              )}
-                              {fighter.gym && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Gym:</strong> {fighter.gym}
-                                </Typography>
-                              )}
-                              {fighter.platform && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Platform:</strong> {fighter.platform === 'PSN' ? 'PlayStation/PSN' : fighter.platform === 'Xbox' ? 'Xbox' : fighter.platform === 'PC' ? 'Steam/PC' : fighter.platform}
-                                </Typography>
-                              )}
-                              {fighter.timezone && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Timezone:</strong> {getTimezoneLabel(fighter.timezone)}
-                                </Typography>
-                              )}
-                              {fighter.birthday && (
-                                <Typography variant="body2" sx={{ color: isTopThree ? 'rgba(0, 0, 0, 0.8)' : 'text.secondary', fontSize: '0.8rem' }}>
-                                  <strong>Birthday:</strong> {formatBirthday(fighter.birthday)}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                  {fighterCards}
                 </Box>
               )}
             </TabPanel>

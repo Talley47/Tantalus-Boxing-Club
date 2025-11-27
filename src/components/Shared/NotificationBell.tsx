@@ -188,8 +188,14 @@ const NotificationBell: React.FC = () => {
       setLoading(true);
       const data = await notificationService.getNotifications(user.id, 50);
       setNotifications(data);
+      
+      // Initialize read state tracking
+      notificationReadStatesRef.current.clear();
+      data.forEach(notification => {
+        notificationReadStatesRef.current.set(notification.id, notification.is_read || false);
+      });
+      
       const count = await notificationService.getUnreadCount(user.id);
-      console.log('🔔 Loaded unread count from API:', count);
       setUnreadCount(count);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -265,6 +271,265 @@ const NotificationBell: React.FC = () => {
         window.dispatchEvent(new PopStateEvent('popstate'));
       } else {
         navigate('/?tab=news');
+      }
+      handleClose();
+    } else if (notification.type === 'NewFighter') {
+      // Navigate to the new fighter's profile page
+      console.log('NewFighter notification clicked:', notification);
+      console.log('Action URL:', notification.action_url);
+      
+      if (notification.action_url) {
+        // Clean the action_url to ensure it's a valid path
+        let targetUrl = notification.action_url.trim();
+        
+        // Remove any query parameters for now (we can add them back if needed)
+        if (targetUrl.includes('?')) {
+          targetUrl = targetUrl.split('?')[0];
+        }
+        
+        // Ensure it starts with /fighter/
+        if (!targetUrl.startsWith('/fighter/')) {
+          console.log('NewFighter notification has non-standard action_url, extracting fighter info from message:', notification.action_url);
+          
+          // Try to extract user_id from the URL if it's malformed
+          const userIdMatch = notification.action_url.match(/fighter[\/\s]+([a-f0-9-]{36})/i);
+          if (userIdMatch) {
+            targetUrl = `/fighter/${userIdMatch[1]}`;
+            console.log('Extracted user_id from malformed URL, using:', targetUrl);
+            navigate(targetUrl);
+            handleClose();
+            return;
+          }
+          
+          // If URL doesn't contain user_id, try to extract fighter name from message
+          // Try multiple patterns to extract fighter name
+          let fighterName: string | null = null;
+          
+          // Pattern 1: "{name} has joined the club!"
+          const nameMatch1 = notification.message?.match(/^(.+?)\s+has joined the club!/i);
+          if (nameMatch1 && nameMatch1[1]) {
+            fighterName = nameMatch1[1].trim();
+          }
+          
+          // Pattern 2: "New Fighter: {name}" or similar
+          if (!fighterName) {
+            const nameMatch2 = notification.message?.match(/New Fighter[:\s]+(.+?)(?:\s|$)/i);
+            if (nameMatch2 && nameMatch2[1]) {
+              fighterName = nameMatch2[1].trim();
+            }
+          }
+          
+          // Pattern 3: Extract any name before common phrases
+          if (!fighterName) {
+            const nameMatch3 = notification.message?.match(/^(.+?)(?:\s+has joined|\s+joined|$)/i);
+            if (nameMatch3 && nameMatch3[1] && nameMatch3[1].length > 0) {
+              fighterName = nameMatch3[1].trim();
+            }
+          }
+          
+          if (fighterName) {
+            console.log('Extracted fighter name from message:', fighterName);
+            
+            // Query database to find fighter by name (case-insensitive, try exact match first)
+            try {
+              let { data, error } = await supabase
+                .from('fighter_profiles')
+                .select('user_id, name, created_at')
+                .ilike('name', fighterName)  // Case-insensitive match
+                .order('created_at', { ascending: false })
+                .limit(5);  // Get multiple in case of duplicates
+              
+              // If no exact match, try partial match
+              if (error || !data || data.length === 0) {
+                console.log('Trying partial name match...');
+                const { data: partialData, error: partialError } = await supabase
+                  .from('fighter_profiles')
+                  .select('user_id, name, created_at')
+                  .ilike('name', `%${fighterName}%`)  // Partial match
+                  .order('created_at', { ascending: false })
+                  .limit(5);
+                
+                if (!partialError && partialData && partialData.length > 0) {
+                  data = partialData;
+                  error = null;
+                }
+              }
+              
+              // If still no match, try to find the most recently created fighter
+              if (error || !data || data.length === 0) {
+                console.log('Trying to find most recently created fighter...');
+                const { data: recentData, error: recentError } = await supabase
+                  .from('fighter_profiles')
+                  .select('user_id, name, created_at')
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+                
+                if (!recentError && recentData?.user_id) {
+                  console.log('Using most recently created fighter:', recentData.name);
+                  targetUrl = `/fighter/${recentData.user_id}`;
+                  navigate(targetUrl);
+                  handleClose();
+                  return;
+                }
+              }
+              
+              if (!error && data && data.length > 0) {
+                // Use the first (most recent) match
+                const fighter = data[0];
+                targetUrl = `/fighter/${fighter.user_id}`;
+                console.log('Found fighter by name, navigating to:', targetUrl, 'Fighter:', fighter.name);
+                navigate(targetUrl);
+                handleClose();
+                return;
+              } else {
+                console.error('Could not find fighter by name:', fighterName, error);
+              }
+            } catch (err) {
+              console.error('Error querying fighter by name:', err);
+            }
+          } else {
+            console.warn('Could not extract fighter name from message:', notification.message);
+          }
+          
+          // If we still can't find the fighter, try to get the most recently created fighter
+          console.log('Attempting fallback: finding most recently created fighter...');
+          try {
+            const { data: recentFighter, error: recentError } = await supabase
+              .from('fighter_profiles')
+              .select('user_id, name, created_at')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (!recentError && recentFighter?.user_id) {
+              targetUrl = `/fighter/${recentFighter.user_id}`;
+              console.log('Using most recently created fighter as fallback:', recentFighter.name);
+              navigate(targetUrl);
+              handleClose();
+              return;
+            }
+          } catch (err) {
+            console.error('Error in fallback fighter lookup:', err);
+          }
+          
+          // Last resort: show error
+          console.error('Could not determine fighter profile URL from notification');
+          console.error('Notification details:', {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            action_url: notification.action_url
+          });
+          alert(`Unable to navigate to fighter profile. The notification may be missing required information.\n\nNotification: ${notification.message || notification.title}`);
+          handleClose();
+          return;
+        }
+        
+        console.log('Navigating to fighter profile:', targetUrl);
+        
+        // Navigate to the fighter profile
+        navigate(targetUrl);
+      } else {
+        // Fallback: try to find the fighter by name from the message
+        console.warn('NewFighter notification missing action_url, attempting to find fighter by name');
+        console.warn('Full notification object:', JSON.stringify(notification, null, 2));
+        
+        // Try multiple patterns to extract fighter name from message
+        let fighterName: string | null = null;
+        
+        // Pattern 1: "{name} has joined the club!"
+        const nameMatch1 = notification.message?.match(/^(.+?)\s+has joined the club!/i);
+        if (nameMatch1 && nameMatch1[1]) {
+          fighterName = nameMatch1[1].trim();
+        }
+        
+        // Pattern 2: "New Fighter: {name}" or similar
+        if (!fighterName) {
+          const nameMatch2 = notification.message?.match(/New Fighter[:\s]+(.+?)(?:\s|$)/i);
+          if (nameMatch2 && nameMatch2[1]) {
+            fighterName = nameMatch2[1].trim();
+          }
+        }
+        
+        // Pattern 3: Extract any name before common phrases
+        if (!fighterName) {
+          const nameMatch3 = notification.message?.match(/^(.+?)(?:\s+has joined|\s+joined|$)/i);
+          if (nameMatch3 && nameMatch3[1] && nameMatch3[1].length > 0) {
+            fighterName = nameMatch3[1].trim();
+          }
+        }
+        
+        if (fighterName) {
+          console.log('Extracted fighter name from message:', fighterName);
+          
+          // Query database to find fighter by name (case-insensitive)
+          supabase
+            .from('fighter_profiles')
+            .select('user_id, name, created_at')
+            .ilike('name', fighterName)  // Case-insensitive match
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+            .then(({ data, error }) => {
+              if (!error && data?.user_id) {
+                console.log('Found fighter user_id:', data.user_id, 'Name:', data.name);
+                navigate(`/fighter/${data.user_id}`);
+              } else {
+                // Try partial match
+                console.log('Trying partial name match...');
+                supabase
+                  .from('fighter_profiles')
+                  .select('user_id, name, created_at')
+                  .ilike('name', `%${fighterName}%`)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single()
+                  .then(({ data: partialData, error: partialError }) => {
+                    if (!partialError && partialData?.user_id) {
+                      console.log('Found fighter with partial match:', partialData.user_id);
+                      navigate(`/fighter/${partialData.user_id}`);
+                    } else {
+                      // Last resort: get most recently created fighter
+                      console.log('Trying to find most recently created fighter...');
+                      supabase
+                        .from('fighter_profiles')
+                        .select('user_id, name, created_at')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single()
+                        .then(({ data: recentData, error: recentError }) => {
+                          if (!recentError && recentData?.user_id) {
+                            console.log('Using most recently created fighter:', recentData.name);
+                            navigate(`/fighter/${recentData.user_id}`);
+                          } else {
+                            console.error('Could not find fighter by name:', fighterName, error, partialError, recentError);
+                            alert(`Could not find fighter profile for "${fighterName}". The notification may be missing required information.`);
+                          }
+                        });
+                    }
+                  });
+              }
+            });
+        } else {
+          console.error('Could not extract fighter name from notification message:', notification.message);
+          // Try to get most recently created fighter as fallback
+          supabase
+            .from('fighter_profiles')
+            .select('user_id, name, created_at')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+            .then(({ data, error }) => {
+              if (!error && data?.user_id) {
+                console.log('Using most recently created fighter as fallback:', data.name);
+                navigate(`/fighter/${data.user_id}`);
+              } else {
+                alert('Unable to navigate to fighter profile. The notification is missing required information.');
+              }
+            });
+        }
       }
       handleClose();
     } else if (notification.action_url) {
@@ -388,17 +653,7 @@ const NotificationBell: React.FC = () => {
     }
   }, [user]);
 
-  // Debug: Log unread count for troubleshooting
-  useEffect(() => {
-    if (user) {
-      console.log('🔔 NotificationBell - Current unread count:', unreadCount);
-      console.log('🔔 NotificationBell - Badge will show:', unreadCount > 0 ? unreadCount : 'hidden');
-      // Force a re-render check
-      if (unreadCount > 0) {
-        console.log('🔔 NotificationBell - Badge should be visible with count:', unreadCount);
-      }
-    }
-  }, [unreadCount, user]);
+  // Removed debug logging to improve performance
 
   // Play sound continuously when there are unread notifications
   useEffect(() => {
@@ -457,9 +712,24 @@ const NotificationBell: React.FC = () => {
     };
   }, [unreadCount]);
 
+  // Track notification read states in a ref to avoid dependency issues
+  const notificationReadStatesRef = useRef<Map<string, boolean>>(new Map());
+
   // Set up real-time subscription for notifications
   useEffect(() => {
     if (!user) return;
+
+    // Use a debounce mechanism to batch rapid updates
+    let updateTimeout: NodeJS.Timeout | null = null;
+    const pendingUpdates: Array<() => void> = [];
+
+    const processPendingUpdates = () => {
+      if (pendingUpdates.length === 0) return;
+      
+      // Process all pending updates
+      pendingUpdates.forEach(update => update());
+      pendingUpdates.length = 0;
+    };
 
     const channel = supabase
       .channel('notifications_changes')
@@ -472,44 +742,82 @@ const NotificationBell: React.FC = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('🔔 Notification real-time event:', payload.eventType, payload.new);
-          if (payload.eventType === 'INSERT') {
-            const newNotification = payload.new as Notification;
-            setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => {
-              const newCount = (prev || 0) + 1;
-              console.log('🔔 Unread count updated to:', newCount);
-              return newCount;
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedNotification = payload.new as Notification;
-            setNotifications(prev =>
-              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-            );
-            if (updatedNotification.is_read) {
-              setUnreadCount(prev => Math.max(0, prev - 1));
-            } else {
-              // If notification was unread, increment count
-              const wasRead = notifications.find(n => n.id === updatedNotification.id)?.is_read;
-              if (wasRead && !updatedNotification.is_read) {
-                setUnreadCount(prev => prev + 1);
+          // Batch updates to avoid overwhelming the message handler
+          if (updateTimeout) {
+            clearTimeout(updateTimeout);
+          }
+
+          const updateFn = () => {
+            if (payload.eventType === 'INSERT') {
+              const newNotification = payload.new as Notification;
+              // Update read state tracking
+              notificationReadStatesRef.current.set(newNotification.id, newNotification.is_read || false);
+              
+              setNotifications(prev => {
+                // Avoid duplicates
+                if (prev.some(n => n.id === newNotification.id)) {
+                  return prev;
+                }
+                return [newNotification, ...prev];
+              });
+              
+              // Only increment if unread
+              if (!newNotification.is_read) {
+                setUnreadCount(prev => (prev || 0) + 1);
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedNotification = payload.new as Notification;
+              const previousReadState = notificationReadStatesRef.current.get(updatedNotification.id) ?? false;
+              
+              // Update read state tracking
+              notificationReadStatesRef.current.set(updatedNotification.id, updatedNotification.is_read || false);
+              
+              setNotifications(prev =>
+                prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+              );
+              
+              // Update unread count based on read state change
+              if (previousReadState && !updatedNotification.is_read) {
+                // Was read, now unread - increment
+                setUnreadCount(prev => (prev || 0) + 1);
+              } else if (!previousReadState && updatedNotification.is_read) {
+                // Was unread, now read - decrement
+                setUnreadCount(prev => Math.max(0, (prev || 0) - 1));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const deletedNotification = payload.old as Notification;
+              const wasRead = notificationReadStatesRef.current.get(deletedNotification.id) ?? false;
+              
+              // Remove from read state tracking
+              notificationReadStatesRef.current.delete(deletedNotification.id);
+              
+              setNotifications(prev => prev.filter(n => n.id !== deletedNotification.id));
+              
+              // Only decrement if it was unread
+              if (!wasRead) {
+                setUnreadCount(prev => Math.max(0, (prev || 0) - 1));
               }
             }
-          } else if (payload.eventType === 'DELETE') {
-            const deletedNotification = payload.old as Notification;
-            setNotifications(prev => prev.filter(n => n.id !== deletedNotification.id));
-            if (!deletedNotification.is_read) {
-              setUnreadCount(prev => Math.max(0, prev - 1));
-            }
-          }
+          };
+
+          // Batch updates - process immediately for single updates, batch for rapid updates
+          pendingUpdates.push(updateFn);
+          
+          updateTimeout = setTimeout(() => {
+            processPendingUpdates();
+            updateTimeout = null;
+          }, 50); // 50ms debounce for batching
         }
       )
       .subscribe();
 
     return () => {
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+      }
       supabase.removeChannel(channel);
     };
-  }, [user, notifications]);
+  }, [user]); // Removed 'notifications' from dependencies - this was causing performance issues
 
   // Boxing Glove Icon Component
   const BoxingGloveIcon = ({ hasNotifications }: { hasNotifications: boolean }) => (
@@ -710,6 +1018,11 @@ const NotificationBell: React.FC = () => {
                           <Typography variant="body2" color="text.secondary" component="div" sx={{ mb: 0.5 }}>
                             {notification.message}
                           </Typography>
+                          {notification.type === 'NewFighter' && notification.action_url && (
+                            <Typography variant="caption" color="primary" component="div" sx={{ mb: 0.5, fontStyle: 'italic' }}>
+                              Click to view profile
+                            </Typography>
+                          )}
                           <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                             <Chip
                               label={notification.type}

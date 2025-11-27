@@ -54,7 +54,7 @@ import {
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase, TABLES } from '../../services/supabase';
 import { HomePageService, ScheduledFight } from '../../services/homePageService';
 import { useRealtime } from '../../contexts/RealtimeContext';
@@ -237,8 +237,14 @@ const normalizeWeightClass = (weightClass: string | undefined | null): string =>
 };
 
 const FighterProfile: React.FC = () => {
-  const { fighterProfile, updateFighterProfile, refreshFighterProfile, user } = useAuth();
+  const { userId: urlUserId } = useParams<{ userId?: string }>();
+  const { fighterProfile: currentUserProfile, updateFighterProfile, refreshFighterProfile, user } = useAuth();
   const navigate = useNavigate();
+  const [viewingFighterProfile, setViewingFighterProfile] = useState<any>(null);
+  const [isViewingOtherFighter, setIsViewingOtherFighter] = useState(false);
+  
+  // Determine if we're viewing another fighter's profile
+  const fighterProfile = urlUserId && urlUserId !== user?.id ? viewingFighterProfile : currentUserProfile;
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -487,6 +493,57 @@ const FighterProfile: React.FC = () => {
       console.error('Error loading fight URL submissions:', error);
     }
   }, [fighterProfile?.id]);
+
+  // Load other fighter's profile if viewing someone else
+  useEffect(() => {
+    console.log('FighterProfile - urlUserId:', urlUserId, 'user?.id:', user?.id, 'location.pathname:', window.location.pathname);
+    if (urlUserId && urlUserId !== user?.id) {
+      console.log('Loading other fighter profile for userId:', urlUserId);
+      setIsViewingOtherFighter(true);
+      setLoading(true);
+      setError(null);
+      const loadOtherFighterProfile = async () => {
+        try {
+          console.log('Fetching fighter profile for user_id:', urlUserId);
+          const { data, error } = await supabase
+            .from('fighter_profiles')
+            .select('*')
+            .eq('user_id', urlUserId)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching fighter profile:', error);
+            if (error.code === 'PGRST116') {
+              // No rows returned
+              throw new Error(`Fighter profile not found for user ID: ${urlUserId}`);
+            }
+            throw error;
+          }
+          
+          if (!data) {
+            throw new Error(`Fighter profile not found for user ID: ${urlUserId}`);
+          }
+          
+          console.log('Fighter profile loaded successfully:', data.name, data.id);
+          setViewingFighterProfile(data);
+          setLoading(false);
+        } catch (error: any) {
+          console.error('Error loading fighter profile:', error);
+          setError(error.message || 'Failed to load fighter profile');
+          setLoading(false);
+        }
+      };
+      loadOtherFighterProfile();
+    } else if (urlUserId && urlUserId === user?.id) {
+      // If viewing own profile via /fighter/:userId, redirect to /profile
+      console.log('Viewing own profile via /fighter route, redirecting to /profile');
+      navigate('/profile', { replace: true });
+    } else {
+      setIsViewingOtherFighter(false);
+      setViewingFighterProfile(null);
+      setError(null);
+    }
+  }, [urlUserId, user?.id, navigate]);
 
   useEffect(() => {
     if (fighterProfile?.user_id) {
@@ -1339,6 +1396,46 @@ const FighterProfile: React.FC = () => {
     }
   };
 
+  // Show loading state if we're loading the current user's profile OR another fighter's profile
+  if (loading || (isViewingOtherFighter && !fighterProfile && !error)) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Show error if viewing another fighter and failed to load
+  if (isViewingOtherFighter && !fighterProfile && error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+        <Button sx={{ mt: 2 }} onClick={() => navigate('/')}>
+          Go to Home
+        </Button>
+      </Box>
+    );
+  }
+  
+  // Don't render if we don't have a profile (for current user only)
+  if (!fighterProfile && !isViewingOtherFighter) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Don't render if we're viewing another fighter but haven't loaded their profile yet
+  if (isViewingOtherFighter && !fighterProfile) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Safety check - don't render if fighterProfile is still null
   if (!fighterProfile) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -1393,6 +1490,22 @@ const FighterProfile: React.FC = () => {
           minHeight: '100vh',
         }}
       >
+      {/* Show loading or error if viewing another fighter */}
+      {isViewingOtherFighter && !fighterProfile && !error && (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      )}
+      {isViewingOtherFighter && !fighterProfile && error && (
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">{error}</Alert>
+          <Button sx={{ mt: 2 }} onClick={() => navigate('/')}>
+            Go to Home
+          </Button>
+        </Box>
+      )}
+      {(!isViewingOtherFighter || fighterProfile) && fighterProfile && (
+        <>
       {/* Header Section */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -1510,7 +1623,7 @@ const FighterProfile: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                   Physical Information
                 </Typography>
-                {!isEditing && (
+                {!isEditing && !isViewingOtherFighter && (
                   <IconButton onClick={() => setIsEditing(true)} color="primary">
                     <Edit />
                   </IconButton>
@@ -2132,17 +2245,33 @@ const FighterProfile: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                   Fight Record
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={(e) => {
-                    e.currentTarget.blur();
-                    setAddFightDialogOpen(true);
-                  }}
-                >
-                  Add Fight
-                </Button>
+                {!isViewingOtherFighter && (
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      setAddFightDialogOpen(true);
+                    }}
+                  >
+                    Add Fight
+                  </Button>
+                )}
               </Box>
+              {isViewingOtherFighter && (
+                <Box sx={{ mt: 2 }}>
+                  <Alert severity="info">
+                    You are viewing {fighterProfile?.name}'s profile. You cannot edit their information.
+                  </Alert>
+                </Box>
+              )}
+              {isViewingOtherFighter && (
+                <Box sx={{ mt: 2 }}>
+                  <Alert severity="info">
+                    You are viewing {fighterProfile?.name}'s profile. You cannot edit their information.
+                  </Alert>
+                </Box>
+              )}
               
               {fightRecords.length === 0 ? (
                 <Alert severity="info">No fight records yet. Add your first fight!</Alert>
@@ -3494,6 +3623,8 @@ const FighterProfile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+        </>
+      )}
       </Box>
     </>
   );

@@ -154,6 +154,14 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
+            path="/fighter/:userId"
+            element={
+              <ProtectedRoute>
+                <FighterProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/rankings"
             element={
               <ProtectedRoute>

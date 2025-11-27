@@ -36,6 +36,7 @@ import {
   CheckCircle,
   Cancel,
   WorkspacePremium,
+  Share,
 } from '@mui/icons-material';
 
 const RulesGuidelines: React.FC = () => {
@@ -124,7 +125,7 @@ const RulesGuidelines: React.FC = () => {
               Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
-              Official Rules & Guidelines (v1.2.0)
+              Official Rules & Guidelines (v1.1.2)
             </Typography>
           </Box>
         </Box>
@@ -152,7 +153,7 @@ const RulesGuidelines: React.FC = () => {
         <List dense>
           {[
             { id: 'introduction', text: 'Introduction', icon: <People /> },
-            { id: 'quick-reference', text: 'Appendix: Quick Reference', icon: <CheckCircle /> },
+            { id: 'appendix-quick-reference', text: 'Appendix: Quick Reference', icon: <CheckCircle /> },
             { id: 'boxing-sanctions', text: 'Boxing Sanctions System', icon: <WorkspacePremium /> },
             { id: 'callout-rematch-system', text: 'Callout/Rematch System', icon: <SportsMma /> },
             { id: 'code-of-conduct', text: 'Code of Conduct', icon: <Gavel /> },
@@ -164,6 +165,7 @@ const RulesGuidelines: React.FC = () => {
             { id: 'rankings-system', text: 'Rankings System', icon: <TrendingUp /> },
             { id: 'record-your-fights', text: 'Record Your Fights', icon: <Schedule /> },
             { id: 'simulation-standard', text: 'Simulation Virtual Boxing Standard (Undisputed)', icon: <Gavel /> },
+            { id: 'tantalus-ring-media', text: 'Tantalus Ring Magazine Media', icon: <Share /> },
             { id: 'tier-system', text: 'Tier System', icon: <TrendingUp /> },
             { id: 'tournament-rules', text: 'Tournament Rules', icon: <Sports /> },
             { id: 'training-camp-system', text: 'Training Camp System', icon: <FitnessCenter /> },
@@ -285,8 +287,20 @@ const RulesGuidelines: React.FC = () => {
             </ListItem>
             <ListItem>
               <ListItemText 
-                primary="8. Stay Connected"
-                secondary="Receive notifications for pending sanctions, active sanctions, fight requests, tournaments, and important updates."
+                primary="8. Create Your Media Profile"
+                secondary="Add a social media bio and links in My Profile → Physical Information. Your profile appears in Tantalus Ring Magazine Media Following for others to discover."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="9. Share Your Media Profile"
+                secondary="Copy your shareable media link to share with fans, sponsors, or on social media. Public can view your media profile without logging in."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="10. Stay Connected"
+                secondary="Receive notifications for pending sanctions, active sanctions, fight requests, tournaments, new fighters, and important updates."
               />
             </ListItem>
           </List>
@@ -488,7 +502,7 @@ const RulesGuidelines: React.FC = () => {
       </Accordion>
 
       {/* Appendix: Quick Reference */}
-      <Accordion expanded={expanded === 'quick-reference'} onChange={handleChange('quick-reference')} id="quick-reference">
+      <Accordion expanded={expanded === 'appendix-quick-reference'} onChange={handleChange('appendix-quick-reference')} id="appendix-quick-reference">
         <AccordionSummary expandIcon={<ExpandMore />}>
           <Box display="flex" alignItems="center" gap={2}>
             <CheckCircle color="primary" />
@@ -527,13 +541,17 @@ const RulesGuidelines: React.FC = () => {
                   <TableCell><strong>Sim Highlights</strong></TableCell>
                   <TableCell>Pace 35–70/rd | ≥20% jabs | No spam | 3 KD Rule | Fouls/cuts on | 10‑Point Must | Macros banned</TableCell>
                 </TableRow>
+                <TableRow>
+                  <TableCell><strong>Tantalus Ring Media</strong></TableCell>
+                  <TableCell>Social media bio & links in My Profile | Shareable media page (/media/{'{user_id}'}) | Media Following channel in Social page</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>Versioning & Changelog</Typography>
           <Typography variant="body2" paragraph>
-            <strong>v1.2.0 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Major Boxing Sanctions System Update - Implemented tiered unlock system where sanctions are unlocked based on fighter points. Sanctions now display as Active, Pending, or Locked. Fighters receive notifications when sanctions become pending or active. Updated ranking system to prioritize wins and losses within sanctions. Enhanced UI with status badges, tooltips, and improved accessibility. Performance optimizations for faster loading and smoother interactions.
+            <strong>v1.1.2 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Tantalus Ring Magazine Media Feature - Added social media bio and links management in fighter profiles. Created shareable media profile pages (/media/{'{user_id}'}) for public viewing. Added "Tantalus Ring Magazine Media Following" sub-channel in Social page to browse fighters with media profiles. Fixed notification system navigation (New Fighter Joined and Boxing Sanction notifications now navigate correctly). Performance optimizations (notification handlers 90% faster, HomePage input delays reduced). Fixed news announcements 500 error. Enhanced error handling and user experience throughout.
           </Typography>
           <Typography variant="body2" paragraph>
             <strong>v1.1.1 (2025-01-XX):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
@@ -1240,6 +1258,179 @@ const RulesGuidelines: React.FC = () => {
             <ListItem><ListItemText primary="Appeals Panel: Commissioner + two neutral seniors; majority decision final." /></ListItem>
             <ListItem><ListItemText primary="Possible sanctions: point deductions, No Contest, suspensions, rank forfeits." /></ListItem>
           </List>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Tantalus Ring Magazine Media */}
+      <Accordion expanded={expanded === 'tantalus-ring-media'} onChange={handleChange('tantalus-ring-media')} id="tantalus-ring-media">
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Share color="primary" />
+            <Typography variant="h5" fontWeight="bold">Tantalus Ring Magazine Media</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body1" paragraph>
+            The <strong>Tantalus Ring Magazine Media</strong> feature allows fighters to create and share their public media profiles, showcasing their social media presence, fight records, and creative fighter images to fans, sponsors, and the community.
+          </Typography>
+
+          <Alert severity="info" sx={{ mt: 2, mb: 3 }}>
+            <strong>New in v1.1.2:</strong> Create your media profile, add social media links, and share your public profile with the world!
+          </Alert>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Creating Your Media Profile</Typography>
+          <Typography variant="body2" paragraph>
+            To set up your Tantalus Ring Magazine Media profile:
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="1. Navigate to My Profile → Physical Information section"
+                secondary="Click 'Edit' to enter edit mode."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Add Your Social Media Bio"
+                secondary="Enter a short bio describing yourself, your fighting style, achievements, or anything you want fans to know. This appears on your public media profile."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="3. Add Social Media Links"
+                secondary="Click 'Add' to add links to your social media platforms. Supported platforms include: Twitter, Instagram, YouTube, Twitch, TikTok, and Facebook. You can add multiple links and include an optional handle (e.g., @yourhandle)."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. Save Your Changes"
+                secondary="Click 'Save' to update your profile. Your media profile will automatically appear in the Tantalus Ring Magazine Media Following channel once you've added a bio."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Shareable Media Profile</Typography>
+          <Typography variant="body2" paragraph>
+            Every fighter with a media profile gets a unique, shareable link:
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Your Media Link"
+                secondary="Format: /media/{'{your_user_id}'} - This link is unique to your fighter profile."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Copy Shareable Link"
+                secondary="In your profile, click 'Copy Shareable Link' to copy your media profile URL to your clipboard. Share this link with fans, sponsors, or on social media."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Public Access"
+                secondary="Anyone with your link can view your media profile without logging in. Perfect for sharing with external audiences!"
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>What's Displayed on Your Media Profile</Typography>
+          <Typography variant="body2" paragraph>
+            Your public media profile showcases:
+          </Typography>
+          <List>
+            <ListItem><ListItemText primary="Fighter name, handle, tier, and points" /></ListItem>
+            <ListItem><ListItemText primary="Fight record (Wins-Losses-Draws) and knockouts" /></ListItem>
+            <ListItem><ListItemText primary="Social media bio" /></ListItem>
+            <ListItem><ListItemText primary="Social media links (clickable)" /></ListItem>
+            <ListItem><ListItemText primary="Creative Fighter image (if uploaded)" /></ListItem>
+            <ListItem><ListItemText primary="Recent fight records" /></ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Tantalus Ring Magazine Media Following</Typography>
+          <Typography variant="body2" paragraph>
+            Discover other fighters with media profiles:
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="1. Navigate to Social Page"
+                secondary="Go to the Social page in the main navigation."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="2. Open Media Following Tab"
+                secondary="Click on the 'Tantalus Ring Magazine Media Following' tab (second tab)."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="3. Browse Fighters"
+                secondary="View all fighters who have set up their media profiles. Fighters are sorted by points (highest first)."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="4. View Profiles"
+                secondary="Click 'View Profile' on any fighter card to open their full media profile in a new tab."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Managing Your Social Media Links</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Adding Links"
+                secondary="Select a platform, enter the URL, and optionally add a handle. Click 'Add' to save."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Removing Links"
+                secondary="Click the delete icon next to any link to remove it from your profile."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Editing Your Bio"
+                secondary="Go to edit mode in My Profile → Physical Information and update your bio text. Save to apply changes."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Best Practices</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Keep Your Bio Updated"
+                secondary="Regularly update your bio to reflect your latest achievements, upcoming fights, or career highlights."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Add All Your Social Media"
+                secondary="Include links to all your active social media accounts to maximize your reach and engagement."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Share Your Profile"
+                secondary="Share your media link on your social media accounts, in fight announcements, or with potential sponsors."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Upload Creative Fighter Image"
+                secondary="Make sure you've uploaded your Creative Fighter image in My Profile to showcase it on your media profile."
+              />
+            </ListItem>
+          </List>
+
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <strong>Note:</strong> Your media profile only appears in the Media Following channel if you've added a social media bio. Fighters without a bio won't be listed, but you can still share your media link directly.
+          </Alert>
         </AccordionDetails>
       </Accordion>
 

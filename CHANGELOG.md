@@ -5,6 +5,71 @@ All notable changes to Tantalus Boxing Club will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-01-XX
+
+### 🎉 Major Features Added
+
+#### Tantalus Ring Magazine Media Feature
+- **Social Media Bio**: Fighters can add a custom bio for their media profile
+- **Social Media Links**: Add and manage links to Twitter, Instagram, YouTube, Twitch, TikTok, Facebook
+- **Shareable Media Page**: Public-facing media profile page at `/media/{user_id}`
+- **Media Following Channel**: New sub-channel in Social page to browse fighters with media profiles
+- **Location**: My Profile → Physical Information section
+
+### 🔧 Bug Fixes
+
+#### Notification System
+- Fixed "New Fighter Joined" notifications navigating to Rankings instead of fighter profile
+- Fixed "New Boxing Sanction Available" notifications navigation
+- Improved action_url parsing and validation with multiple fallback mechanisms
+- Enhanced error handling and logging
+
+#### Performance
+- Fixed notification handler performance issues (reduced from 455-460ms to <50ms)
+- Added debouncing and batching for notification updates
+- Optimized HomePage performance (reduced input delays and render times)
+- Fixed news announcements 500 error
+
+### ⚡ Performance Improvements
+- Notification handlers: 90% faster processing
+- HomePage: Reduced input delays and render times
+- News queries: Fixed timeouts and errors
+- React rendering: Added memoization and debouncing
+
+### 📊 Technical Updates
+- Added `social_media_bio` field to `fighter_profiles` table
+- Created `FighterMedia.tsx` component for shareable media profiles
+- Added `/media/:userId` route for public media profiles
+- Enhanced `NotificationBell.tsx` with better error handling
+- Updated `Social.tsx` with Media Following sub-channel
+- Added `deleteSocialLink()` function to `mediaService.ts`
+
+### 📁 Files Changed
+- New: `src/components/FighterMedia/FighterMedia.tsx`
+- New: `database/add-social-media-bio.sql`
+- New: `database/fix-news-500-error-diagnostic.sql`
+- Updated: `src/components/FighterProfile/FighterProfile.tsx`
+- Updated: `src/components/Shared/NotificationBell.tsx`
+- Updated: `src/components/HomePage/HomePage.tsx`
+- Updated: `src/components/Social/Social.tsx`
+- Updated: `src/services/mediaService.ts`
+- Updated: `src/App.tsx`
+
+## [1.1.1] - 2025-01-XX
+
+### 🎉 Major Features Added
+
+#### Boxing Sanctions Management System
+- Fighters can join Boxing Sanctions and compete for rankings
+- 6 available sanctions: TBCA, TBA, TBO, TBF, TBC, TRM
+- Independent rankings per sanction
+- Multi-sanction participation support
+
+### 🔧 Bug Fixes
+- Fixed 409 Conflict Error on championship_belts table
+- Corrected points system (Loss: -2 instead of -3)
+- Updated demotion system (5 losses instead of 4)
+
 ## [1.1.0] - 2025-01-XX
 
 ### 🎉 Major Features Added

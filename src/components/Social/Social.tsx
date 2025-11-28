@@ -1126,7 +1126,13 @@ const Social: React.FC = () => {
               zIndex: 10,
             }}
           >
-            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+            <Tabs 
+              value={activeTab} 
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+            >
               <Tab icon={<Forum />} label="Club Chat" iconPosition="start" />
               <Tab icon={<Article />} label="Tantalus Ring Magazine Media Following" iconPosition="start" />
               <Tab icon={<Share />} label="The TBC Social Media Channels" iconPosition="start" />

@@ -1405,6 +1405,9 @@ const HomePage: React.FC = () => {
                 value={tabValue} 
                 onChange={handleTabChange} 
                 aria-label="homepage tabs"
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
                 sx={{ '& .MuiTab-root': { color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' } }}
               >
                 <Tab label="Top Fighters" value={0} />

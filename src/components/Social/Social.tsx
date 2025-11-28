@@ -43,6 +43,7 @@ import { sanitizeText, sanitizeHTML, sanitizeURL } from '../../utils/securityUti
 import boxingGymBg from '../../bxr-boxinggym-hd-4.jpg';
 import fighterFollowingBg from '../../Fighter Following.png';
 import logo0Bg from '../../Logo0.png';
+import tbcSocialMediaBg from '../../TBC Social Media.png';
 
 const Social: React.FC = () => {
   const { user, fighterProfile } = useAuth();
@@ -1108,8 +1109,8 @@ const Social: React.FC = () => {
             display: 'flex', 
             flexDirection: 'column', 
             overflow: 'hidden',
-            backgroundColor: (activeTab === 0 || activeTab === 1) ? 'transparent' : 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: (activeTab === 0 || activeTab === 1) ? 'none' : 'blur(3px)',
+            backgroundColor: (activeTab === 0 || activeTab === 1 || activeTab === 2) ? 'transparent' : 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: (activeTab === 0 || activeTab === 1 || activeTab === 2) ? 'none' : 'blur(3px)',
             position: 'relative',
           }}
         >
@@ -1768,6 +1769,7 @@ const Social: React.FC = () => {
           {/* The TBC Social Media Channels Tab */}
           {activeTab === 2 && (
             <>
+              {/* Header with visible background */}
               <Box
                 sx={{
                   p: 2,
@@ -1776,6 +1778,10 @@ const Social: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(5px)',
+                  position: 'relative',
+                  zIndex: 5,
                 }}
               >
                 <Share color="primary" />
@@ -1783,6 +1789,33 @@ const Social: React.FC = () => {
                   The TBC Social Media Channels
                 </Typography>
               </Box>
+
+              {/* Background image container - fixed behind content */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: tbcSocialMediaBg ? `url("${tbcSocialMediaBg}")` : 'none',
+                  backgroundSize: '100% 100%',
+                  backgroundPosition: 'center center',
+                  backgroundRepeat: 'no-repeat',
+                  zIndex: 0,
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
 
               <Box
                 sx={{
@@ -1794,6 +1827,8 @@ const Social: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 3,
+                  position: 'relative',
+                  zIndex: 1,
                 }}
               >
                 <Box

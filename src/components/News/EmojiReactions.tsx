@@ -270,8 +270,8 @@ const EmojiReactions: React.FC<EmojiReactionsProps> = ({ newsId }) => {
           vertical: 'bottom',
           horizontal: 'left',
         }}
-        disableEnforceFocus
-        disableAutoFocus
+        hideBackdrop
+        disableRestoreFocus
         PaperProps={{
           sx: {
             p: 2,

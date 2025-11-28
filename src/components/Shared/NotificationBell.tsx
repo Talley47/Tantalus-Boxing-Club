@@ -943,8 +943,8 @@ const NotificationBell: React.FC = () => {
           vertical: 'top',
           horizontal: 'right',
         }}
-        disableEnforceFocus
-        disableAutoFocus
+        hideBackdrop
+        disableRestoreFocus
         PaperProps={{
           sx: {
             width: 400,

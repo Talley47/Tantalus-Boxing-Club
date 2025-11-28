@@ -1518,8 +1518,8 @@ const Social: React.FC = () => {
               vertical: 'bottom',
               horizontal: 'left',
             }}
-            disableEnforceFocus
-            disableAutoFocus
+            hideBackdrop
+            disableRestoreFocus
             PaperProps={{
               sx: {
                 width: 300,

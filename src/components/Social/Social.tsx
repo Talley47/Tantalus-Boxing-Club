@@ -1450,6 +1450,8 @@ const Social: React.FC = () => {
               p: 2,
               borderTop: 1,
               borderColor: 'divider',
+              position: 'relative',
+              zIndex: 5,
             }}
           >
             {attachmentPreview && (
@@ -1502,8 +1504,29 @@ const Social: React.FC = () => {
                   onKeyPress={handleKeyPress}
                   disabled={sending || uploading || !user}
                   sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'transparent',
+                      '& fieldset': {
+                        borderColor: '#d32f2f',
+                        borderWidth: '2px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#c62828',
+                        borderWidth: '2px',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#b71c1c',
+                        borderWidth: '2px',
+                      },
+                    },
                     '& .MuiInputBase-input': {
-                      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"'
+                      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+                      backgroundColor: 'transparent',
+                      color: '#000',
+                    },
+                    '& .MuiInputBase-input::placeholder': {
+                      color: 'rgba(0, 0, 0, 0.6)',
+                      opacity: 1,
                     }
                   }}
                 />

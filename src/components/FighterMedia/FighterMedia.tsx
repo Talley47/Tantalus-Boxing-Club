@@ -18,6 +18,12 @@ import {
   EmojiEvents,
   SportsMma,
   Person,
+  Height,
+  Scale,
+  CalendarToday,
+  LocationOn,
+  Business,
+  FitnessCenter,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
@@ -325,6 +331,173 @@ const FighterMedia: React.FC = () => {
                         </Typography>
                       </Box>
                     )}
+                  </Stack>
+                </Box>
+
+                {/* Physical Information */}
+                <Box mb={3}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                    Physical Information
+                  </Typography>
+                  <Stack spacing={2}>
+                    {(fighterProfile.height_feet !== null && fighterProfile.height_feet !== undefined) || 
+                     (fighterProfile.height_inches !== null && fighterProfile.height_inches !== undefined) ? (
+                      <Box display="flex" alignItems="center">
+                        <Height sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Height
+                          </Typography>
+                          <Typography variant="body1">
+                            {fighterProfile.height_feet || 0}'{fighterProfile.height_inches || 0}"
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.weight ? (
+                      <Box display="flex" alignItems="center">
+                        <Scale sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Weight
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.weight} lbs</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.reach ? (
+                      <Box display="flex" alignItems="center">
+                        <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Reach
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.reach}"</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.stance ? (
+                      <Box display="flex" alignItems="center">
+                        <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Stance
+                          </Typography>
+                          <Typography variant="body1">
+                            {fighterProfile.stance.charAt(0).toUpperCase() + fighterProfile.stance.slice(1).toLowerCase()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.age ? (
+                      <Box display="flex" alignItems="center">
+                        <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Age
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.age} years old</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.hometown ? (
+                      <Box display="flex" alignItems="center">
+                        <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Hometown
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.hometown}</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.nationality ? (
+                      <Box display="flex" alignItems="center">
+                        <LocationOn sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Nationality
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.nationality}</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.fighting_style ? (
+                      <Box display="flex" alignItems="center">
+                        <SportsMma sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Fighting Style
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.fighting_style}</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {(fighterProfile as any)?.birthday ? (
+                      <Box display="flex" alignItems="center">
+                        <CalendarToday sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Birthday
+                          </Typography>
+                          <Typography variant="body1">
+                            {(() => {
+                              try {
+                                const birthday = (fighterProfile as any).birthday;
+                                if (!birthday) return 'Not set';
+                                const dateStr = typeof birthday === 'string' 
+                                  ? birthday.split('T')[0] 
+                                  : String(birthday);
+                                const parts = dateStr.split('-');
+                                if (parts.length === 3) {
+                                  const year = parseInt(parts[0], 10);
+                                  const month = parseInt(parts[1], 10) - 1;
+                                  const day = parseInt(parts[2], 10);
+                                  const date = new Date(year, month, day);
+                                  if (isNaN(date.getTime())) return 'Not set';
+                                  return date.toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  });
+                                }
+                                const date = new Date(dateStr);
+                                if (isNaN(date.getTime())) return 'Not set';
+                                return date.toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                });
+                              } catch {
+                                return 'Not set';
+                              }
+                            })()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.trainer ? (
+                      <Box display="flex" alignItems="center">
+                        <Person sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Trainer
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.trainer}</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                    {fighterProfile.gym ? (
+                      <Box display="flex" alignItems="center">
+                        <Business sx={{ mr: 2, color: 'text.secondary' }} />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Gym
+                          </Typography>
+                          <Typography variant="body1">{fighterProfile.gym}</Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
                   </Stack>
                 </Box>
 

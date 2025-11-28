@@ -41,6 +41,7 @@ import { chatService, ChatMessage } from '../../services/chatService';
 import { supabase } from '../../services/supabase';
 import { sanitizeText, sanitizeHTML, sanitizeURL } from '../../utils/securityUtils';
 import boxingGymBg from '../../bxr-boxinggym-hd-4.jpg';
+import fighterFollowingBg from '../../Fighter Following.png';
 
 const Social: React.FC = () => {
   const { user, fighterProfile } = useAuth();
@@ -1106,14 +1107,23 @@ const Social: React.FC = () => {
             display: 'flex', 
             flexDirection: 'column', 
             overflow: 'hidden',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(3px)',
+            backgroundColor: activeTab === 1 ? 'transparent' : 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: activeTab === 1 ? 'none' : 'blur(3px)',
             position: 'relative',
           }}
         >
-        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0, minHeight: 0 }}>
-          {/* Tabs */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0, minHeight: 0, position: 'relative' }}>
+          {/* Tabs - Always visible with white background */}
+          <Box 
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(5px)',
+              position: 'relative',
+              zIndex: 10,
+            }}
+          >
             <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
               <Tab icon={<Forum />} label="Club Chat" iconPosition="start" />
               <Tab icon={<Article />} label="Tantalus Ring Magazine Media Following" iconPosition="start" />
@@ -1569,6 +1579,7 @@ const Social: React.FC = () => {
           {/* Tantalus Ring Magazine Media Following Tab */}
           {activeTab === 1 && (
             <>
+              {/* Header with visible background */}
               <Box
                 sx={{
                   p: 2,
@@ -1577,6 +1588,10 @@ const Social: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(5px)',
+                  position: 'relative',
+                  zIndex: 5,
                 }}
               >
                 <Article color="primary" />
@@ -1585,23 +1600,54 @@ const Social: React.FC = () => {
                 </Typography>
               </Box>
 
+              {/* Background image container - fixed behind content */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: fighterFollowingBg ? `url("${fighterFollowingBg}")` : 'none',
+                  backgroundSize: '100% 100%',
+                  backgroundPosition: 'center center',
+                  backgroundRepeat: 'no-repeat',
+                  zIndex: 0,
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
+
+              {/* Content area */}
               <Box
                 sx={{
                   flex: 1,
                   overflowY: 'auto',
                   p: 2,
+                  position: 'relative',
+                  zIndex: 1,
+                  minHeight: '100%',
                 }}
               >
                 {loadingMediaFighters ? (
-                  <Box display="flex" justifyContent="center" p={4}>
+                  <Box display="flex" justifyContent="center" p={4} sx={{ position: 'relative', zIndex: 1 }}>
                     <CircularProgress />
                   </Box>
                 ) : mediaFighters.length === 0 ? (
-                  <Alert severity="info">
+                  <Alert severity="info" sx={{ position: 'relative', zIndex: 1 }}>
                     No fighters have set up their Tantalus Ring Magazine Media profiles yet.
                   </Alert>
                 ) : (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, position: 'relative', zIndex: 1 }}>
                     {mediaFighters.map((fighter) => (
                       <Box key={fighter.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' } }}>
                         <Card

@@ -23,6 +23,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
 import { mediaService } from '../../services/mediaService';
 import { SocialLink } from '../../types';
+import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from '../../services/championshipBeltService';
 import logo1 from '../../Logo1.png';
 import backgroundImage from '../../TBC Ring Magazine.png';
 
@@ -36,6 +37,8 @@ const FighterMedia: React.FC = () => {
   const [fighterProfile, setFighterProfile] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [fightRecords, setFightRecords] = useState<any[]>([]);
+  const [championshipBelts, setChampionshipBelts] = useState<ChampionshipBelt[]>([]);
+  const [loadingBelts, setLoadingBelts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +93,18 @@ const FighterMedia: React.FC = () => {
         } catch (err) {
           console.error('Error loading fight records:', err);
           setFightRecords([]);
+        }
+
+        // Load championship belts
+        try {
+          setLoadingBelts(true);
+          const belts = await championshipBeltService.getBeltsByUserId(userId);
+          setChampionshipBelts(belts);
+        } catch (err) {
+          console.error('Error loading championship belts:', err);
+          setChampionshipBelts([]);
+        } finally {
+          setLoadingBelts(false);
         }
       } catch (err: any) {
         console.error('Error loading fighter media:', err);
@@ -354,6 +369,66 @@ const FighterMedia: React.FC = () => {
                         />
                       ))}
                     </Stack>
+                  </Box>
+                )}
+
+                {/* Championship Belts */}
+                {loadingBelts ? (
+                  <Box display="flex" justifyContent="center" mb={3}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : championshipBelts.length > 0 && (
+                  <Box mb={3}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Championship Belts
+                    </Typography>
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: 2, 
+                        mt: 1,
+                        justifyContent: 'flex-start'
+                      }}
+                    >
+                      {championshipBelts.map((belt) => (
+                        <Box
+                          key={belt.id}
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            maxWidth: '200px',
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={belt.belt_image_url}
+                            alt={GOVERNING_BODY_LABELS[belt.governing_body]}
+                            sx={{
+                              width: '100%',
+                              maxWidth: '160px',
+                              height: 'auto',
+                              objectFit: 'contain',
+                              borderRadius: 1,
+                              mb: 0.5,
+                              boxShadow: 2,
+                            }}
+                          />
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              textAlign: 'center',
+                              fontSize: '0.7rem',
+                              color: 'text.secondary',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {GOVERNING_BODY_LABELS[belt.governing_body]}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
                 )}
               </Box>

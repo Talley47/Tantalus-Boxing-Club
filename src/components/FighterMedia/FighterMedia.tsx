@@ -24,6 +24,11 @@ import { supabase } from '../../services/supabase';
 import { mediaService } from '../../services/mediaService';
 import { SocialLink } from '../../types';
 import logo1 from '../../Logo1.png';
+import backgroundImage from '../../TBC Ring Magazine.png';
+
+// Debug: Log the imported image path
+console.log('FighterMedia background image imported:', backgroundImage);
+console.log('Image type:', typeof backgroundImage);
 
 const FighterMedia: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -109,34 +114,88 @@ const FighterMedia: React.FC = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
-      </Box>
+      <>
+        {/* Full-screen background layer */}
+        <Box
+          component="div"
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100vh',
+            backgroundImage: backgroundImage ? `url("${backgroundImage}")` : 'url("/TBC Ring Magazine.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed',
+            zIndex: -1,
+            display: 'block',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 0,
+            minHeight: '100vh',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <CircularProgress sx={{ color: 'white' }} />
+        </Box>
+      </>
     );
   }
 
   if (error || !fighterProfile) {
     return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 3,
-        }}
-      >
-        <Box sx={{ maxWidth: 600, width: '100%' }}>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error || 'Fighter profile not found'}
-          </Alert>
-          <Typography variant="body2" color="white" textAlign="center">
-            This fighter's media profile is not available or has been removed.
-          </Typography>
+      <>
+        {/* Full-screen background layer */}
+        <Box
+          component="div"
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100vh',
+            backgroundImage: backgroundImage ? `url("${backgroundImage}")` : 'url("/TBC Ring Magazine.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundAttachment: 'fixed',
+            zIndex: -1,
+            display: 'block',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 0,
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            p: 3,
+          }}
+        >
+          <Box sx={{ maxWidth: 600, width: '100%' }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error || 'Fighter profile not found'}
+            </Alert>
+            <Typography variant="body2" color="white" textAlign="center">
+              This fighter's media profile is not available or has been removed.
+            </Typography>
+          </Box>
         </Box>
-      </Box>
+      </>
     );
   }
 
@@ -144,14 +203,37 @@ const FighterMedia: React.FC = () => {
   const knockouts = fighterProfile.knockouts || 0;
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        py: 4,
-        px: { xs: 2, md: 4 },
-      }}
-    >
+    <>
+      {/* Full-screen background layer */}
+      <Box
+        component="div"
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100vh',
+          backgroundImage: backgroundImage ? `url("${backgroundImage}")` : 'url("/TBC Ring Magazine.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          zIndex: -1,
+          display: 'block',
+        }}
+      />
+      {/* Content layer */}
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 0,
+          minHeight: '100vh',
+          py: 4,
+          px: { xs: 2, md: 4 },
+        }}
+      >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
@@ -345,7 +427,8 @@ const FighterMedia: React.FC = () => {
           </Card>
         )}
       </Box>
-    </Box>
+      </Box>
+    </>
   );
 };
 

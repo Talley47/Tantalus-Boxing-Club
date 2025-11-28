@@ -144,6 +144,12 @@ if (typeof window !== 'undefined') {
     const lowerErrorString = errorString.toLowerCase();
     const lowerErrorStack = errorStack.toLowerCase();
     
+    // Check if error is from background-redux-new.js (common Redux DevTools error)
+    const isReduxDevToolsError = 
+      lowerErrorStack.includes('background-redux-new.js') ||
+      lowerErrorString.includes('background-redux-new.js') ||
+      (lowerErrorMessage.includes('no tab with id') && (lowerErrorStack.includes('background-redux') || lowerErrorString.includes('background-redux')));
+    
     // More comprehensive check - catch any variation of browser extension errors
     // Check for partial matches to catch all variations (case-insensitive)
     // Also check if error is from route paths (e.g., /rules, /login, etc.)
@@ -156,6 +162,7 @@ if (typeof window !== 'undefined') {
                         lowerErrorString.includes('/matchmaking');
     
     const isBrowserExtensionError = 
+      isReduxDevToolsError ||
       lowerErrorMessage.includes('$ is not defined') ||
       lowerErrorMessage.includes('referenceerror: $') ||
       (errorName === 'ReferenceError' && (lowerErrorMessage.includes('$') || lowerErrorString.includes('$'))) ||

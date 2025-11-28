@@ -42,6 +42,7 @@ import { supabase } from '../../services/supabase';
 import { sanitizeText, sanitizeHTML, sanitizeURL } from '../../utils/securityUtils';
 import boxingGymBg from '../../bxr-boxinggym-hd-4.jpg';
 import fighterFollowingBg from '../../Fighter Following.png';
+import logo0Bg from '../../Logo0.png';
 
 const Social: React.FC = () => {
   const { user, fighterProfile } = useAuth();
@@ -1107,8 +1108,8 @@ const Social: React.FC = () => {
             display: 'flex', 
             flexDirection: 'column', 
             overflow: 'hidden',
-            backgroundColor: activeTab === 1 ? 'transparent' : 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: activeTab === 1 ? 'none' : 'blur(3px)',
+            backgroundColor: (activeTab === 0 || activeTab === 1) ? 'transparent' : 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: (activeTab === 0 || activeTab === 1) ? 'none' : 'blur(3px)',
             position: 'relative',
           }}
         >
@@ -1134,7 +1135,7 @@ const Social: React.FC = () => {
           {/* Club Chat Tab */}
           {activeTab === 0 && (
             <>
-              {/* Header */}
+              {/* Header with visible background */}
               <Box
                 sx={{
                   p: 2,
@@ -1143,6 +1144,10 @@ const Social: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(5px)',
+                  position: 'relative',
+                  zIndex: 5,
                 }}
               >
                 <Forum color="primary" />
@@ -1157,6 +1162,33 @@ const Social: React.FC = () => {
                 />
               </Box>
 
+              {/* Background image container - fixed behind content */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: logo0Bg ? `url("${logo0Bg}")` : 'none',
+                  backgroundSize: '100% 100%',
+                  backgroundPosition: 'center center',
+                  backgroundRepeat: 'no-repeat',
+                  zIndex: 0,
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
+
           {/* Messages Container */}
           <Box
             ref={messagesContainerRef}
@@ -1170,6 +1202,7 @@ const Social: React.FC = () => {
               flexDirection: 'column',
               gap: 1,
               position: 'relative',
+              zIndex: 1,
               minHeight: 0, // Important for flex scrolling
               // Ensure scrollbar is visible
               '&::-webkit-scrollbar': {
@@ -2185,4 +2218,5 @@ const Social: React.FC = () => {
 };
 
 export default Social;
+
 

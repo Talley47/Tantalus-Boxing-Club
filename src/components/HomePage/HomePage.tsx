@@ -75,10 +75,6 @@ import tboImage from '../../TBO Tantalus Boxing Organization.png';
 import tbcImage from '../../TBC Tantalus Boxing Council.png';
 import trmImage from '../../TRM Tantalus Ring Magazine.png';
 
-// Debug log
-console.log('HomePage background image path:', homePageBackground);
-console.log('HomePage background type:', typeof homePageBackground);
-
 // Utility function for formatting birthdays - extracted outside component to prevent recreation
 const formatBirthday = (birthday: string | undefined): string => {
   if (!birthday) return 'Not set';

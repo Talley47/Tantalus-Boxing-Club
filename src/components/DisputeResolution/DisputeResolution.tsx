@@ -94,10 +94,6 @@ const DisputeResolution: React.FC = () => {
           table: 'disputes',
         },
         (payload) => {
-          console.log('Dispute changed (real-time) in FighterProfile:', payload);
-          console.log('Event type:', payload.eventType);
-          console.log('Full payload:', JSON.stringify(payload, null, 2));
-          
           // For DELETE events, immediately filter out the deleted dispute for instant UI update
           if (payload.eventType === 'DELETE') {
             const deletedId = payload.old?.id;
@@ -112,41 +108,19 @@ const DisputeResolution: React.FC = () => {
             );
             
             if (deletedId && belongsToFighter) {
-              setDisputes(prevDisputes => {
-                const filtered = prevDisputes.filter(d => d.id !== deletedId);
-                console.log('Fighter: Filtered out deleted dispute ID:', deletedId, 'Remaining:', filtered.length);
-                return filtered;
-              });
+              setDisputes(prevDisputes => prevDisputes.filter(d => d.id !== deletedId));
             } else if (!deletedId || belongsToFighter) {
               // If we can't get the ID or it belongs to this fighter, filter by status (fallback for bulk deletes)
-              console.log('Fighter: DELETE event received, filtering all resolved disputes');
-              setDisputes(prevDisputes => {
-                const filtered = prevDisputes.filter(d => d.status !== 'Resolved');
-                console.log('Fighter: Filtered out resolved disputes. Remaining:', filtered.length);
-                return filtered;
-              });
+              setDisputes(prevDisputes => prevDisputes.filter(d => d.status !== 'Resolved'));
             }
             
-            // Always reload for DELETE events to ensure consistency
-            // Use multiple delays to catch any delayed updates
+            // Reload after a single delay to ensure consistency
             setTimeout(() => {
-              console.log('Fighter: Reloading disputes after DELETE event');
               loadDisputes();
-            }, 100);
-            
-            setTimeout(() => {
-              console.log('Fighter: Second reload after DELETE event');
-              loadDisputes();
-            }, 500);
-            
-            setTimeout(() => {
-              console.log('Fighter: Third reload after DELETE event (final check)');
-              loadDisputes();
-            }, 1500);
+            }, 300);
           } else {
             // For other events (INSERT, UPDATE), reload after a short delay
             setTimeout(() => {
-              console.log('Fighter: Reloading disputes after real-time event');
               loadDisputes();
             }, 200);
           }
@@ -154,24 +128,21 @@ const DisputeResolution: React.FC = () => {
       )
       .subscribe();
 
-    // Set up polling as a fallback (every 3 seconds) to catch deletions that real-time might miss
-    // This is especially important for bulk deletes
-    const pollInterval = setInterval(() => {
-      console.log('Fighter: Polling for dispute updates...');
-      loadDisputes();
-    }, 3000);
-
-    // Also reload when the window/tab regains focus (in case real-time events were missed)
+    // Reload when the window/tab regains focus (in case real-time events were missed)
+    // Use debouncing to prevent excessive reloads
+    let focusTimeout: NodeJS.Timeout | null = null;
     const handleFocus = () => {
-      console.log('Fighter: Window regained focus, reloading disputes');
-      loadDisputes();
+      if (focusTimeout) clearTimeout(focusTimeout);
+      focusTimeout = setTimeout(() => {
+        loadDisputes();
+      }, 1000); // Debounce focus events
     };
     window.addEventListener('focus', handleFocus);
 
-    // Cleanup subscription and intervals on unmount
+    // Cleanup subscription and event listeners on unmount
     return () => {
       supabase.removeChannel(disputesChannel);
-      clearInterval(pollInterval);
+      if (focusTimeout) clearTimeout(focusTimeout);
       window.removeEventListener('focus', handleFocus);
     };
   }, [fighterProfile?.id]); // Re-subscribe if fighter profile changes

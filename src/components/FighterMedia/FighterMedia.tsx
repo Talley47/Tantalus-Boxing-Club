@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -26,10 +26,6 @@ import { SocialLink } from '../../types';
 import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from '../../services/championshipBeltService';
 import logo1 from '../../Logo1.png';
 import backgroundImage from '../../TBC Ring Magazine.png';
-
-// Debug: Log the imported image path
-console.log('FighterMedia background image imported:', backgroundImage);
-console.log('Image type:', typeof backgroundImage);
 
 const FighterMedia: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -69,43 +65,39 @@ const FighterMedia: React.FC = () => {
 
         setFighterProfile(profile);
 
-        // Load social links
-        try {
-          const links = await mediaService.getSocialLinks(profile.id);
-          setSocialLinks(links);
-        } catch (err) {
-          console.error('Error loading social links:', err);
-          setSocialLinks([]);
-        }
-
-        // Load fight records
-        try {
-          const { data: records, error: recordsError } = await supabase
+        // Load all data in parallel for better performance
+        setLoadingBelts(true);
+        const [linksResult, recordsResult, beltsResult] = await Promise.allSettled([
+          mediaService.getSocialLinks(profile.id).catch(() => []),
+          supabase
             .from('fight_records')
             .select('*')
             .eq('fighter_id', userId)
             .order('date', { ascending: false })
-            .limit(10);
+            .limit(10)
+            .then(({ data, error }) => error ? [] : (data || [])),
+          championshipBeltService.getBeltsByUserId(userId).catch(() => [])
+        ]);
 
-          if (!recordsError && records) {
-            setFightRecords(records);
-          }
-        } catch (err) {
-          console.error('Error loading fight records:', err);
+        // Set results
+        if (linksResult.status === 'fulfilled') {
+          setSocialLinks(linksResult.value);
+        } else {
+          setSocialLinks([]);
+        }
+
+        if (recordsResult.status === 'fulfilled') {
+          setFightRecords(recordsResult.value);
+        } else {
           setFightRecords([]);
         }
 
-        // Load championship belts
-        try {
-          setLoadingBelts(true);
-          const belts = await championshipBeltService.getBeltsByUserId(userId);
-          setChampionshipBelts(belts);
-        } catch (err) {
-          console.error('Error loading championship belts:', err);
+        if (beltsResult.status === 'fulfilled') {
+          setChampionshipBelts(beltsResult.value);
+        } else {
           setChampionshipBelts([]);
-        } finally {
-          setLoadingBelts(false);
         }
+        setLoadingBelts(false);
       } catch (err: any) {
         console.error('Error loading fighter media:', err);
         setError(err.message || 'Failed to load fighter media');
@@ -117,15 +109,15 @@ const FighterMedia: React.FC = () => {
     loadFighterMedia();
   }, [userId]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
     } catch (err) {
-      console.error('Failed to copy link:', err);
+      // Silently fail - clipboard API may not be available
     }
-  };
+  }, []);
 
   if (loading) {
     return (

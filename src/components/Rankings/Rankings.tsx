@@ -49,10 +49,6 @@ import rankingsBackground from '../../RBC Rankings page.png';
 // Import Logo1.png
 import logo1 from '../../Logo1.png';
 
-// Debug: Log the imported image path
-// Debug: Log the imported image path
-console.log('Rankings background image imported:', rankingsBackground);
-console.log('Image type:', typeof rankingsBackground);
 
 const Rankings: React.FC = () => {
   const { fighterProfile } = useAuth();
@@ -76,20 +72,17 @@ const Rankings: React.FC = () => {
     }
 
     // Subscribe to real-time changes
-    const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
-      console.log('Fight record changed - reloading rankings:', payload);
+    const unsubscribeFightRecords = subscribeToFightRecords(() => {
       // Reload rankings when fight records change
       loadRankings();
     });
 
-    const unsubscribeRankings = subscribeToRankings((payload) => {
-      console.log('Rankings changed:', payload);
+    const unsubscribeRankings = subscribeToRankings(() => {
       // Reload rankings directly
       loadRankings();
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      console.log('Fighter profile changed - reloading rankings:', payload);
       // Reload rankings when profiles change (affects points, tier, weight_class, etc.)
       // Check if points, tier, or weight_class changed - these directly affect rankings
       const rankingChange = 
@@ -97,15 +90,10 @@ const Rankings: React.FC = () => {
         payload.old?.tier !== payload.new?.tier ||
         payload.old?.weight_class !== payload.new?.weight_class;
       
+      // Only reload if ranking-affecting change detected
       if (rankingChange) {
-        console.log('Ranking-affecting change detected:', {
-          points: `${payload.old?.points} → ${payload.new?.points}`,
-          tier: `${payload.old?.tier} → ${payload.new?.tier}`,
-          weight_class: `${payload.old?.weight_class} → ${payload.new?.weight_class}`
-        });
+        loadRankings();
       }
-      // Always reload rankings when profiles change
-      loadRankings();
     });
 
     return () => {
@@ -130,7 +118,6 @@ const Rankings: React.FC = () => {
       if (activeTab === 0) {
         // Overall rankings - increased limit to ensure all fighters are shown
         const overall = await getOverallRankings(1000);
-        console.log(`[Rankings] Loaded ${overall.length} fighters in overall rankings`);
         setOverallRankings(overall);
         setRankings(overall);
       } else {
@@ -154,7 +141,6 @@ const Rankings: React.FC = () => {
         } else {
           // Single weight class selected - increased limit to ensure all fighters are shown
           const byClass = await getRankingsByWeightClass(selectedWeightClass, 1000);
-          console.log(`[Rankings] Loaded ${byClass.length} fighters for ${selectedWeightClass}`);
           setRankings(byClass);
           setRankingsByWeightClass({ [selectedWeightClass]: byClass });
         }

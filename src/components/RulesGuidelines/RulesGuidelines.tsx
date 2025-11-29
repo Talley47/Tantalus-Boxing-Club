@@ -37,6 +37,7 @@ import {
   Cancel,
   WorkspacePremium,
   Share,
+  Event,
 } from '@mui/icons-material';
 
 const RulesGuidelines: React.FC = () => {
@@ -125,7 +126,7 @@ const RulesGuidelines: React.FC = () => {
               Tantalus Boxing Club – Creative Fighter Club
             </Typography>
             <Typography variant="h6" color="rgba(255,255,255,0.9)" sx={{ mt: 1 }}>
-              Official Rules & Guidelines (v1.1.2)
+              Official Rules & Guidelines (v1.1.3)
             </Typography>
           </Box>
         </Box>
@@ -167,6 +168,7 @@ const RulesGuidelines: React.FC = () => {
             { id: 'simulation-standard', text: 'Simulation Virtual Boxing Standard (Undisputed)', icon: <Gavel /> },
             { id: 'tantalus-ring-media', text: 'Tantalus Ring Magazine Media', icon: <Share /> },
             { id: 'tier-system', text: 'Tier System', icon: <TrendingUp /> },
+            { id: 'tbc-promotions-fight-calendar', text: 'TBC Promotions Fight Calendar', icon: <Event /> },
             { id: 'tournament-rules', text: 'Tournament Rules', icon: <Sports /> },
             { id: 'training-camp-system', text: 'Training Camp System', icon: <FitnessCenter /> },
           ].sort((a, b) => {
@@ -264,7 +266,7 @@ const RulesGuidelines: React.FC = () => {
             <ListItem>
               <ListItemText 
                 primary="3. Advance Through Tiers"
-                secondary="Start at Amateur (0-29 pts), progress to Semi-Pro (30-69), Pro (70-139), Contender (140-279), and Elite (280+)."
+                secondary="Start at Amateur (0-29 pts), progress to Semi-Pro (30-69), Pro (70-139), Contender (140-279), Elite (280-559), and Hall of famer (560+)."
               />
             </ListItem>
             <ListItem>
@@ -362,6 +364,9 @@ const RulesGuidelines: React.FC = () => {
           </TableContainer>
           <Divider sx={{ my: 3 }} />
           <Typography variant="h6" gutterBottom>Versioning & Changelog</Typography>
+          <Typography variant="body2" paragraph>
+            <strong>v1.1.3 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Automatic Loss System & Tier Updates - Fixed automatic opponent loss system: when a fighter enters a win, the opponent now automatically receives a loss record with -3 points. Both fighters' rankings, demotions, tier, and points update in real-time across all systems. Added Hall of famer tier (560+ points). Updated tier thresholds: Amateur (0-29), Semi-Pro (30-69), Pro (70-139), Contender (140-279), Elite (280-559), Hall of famer (560+). All systems now update in real-time: Home Page, Rankings, Weight Class, Demotion System, Tier System, Smart Matchmaking, and Analytics.
+          </Typography>
           <Typography variant="body2" paragraph>
             <strong>v1.1.2 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Tantalus Ring Magazine Media Feature - Added social media bio and links management in fighter profiles. Created shareable media profile pages (/media/{'{user_id}'}) for public viewing. Added "Tantalus Ring Magazine Media Following" sub-channel in Social page to browse fighters with media profiles. Fixed notification system navigation (New Fighter Joined and Boxing Sanction notifications now navigate correctly). Performance optimizations (notification handlers 90% faster, HomePage input delays reduced). Fixed news announcements 500 error. Enhanced error handling and user experience throughout.
           </Typography>
@@ -647,6 +652,11 @@ const RulesGuidelines: React.FC = () => {
             <strong>Demotion Protection:</strong> You cannot drop a tier due to points loss alone.
           </Typography>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Demotion (Consecutive Losses):</Typography>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>⚠️ Warning Indicator:</strong> Fighters with 3+ consecutive losses are at risk of demotion. Look for the red warning indicator (!) next to fighters' names.
+            </Typography>
+          </Alert>
           <List>
             <ListItem>
               <Cancel color="error" sx={{ mr: 1 }} />
@@ -654,6 +664,7 @@ const RulesGuidelines: React.FC = () => {
             </ListItem>
             <ListItem><ListItemText primary="Demotion is immediate after the 5th loss." /></ListItem>
             <ListItem><ListItemText primary="You keep your points but move to the lower tier." /></ListItem>
+            <ListItem><ListItemText primary="Cannot demote below Amateur tier." /></ListItem>
           </List>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Promotion After Demotion:</Typography>
           <List>
@@ -828,7 +839,7 @@ const RulesGuidelines: React.FC = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Loss</strong></TableCell>
-                  <TableCell>−2</TableCell>
+                  <TableCell>−3</TableCell>
                   <TableCell>Deduction for defeat</TableCell>
                 </TableRow>
                 <TableRow>
@@ -839,16 +850,27 @@ const RulesGuidelines: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <Alert severity="info" sx={{ mt: 3, mb: 2 }}>
+            <Typography variant="body2" component="div">
+              <strong>Automatic Opponent Loss System:</strong> When you enter a fight record as a Win, your opponent automatically receives a Loss record with -3 points. Both fighters' rankings, demotions, tier, and points update in real-time across all systems (Home Page, Rankings, Weight Class, Demotion System, Tier System, Smart Matchmaking, and Analytics).
+            </Typography>
+          </Alert>
           <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Notes</Typography>
           <List>
             <ListItem>
-              <ListItemText primary="Both fighters' records are updated after each bout." />
+              <ListItemText primary="Both fighters' records are updated automatically after each bout." />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="When you enter a Win, your opponent automatically receives a Loss (-3 points)." />
             </ListItem>
             <ListItem>
               <ListItemText primary="KO/TKO bonus applies only to the winner." />
             </ListItem>
             <ListItem>
               <ListItemText primary="Points are calculated automatically upon verified result submission." />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="All systems update in real-time: Home Page, Rankings, Weight Class, Demotion System, Tier System, Smart Matchmaking, and Analytics." />
             </ListItem>
             <ListItem>
               <ListItemText primary="Full point history appears in each fighter's record." />
@@ -1484,8 +1506,13 @@ const RulesGuidelines: React.FC = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Elite</strong></TableCell>
-                  <TableCell>280+</TableCell>
+                  <TableCell>280–559</TableCell>
                   <TableCell>World‑class training, global events, premium analytics, live streaming, interviews, championship belts</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell><strong>Hall of famer</strong></TableCell>
+                  <TableCell>560+</TableCell>
+                  <TableCell>Legendary status, Hall of Fame recognition, all Elite benefits, exclusive events, lifetime achievements</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -1528,6 +1555,105 @@ const RulesGuidelines: React.FC = () => {
           <Typography variant="body2" paragraph>
             <strong>Rules:</strong> Check‑in is required; no‑shows are eliminated; seeding uses current rankings; prize pools may be offered; entry fees may apply.
           </Typography>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* TBC Promotions Fight Calendar */}
+      <Accordion expanded={expanded === 'tbc-promotions-fight-calendar'} onChange={handleChange('tbc-promotions-fight-calendar')} id="tbc-promotions-fight-calendar">
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Event color="primary" />
+            <Typography variant="h5" fontWeight="bold">TBC Promotions Fight Calendar</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body1" paragraph>
+            The <strong>TBC Promotions Fight Calendar</strong> is the central hub for all official Tantalus Boxing Club events, including Fight Cards and Tournaments. All scheduling and fighter selections are managed by Administrators.
+          </Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Fight Cards & Tournament Scheduling</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Admin-Posted Schedules"
+                secondary="The Admin will post Fight Cards and Tournament schedules on the TBC Promotions Fight Calendar. All upcoming events, dates, and details are published here for fighters to view."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Centralized Calendar"
+                secondary="The Fight Calendar serves as the single source of truth for all official TBC events. Check regularly for updates and new event announcements."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Fighter Selection for Live Events & Tournaments</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Performance-Based Selection"
+                secondary="The Admin will select fighters for Live events and Tournaments according to their Performance. Factors considered include: points, tier, win-loss record, recent form, and overall activity."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Selection Criteria"
+                secondary="Fighters are selected based on their competitive performance, consistency, and standing within their weight class and tier. Active participation and strong records increase selection opportunities."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Fair Matchmaking"
+                secondary="Admin ensures competitive and fair matchups by considering tier, points, and recent performance when creating Fight Cards and Tournament brackets."
+              />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>News & Announcements</Typography>
+          <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
+            <Typography variant="body2">
+              <strong>All Admin Updates:</strong> All updates by the Admin will display in the News and Announcements section. This includes:
+            </Typography>
+          </Alert>
+          <List>
+            <ListItem>
+              <ListItemText primary="New Fight Cards posted to the calendar" />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Tournament announcements and registration details" />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Fighter selections for Live events" />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Schedule changes or updates" />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Important club announcements and policy updates" />
+            </ListItem>
+          </List>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>How to Stay Informed</Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Check the Fight Calendar regularly"
+                secondary="Visit the TBC Promotions Fight Calendar to see all upcoming events and schedules."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Monitor News & Announcements"
+                secondary="All Admin updates, event announcements, and fighter selections are posted in the News and Announcements feed. Check this section frequently for the latest information."
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText 
+                primary="Maintain Strong Performance"
+                secondary="Focus on building a strong record, maintaining activity, and performing well in your fights to increase your chances of being selected for Live events and Tournaments."
+              />
+            </ListItem>
+          </List>
         </AccordionDetails>
       </Accordion>
 

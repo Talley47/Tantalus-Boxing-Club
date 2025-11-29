@@ -150,6 +150,14 @@ if (typeof window !== 'undefined') {
       lowerErrorString.includes('background-redux-new.js') ||
       (lowerErrorMessage.includes('no tab with id') && (lowerErrorStack.includes('background-redux') || lowerErrorString.includes('background-redux')));
     
+    // Check for specific "listener indicated asynchronous response" error pattern
+    const isAsyncResponseError = 
+      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('asynchronous response') && lowerErrorMessage.includes('message channel')) ||
+      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('message channel closed')) ||
+      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('asynchronous response') && lowerErrorString.includes('message channel')) ||
+      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('message channel closed')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed'));
+    
     // More comprehensive check - catch any variation of browser extension errors
     // Check for partial matches to catch all variations (case-insensitive)
     // Also check if error is from route paths (e.g., /rules, /login, etc.)
@@ -163,6 +171,7 @@ if (typeof window !== 'undefined') {
     
     const isBrowserExtensionError = 
       isReduxDevToolsError ||
+      isAsyncResponseError ||
       lowerErrorMessage.includes('$ is not defined') ||
       lowerErrorMessage.includes('referenceerror: $') ||
       (errorName === 'ReferenceError' && (lowerErrorMessage.includes('$') || lowerErrorString.includes('$'))) ||
@@ -346,13 +355,23 @@ if (typeof window !== 'undefined') {
                         errorStack.includes('/rules') ||
                         errorStack.includes('/rankings');
     
-    if (
+    // Check for async response errors (browser extension communication errors)
+    const isAsyncResponseErrorWindow = 
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
       lowerErrorMsg.includes('a listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
-      lowerErrorMsg.includes('by returning true') && lowerErrorMsg.includes('message channel closed') ||
+      (lowerErrorMsg.includes('by returning true') && lowerErrorMsg.includes('message channel closed')) ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
+      (lowerErrorMsg.includes('listener indicated') && lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel closed')) ||
+      (lowerErrorMsg.includes('listener indicated') && lowerErrorMsg.includes('message channel closed before')) ||
+      lowerFilename.includes('background-redux') ||
+      lowerFilename.includes('background-redux-new.js') ||
+      lowerStack.includes('background-redux') ||
+      lowerStack.includes('background-redux-new.js');
+    
+    if (
+      isAsyncResponseErrorWindow ||
       lowerErrorMsg.includes('runtime.lasterror') ||
       lowerErrorMsg.includes('unchecked runtime.lasterror') ||
       (lowerErrorMsg.includes('unchecked runtime') && lowerErrorMsg.includes('cannot create item')) ||

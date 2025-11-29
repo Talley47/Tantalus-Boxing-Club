@@ -477,20 +477,33 @@ const HomePage: React.FC = () => {
   };
 
   const { subscribeToFightRecords, subscribeToFighterProfiles, subscribeToScheduledFights, subscribeToRankings } = useRealtime();
+  
+  // Debounce refs for real-time handlers to prevent blocking message handlers
+  const reloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Load initial data
     loadDashboardData();
 
+    // Debounced reload function to prevent blocking message handlers
+    const debouncedReload = () => {
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
+      // Use setTimeout to defer heavy operation and prevent blocking message handler
+      reloadTimeoutRef.current = setTimeout(() => {
+        loadDashboardData();
+        reloadTimeoutRef.current = null;
+      }, 100); // 100ms debounce
+    };
+
     // Set up real-time subscriptions for fight records, fighter profiles, scheduled fights, and rankings
-    const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
-      console.log('Fight record changed:', payload);
-      // Reload dashboard data when fight records change
-      loadDashboardData();
+    const unsubscribeFightRecords = subscribeToFightRecords(() => {
+      // Defer heavy reload operation
+      debouncedReload();
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      console.log('Fighter profile changed:', payload);
       // Reload dashboard data when profiles change (affects top fighters, points, tier, etc.)
       // Check if points, tier, or weight_class changed - these affect rankings
       const significantChange = 
@@ -502,28 +515,22 @@ const HomePage: React.FC = () => {
         payload.old?.draws !== payload.new?.draws;
       
       if (significantChange) {
-        console.log('Significant fighter profile change detected - reloading dashboard:', {
-          points: `${payload.old?.points} → ${payload.new?.points}`,
-          tier: `${payload.old?.tier} → ${payload.new?.tier}`,
-          weight_class: `${payload.old?.weight_class} → ${payload.new?.weight_class}`
-        });
-        loadDashboardData();
+        // Defer heavy reload operation
+        debouncedReload();
       } else {
-        // Still reload for other changes (name, physical info, etc.)
-        loadDashboardData();
+        // Still reload for other changes (name, physical info, etc.) but debounced
+        debouncedReload();
       }
     });
 
-    const unsubscribeScheduledFights = subscribeToScheduledFights((payload) => {
-      console.log('Scheduled fight changed:', payload);
-      // Reload scheduled fights
-      loadDashboardData();
+    const unsubscribeScheduledFights = subscribeToScheduledFights(() => {
+      // Defer heavy reload operation
+      debouncedReload();
     });
 
-    const unsubscribeRankings = subscribeToRankings((payload) => {
-      console.log('Rankings changed:', payload);
-      // Reload top fighters when rankings change
-      loadDashboardData();
+    const unsubscribeRankings = subscribeToRankings(() => {
+      // Defer heavy reload operation
+      debouncedReload();
     });
 
     // Subscribe to news changes for real-time updates
@@ -532,8 +539,8 @@ const HomePage: React.FC = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'news_announcements' },
         () => {
-          console.log('News updated - reloading...');
-          loadDashboardData();
+          // Defer heavy reload operation
+          debouncedReload();
         }
       )
       .subscribe();
@@ -544,8 +551,8 @@ const HomePage: React.FC = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'training_camp_invitations' },
         () => {
-          console.log('Training camp updated - reloading...');
-          loadDashboardData();
+          // Defer heavy reload operation
+          debouncedReload();
         }
       )
       .subscribe();
@@ -556,8 +563,8 @@ const HomePage: React.FC = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'callout_requests' },
         () => {
-          console.log('Callout updated - reloading...');
-          loadDashboardData();
+          // Defer heavy reload operation
+          debouncedReload();
         }
       )
       .subscribe();

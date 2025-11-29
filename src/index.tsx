@@ -9,38 +9,49 @@ import ErrorBoundary from './components/Shared/ErrorBoundary';
 // These errors are harmless and come from browser extensions (e.g., LastPass, Grammarly, Redux DevTools)
 if (typeof window !== 'undefined') {
   // Set up unhandled rejection handler FIRST, before anything else
-  window.addEventListener('unhandledrejection', (event) => {
-    const errorMessage = event.reason?.message || event.reason?.toString() || '';
-    const errorString = JSON.stringify(event.reason) || '';
-    const errorStack = event.reason?.stack || '';
-    const allErrorText = `${errorMessage} ${errorString} ${errorStack}`.toLowerCase();
-    
-    // Check for async response errors (most common browser extension error)
-    // Match: "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
-    const isAsyncResponseError = 
-      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response')) ||
-      (allErrorText.includes('listener indicated') && allErrorText.includes('message channel')) ||
-      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed')) ||
-      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel')) ||
-      (allErrorText.includes('listener indicated') && allErrorText.includes('returning true') && allErrorText.includes('message channel'));
-    
-    // Check for other browser extension errors
-    const isBrowserExtensionError = 
-      isAsyncResponseError ||
-      allErrorText.includes('no tab with id') ||
-      allErrorText.includes('background-redux') ||
-      allErrorText.includes('chrome-extension://') ||
-      allErrorText.includes('content-script') ||
-      allErrorText.includes('runtime.lasterror') ||
-      allErrorText.includes('unchecked runtime.lasterror');
-    
-    if (isBrowserExtensionError) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      return false;
+  // This must be the FIRST handler to catch errors early
+  const earlyRejectionHandler = (event: PromiseRejectionEvent) => {
+    try {
+      // Get error in multiple formats to catch all variations
+      const errorMessage = event.reason?.message || event.reason?.toString() || String(event.reason) || '';
+      const errorString = JSON.stringify(event.reason) || '';
+      const errorStack = event.reason?.stack || '';
+      const errorName = event.reason?.name || '';
+      const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`.toLowerCase();
+      
+      // Check for async response errors (most common browser extension error)
+      // Match: "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+      // Be very aggressive - if ANY part of the error message matches, suppress it
+      const isAsyncResponseError = 
+        allErrorText.includes('listener indicated') ||
+        allErrorText.includes('asynchronous response') ||
+        (allErrorText.includes('message channel') && (allErrorText.includes('closed') || allErrorText.includes('listener') || allErrorText.includes('asynchronous'))) ||
+        (allErrorText.includes('returning true') && allErrorText.includes('message channel'));
+      
+      // Check for other browser extension errors
+      const isBrowserExtensionError = 
+        isAsyncResponseError ||
+        allErrorText.includes('no tab with id') ||
+        allErrorText.includes('background-redux') ||
+        allErrorText.includes('chrome-extension://') ||
+        allErrorText.includes('content-script') ||
+        allErrorText.includes('runtime.lasterror') ||
+        allErrorText.includes('unchecked runtime.lasterror');
+      
+      if (isBrowserExtensionError) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        // Return false to indicate we handled it
+        return false;
+      }
+    } catch (e) {
+      // Silently ignore errors in error handler
     }
-  }, true); // Use capture phase to catch early
+  };
+  
+  // Add with capture phase to catch early - this runs before other handlers
+  window.addEventListener('unhandledrejection', earlyRejectionHandler, true);
   // Add a helpful message explaining browser extension errors (only in development)
   if (process.env.NODE_ENV === 'development') {
     // Use setTimeout to ensure this runs after browser extension errors are logged
@@ -61,6 +72,20 @@ if (typeof window !== 'undefined') {
     const errorMessage = args[0]?.toString() || '';
     const allArgs = args.join(' ').toLowerCase();
     const lowerErrorMessage = errorMessage.toLowerCase();
+    
+    // Check for async response errors at console level too
+    // Be very aggressive - if ANY key phrase appears, suppress it
+    const isAsyncResponseError = 
+      lowerErrorMessage.includes('listener indicated') ||
+      lowerErrorMessage.includes('asynchronous response') ||
+      (lowerErrorMessage.includes('message channel') && (lowerErrorMessage.includes('closed') || lowerErrorMessage.includes('listener') || lowerErrorMessage.includes('asynchronous'))) ||
+      allArgs.includes('listener indicated') ||
+      allArgs.includes('asynchronous response') ||
+      (allArgs.includes('message channel') && (allArgs.includes('closed') || allArgs.includes('listener') || allArgs.includes('asynchronous')));
+    
+    if (isAsyncResponseError) {
+      return; // Suppress this error
+    }
     
     // Check if this is a browser extension error (check chrome-extension:// URLs)
     // Also catch "Unchecked runtime.lastError" errors from LastPass and other extensions

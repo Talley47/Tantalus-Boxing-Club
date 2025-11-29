@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -61,6 +61,9 @@ const Rankings: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0); // 0 = Overall, 1 = Weight Class
 
   const { subscribeToFightRecords, subscribeToRankings, subscribeToFighterProfiles } = useRealtime();
+  
+  // Debounce ref for real-time handlers to prevent blocking message handlers
+  const reloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadWeightClasses();
@@ -71,15 +74,27 @@ const Rankings: React.FC = () => {
       loadRankings();
     }
 
+    // Debounced reload function to prevent blocking message handlers
+    const debouncedReload = () => {
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
+      // Use setTimeout to defer heavy operation and prevent blocking message handler
+      reloadTimeoutRef.current = setTimeout(() => {
+        loadRankings();
+        reloadTimeoutRef.current = null;
+      }, 100); // 100ms debounce
+    };
+
     // Subscribe to real-time changes
     const unsubscribeFightRecords = subscribeToFightRecords(() => {
-      // Reload rankings when fight records change
-      loadRankings();
+      // Defer heavy reload operation
+      debouncedReload();
     });
 
     const unsubscribeRankings = subscribeToRankings(() => {
-      // Reload rankings directly
-      loadRankings();
+      // Defer heavy reload operation
+      debouncedReload();
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
@@ -90,9 +105,9 @@ const Rankings: React.FC = () => {
         payload.old?.tier !== payload.new?.tier ||
         payload.old?.weight_class !== payload.new?.weight_class;
       
-      // Only reload if ranking-affecting change detected
+      // Only reload if ranking-affecting change detected, but still debounced
       if (rankingChange) {
-        loadRankings();
+        debouncedReload();
       }
     });
 
@@ -100,6 +115,10 @@ const Rankings: React.FC = () => {
       unsubscribeFightRecords();
       unsubscribeRankings();
       unsubscribeFighterProfiles();
+      // Clear any pending reloads on unmount
+      if (reloadTimeoutRef.current) {
+        clearTimeout(reloadTimeoutRef.current);
+      }
     };
   }, [selectedWeightClass, activeTab, availableWeightClasses.length]);
 

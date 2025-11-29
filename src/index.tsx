@@ -6,8 +6,41 @@ import reportWebVitals from './reportWebVitals';
 import ErrorBoundary from './components/Shared/ErrorBoundary';
 
 // Suppress browser extension errors EARLY - before any other code runs
-// These errors are harmless and come from browser extensions (e.g., LastPass, Grammarly)
+// These errors are harmless and come from browser extensions (e.g., LastPass, Grammarly, Redux DevTools)
 if (typeof window !== 'undefined') {
+  // Set up unhandled rejection handler FIRST, before anything else
+  window.addEventListener('unhandledrejection', (event) => {
+    const errorMessage = event.reason?.message || event.reason?.toString() || '';
+    const errorString = JSON.stringify(event.reason) || '';
+    const errorStack = event.reason?.stack || '';
+    const allErrorText = `${errorMessage} ${errorString} ${errorStack}`.toLowerCase();
+    
+    // Check for async response errors (most common browser extension error)
+    // Match: "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+    const isAsyncResponseError = 
+      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('message channel')) ||
+      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed')) ||
+      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('returning true') && allErrorText.includes('message channel'));
+    
+    // Check for other browser extension errors
+    const isBrowserExtensionError = 
+      isAsyncResponseError ||
+      allErrorText.includes('no tab with id') ||
+      allErrorText.includes('background-redux') ||
+      allErrorText.includes('chrome-extension://') ||
+      allErrorText.includes('content-script') ||
+      allErrorText.includes('runtime.lasterror') ||
+      allErrorText.includes('unchecked runtime.lasterror');
+    
+    if (isBrowserExtensionError) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }, true); // Use capture phase to catch early
   // Add a helpful message explaining browser extension errors (only in development)
   if (process.env.NODE_ENV === 'development') {
     // Use setTimeout to ensure this runs after browser extension errors are logged
@@ -151,12 +184,18 @@ if (typeof window !== 'undefined') {
       (lowerErrorMessage.includes('no tab with id') && (lowerErrorStack.includes('background-redux') || lowerErrorString.includes('background-redux')));
     
     // Check for specific "listener indicated asynchronous response" error pattern
+    // Match: "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
     const isAsyncResponseError = 
-      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('asynchronous response') && lowerErrorMessage.includes('message channel')) ||
-      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('message channel closed')) ||
-      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('asynchronous response') && lowerErrorString.includes('message channel')) ||
-      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('message channel closed')) ||
-      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed'));
+      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('asynchronous response')) ||
+      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('message channel')) ||
+      (lowerErrorMessage.includes('asynchronous response') && lowerErrorMessage.includes('message channel closed')) ||
+      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('asynchronous response')) ||
+      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('message channel')) ||
+      (lowerErrorString.includes('asynchronous response') && lowerErrorString.includes('message channel closed')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('message channel closed')) ||
+      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed')) ||
+      (allErrorText.includes('listener indicated') && allErrorText.includes('returning true') && allErrorText.includes('message channel'));
     
     // More comprehensive check - catch any variation of browser extension errors
     // Check for partial matches to catch all variations (case-insensitive)

@@ -25,8 +25,12 @@ if (typeof window !== 'undefined') {
       const isAsyncResponseError = 
         allErrorText.includes('listener indicated') ||
         allErrorText.includes('asynchronous response') ||
-        (allErrorText.includes('message channel') && (allErrorText.includes('closed') || allErrorText.includes('listener') || allErrorText.includes('asynchronous'))) ||
-        (allErrorText.includes('returning true') && allErrorText.includes('message channel'));
+        allErrorText.includes('message channel closed') ||
+        allErrorText.includes('message channel') ||
+        (allErrorText.includes('returning true') && allErrorText.includes('message channel')) ||
+        // Also check individual parts - if error contains any of these, it's likely this error
+        (errorMessage.toLowerCase().includes('listener') && errorMessage.toLowerCase().includes('asynchronous')) ||
+        (errorMessage.toLowerCase().includes('message channel') && errorMessage.toLowerCase().includes('closed'));
       
       // Check for other browser extension errors
       const isBrowserExtensionError = 
@@ -78,10 +82,14 @@ if (typeof window !== 'undefined') {
     const isAsyncResponseError = 
       lowerErrorMessage.includes('listener indicated') ||
       lowerErrorMessage.includes('asynchronous response') ||
+      lowerErrorMessage.includes('message channel closed') ||
       (lowerErrorMessage.includes('message channel') && (lowerErrorMessage.includes('closed') || lowerErrorMessage.includes('listener') || lowerErrorMessage.includes('asynchronous'))) ||
+      (lowerErrorMessage.includes('listener') && lowerErrorMessage.includes('asynchronous')) ||
       allArgs.includes('listener indicated') ||
       allArgs.includes('asynchronous response') ||
-      (allArgs.includes('message channel') && (allArgs.includes('closed') || allArgs.includes('listener') || allArgs.includes('asynchronous')));
+      allArgs.includes('message channel closed') ||
+      (allArgs.includes('message channel') && (allArgs.includes('closed') || allArgs.includes('listener') || allArgs.includes('asynchronous'))) ||
+      (allArgs.includes('listener') && allArgs.includes('asynchronous'));
     
     if (isAsyncResponseError) {
       return; // Suppress this error
@@ -166,8 +174,22 @@ if (typeof window !== 'undefined') {
     const allArgs = args.join(' ').toLowerCase();
     const lowerErrorMessage = errorMessage.toLowerCase();
     
+    // Check for async response errors at warn level too
+    const isAsyncResponseErrorWarn = 
+      lowerErrorMessage.includes('listener indicated') ||
+      lowerErrorMessage.includes('asynchronous response') ||
+      lowerErrorMessage.includes('message channel closed') ||
+      (lowerErrorMessage.includes('message channel') && (lowerErrorMessage.includes('closed') || lowerErrorMessage.includes('listener'))) ||
+      (lowerErrorMessage.includes('listener') && lowerErrorMessage.includes('asynchronous')) ||
+      allArgs.includes('listener indicated') ||
+      allArgs.includes('asynchronous response') ||
+      allArgs.includes('message channel closed') ||
+      (allArgs.includes('message channel') && (allArgs.includes('closed') || allArgs.includes('listener'))) ||
+      (allArgs.includes('listener') && allArgs.includes('asynchronous'));
+    
     // Check if this is a browser extension error
     const isBrowserExtensionError = 
+      isAsyncResponseErrorWarn ||
       lowerErrorMessage.includes('unchecked runtime.lasterror') ||
       lowerErrorMessage.includes('runtime.lasterror') ||
       lowerErrorMessage.includes('cannot create item') ||
@@ -210,16 +232,23 @@ if (typeof window !== 'undefined') {
     
     // Check for specific "listener indicated asynchronous response" error pattern
     // Match: "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+    // Be very aggressive - check for any combination of key phrases
     const isAsyncResponseError = 
-      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('asynchronous response')) ||
-      (lowerErrorMessage.includes('listener indicated') && lowerErrorMessage.includes('message channel')) ||
-      (lowerErrorMessage.includes('asynchronous response') && lowerErrorMessage.includes('message channel closed')) ||
-      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('asynchronous response')) ||
-      (lowerErrorString.includes('listener indicated') && lowerErrorString.includes('message channel')) ||
-      (lowerErrorString.includes('asynchronous response') && lowerErrorString.includes('message channel closed')) ||
-      (allErrorText.includes('listener indicated') && allErrorText.includes('asynchronous response')) ||
-      (allErrorText.includes('listener indicated') && allErrorText.includes('message channel closed')) ||
-      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel closed')) ||
+      lowerErrorMessage.includes('listener indicated') ||
+      lowerErrorMessage.includes('asynchronous response') ||
+      lowerErrorMessage.includes('message channel closed') ||
+      (lowerErrorMessage.includes('listener') && lowerErrorMessage.includes('asynchronous')) ||
+      (lowerErrorMessage.includes('message channel') && (lowerErrorMessage.includes('closed') || lowerErrorMessage.includes('listener'))) ||
+      lowerErrorString.includes('listener indicated') ||
+      lowerErrorString.includes('asynchronous response') ||
+      lowerErrorString.includes('message channel closed') ||
+      (lowerErrorString.includes('listener') && lowerErrorString.includes('asynchronous')) ||
+      (lowerErrorString.includes('message channel') && (lowerErrorString.includes('closed') || lowerErrorString.includes('listener'))) ||
+      allErrorText.includes('listener indicated') ||
+      allErrorText.includes('asynchronous response') ||
+      allErrorText.includes('message channel closed') ||
+      (allErrorText.includes('listener') && allErrorText.includes('asynchronous')) ||
+      (allErrorText.includes('message channel') && (allErrorText.includes('closed') || allErrorText.includes('listener'))) ||
       (allErrorText.includes('listener indicated') && allErrorText.includes('returning true') && allErrorText.includes('message channel'));
     
     // More comprehensive check - catch any variation of browser extension errors

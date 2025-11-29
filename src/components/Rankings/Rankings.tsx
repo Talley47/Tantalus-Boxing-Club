@@ -173,8 +173,10 @@ const Rankings: React.FC = () => {
 
   const getTierColor = (tier: string): string => {
     switch (tier.toLowerCase()) {
-      case 'elite':
+      case 'hall of famer':
         return '#FFD700'; // Gold
+      case 'elite':
+        return '#9C27B0'; // Purple
       case 'contender':
         return '#C0C0C0'; // Silver
       case 'pro':
@@ -430,7 +432,7 @@ const Rankings: React.FC = () => {
                 }
                 sx={{
                   backgroundColor: getTierColor(threshold.tier),
-                  color: threshold.tier === 'Elite' ? '#000' : '#fff',
+                  color: (threshold.tier === 'Elite' || threshold.tier === 'Hall of famer') ? '#000' : '#fff',
                   fontWeight: 'bold',
                 }}
               />
@@ -525,7 +527,7 @@ const Rankings: React.FC = () => {
                                       size="small"
                                       sx={{
                                         backgroundColor: getTierColor(entry.tier || 'Amateur'),
-                                        color: (entry.tier || 'Amateur') === 'Elite' ? '#000' : '#fff',
+                                        color: ((entry.tier || 'Amateur') === 'Elite' || (entry.tier || 'Amateur') === 'Hall of famer') ? '#000' : '#fff',
                                         fontWeight: 'bold',
                                       }}
                                     />
@@ -705,7 +707,7 @@ const Rankings: React.FC = () => {
                             size="small"
                             sx={{
                               backgroundColor: getTierColor(entry.tier || 'Amateur'),
-                              color: (entry.tier || 'Amateur') === 'Elite' ? '#000' : '#fff',
+                              color: ((entry.tier || 'Amateur') === 'Elite' || (entry.tier || 'Amateur') === 'Hall of famer') ? '#000' : '#fff',
                               fontWeight: 'bold',
                             }}
                           />

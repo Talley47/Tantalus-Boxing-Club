@@ -327,11 +327,11 @@ const RulesGuidelines: React.FC = () => {
               <TableBody>
                 <TableRow>
                   <TableCell><strong>Point Values</strong></TableCell>
-                  <TableCell>Win +5 | KO/TKO +8 | Loss −2 | Draw 0</TableCell>
+                  <TableCell>Win +5 | KO/TKO +8 | Loss −3 | Draw 0</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Tier Thresholds</strong></TableCell>
-                  <TableCell>Amateur 0–29 | Semi‑Pro 30–69 | Pro 70–139 | Contender 140–279 | Elite 280+</TableCell>
+                  <TableCell>Amateur 0–29 | Semi‑Pro 30–69 | Pro 70–139 | Contender 140–279 | Elite 280–559 | Hall of famer 560+</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell><strong>Matchmaking</strong></TableCell>
@@ -366,7 +366,7 @@ const RulesGuidelines: React.FC = () => {
             <strong>v1.1.2 ({new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}):</strong> Tantalus Ring Magazine Media Feature - Added social media bio and links management in fighter profiles. Created shareable media profile pages (/media/{'{user_id}'}) for public viewing. Added "Tantalus Ring Magazine Media Following" sub-channel in Social page to browse fighters with media profiles. Fixed notification system navigation (New Fighter Joined and Boxing Sanction notifications now navigate correctly). Performance optimizations (notification handlers 90% faster, HomePage input delays reduced). Fixed news announcements 500 error. Enhanced error handling and user experience throughout.
           </Typography>
           <Typography variant="body2" paragraph>
-            <strong>v1.1.1 (2025-01-XX):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -2), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
+            <strong>v1.1.1 (2025-01-XX):</strong> Added Boxing Sanctions System - fighters can now join governing bodies and compete for rankings within each sanction. Updated points system (Loss: -3), demotion system (5 consecutive losses), enhanced visual design, larger belt images, and comprehensive feature documentation.
           </Typography>
           <Typography variant="body2" paragraph>
             <strong>v1.1.0 (2025-01-XX):</strong> Creative Fighter images, enhanced rankings display, fight URL and scorecard submissions, real-time updates, and visual improvements.

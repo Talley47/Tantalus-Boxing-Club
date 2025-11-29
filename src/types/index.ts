@@ -40,7 +40,7 @@ export interface FighterProfile {
   draws: number;
   knockouts: number;
   points: number;
-  tier: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite';
+  tier: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite' | 'Hall of famer';
   rank?: number;
   weight_class: string;
   
@@ -98,7 +98,7 @@ export interface Ranking {
 }
 
 export interface Tier {
-  name: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite';
+  name: 'Amateur' | 'Semi-Pro' | 'Pro' | 'Contender' | 'Elite' | 'Hall of famer';
   min_points: number;
   max_points: number;
   color: string;
@@ -445,37 +445,44 @@ export const TIERS: Tier[] = [
   {
     name: 'Amateur',
     min_points: 0,
-    max_points: 19,
+    max_points: 29,
     color: '#9E9E9E',
     benefits: ['Basic training access', 'Local events']
   },
   {
     name: 'Semi-Pro',
-    min_points: 20,
-    max_points: 39,
+    min_points: 30,
+    max_points: 69,
     color: '#4CAF50',
     benefits: ['Advanced training', 'Regional events', 'Basic analytics']
   },
   {
     name: 'Pro',
-    min_points: 40,
-    max_points: 89,
+    min_points: 70,
+    max_points: 139,
     color: '#2196F3',
     benefits: ['Professional training', 'National events', 'Full analytics', 'Sponsorship opportunities']
   },
   {
     name: 'Contender',
-    min_points: 90,
-    max_points: 149,
+    min_points: 140,
+    max_points: 279,
     color: '#FF9800',
     benefits: ['Elite training', 'Championship events', 'Advanced analytics', 'Media coverage', 'Title shots']
   },
   {
     name: 'Elite',
-    min_points: 150,
-    max_points: Infinity,
+    min_points: 280,
+    max_points: 559,
     color: '#9C27B0',
     benefits: ['World-class training', 'Global events', 'Premium analytics', 'Live streaming', 'Media interviews', 'Championship belts']
+  },
+  {
+    name: 'Hall of famer',
+    min_points: 560,
+    max_points: Infinity,
+    color: '#FFD700',
+    benefits: ['Legendary status', 'Hall of Fame recognition', 'All Elite benefits', 'Exclusive events', 'Lifetime achievements']
   }
 ];
 

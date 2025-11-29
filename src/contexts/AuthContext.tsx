@@ -555,7 +555,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else if (key === 'tier' && value) {
             // Normalize tier to match database constraint
             const tierValue = value as string;
-            const validTiers = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite'];
+            const validTiers = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite', 'Hall of famer'];
             // Map old tier values to new ones
             const tierMap: Record<string, string> = {
               'bronze': 'Amateur',

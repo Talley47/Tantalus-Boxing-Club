@@ -146,12 +146,14 @@ const TierSystem: React.FC = () => {
       'Semi-Pro': '#4CAF50',
       'Pro': '#2196F3',
       'Contender': '#FF9800',
-      'Elite': '#9C27B0'
+      'Elite': '#9C27B0',
+      'Hall of famer': '#FFD700'
     };
     return colors[tierName] || '#808080';
   };
 
   const getTierIcon = (tierName: string) => {
+    if (tierName === 'Hall of famer') return <Star />;
     if (tierName === 'Elite') return <Star />;
     if (tierName === 'Contender') return <EmojiEvents />;
     if (tierName === 'Pro') return <TrendingUp />;

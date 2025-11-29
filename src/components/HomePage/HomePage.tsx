@@ -2487,7 +2487,7 @@ const HomePage: React.FC = () => {
                               label={fighter.tier}
                               size="small"
                               color={
-                                fighter.tier === 'Elite' ? 'error' :
+                                (fighter.tier === 'Elite' || fighter.tier === 'Hall of famer') ? 'error' :
                                 fighter.tier === 'Contender' ? 'warning' :
                                 fighter.tier === 'Pro' ? 'info' :
                                 fighter.tier === 'Semi-Pro' ? 'success' : 'default'

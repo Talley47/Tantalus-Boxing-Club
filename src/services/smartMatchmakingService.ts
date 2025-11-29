@@ -446,7 +446,7 @@ class SmartMatchmakingService {
       }
 
       // Check if the most recent tier change was a demotion (to_tier is lower than from_tier)
-      const tierOrder = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite'];
+      const tierOrder = ['Amateur', 'Semi-Pro', 'Pro', 'Contender', 'Elite', 'Hall of famer'];
       const recentChange = tierHistory[0];
       const fromIndex = tierOrder.indexOf(recentChange.from_tier);
       const toIndex = tierOrder.indexOf(recentChange.to_tier);

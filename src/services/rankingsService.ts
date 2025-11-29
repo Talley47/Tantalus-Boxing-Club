@@ -37,11 +37,12 @@ export interface TierThreshold {
 }
 
 export const TIER_THRESHOLDS: TierThreshold[] = [
-  { tier: 'Amateur', min_points: 0, max_points: 29 },      // ≤29 points (default start)
-  { tier: 'Semi-Pro', min_points: 30, max_points: 69 },      // 30-69 points
-  { tier: 'Pro', min_points: 70, max_points: 139 },          // 70-139 points
+  { tier: 'Amateur', min_points: 0, max_points: 29 },        // 0-29 points (default start)
+  { tier: 'Semi-Pro', min_points: 30, max_points: 69 },     // 30-69 points
+  { tier: 'Pro', min_points: 70, max_points: 139 },         // 70-139 points
   { tier: 'Contender', min_points: 140, max_points: 279 },  // 140-279 points
-  { tier: 'Elite', min_points: 280 },                        // ≥280 points (eligible for live/media benefits)
+  { tier: 'Elite', min_points: 280, max_points: 559 },      // 280-559 points
+  { tier: 'Hall of famer', min_points: 560 },                // 560+ points
 ];
 
 // Get overall rankings (all fighters, regardless of weight class)
@@ -385,11 +386,12 @@ function compareRecentForm(formA: string[], formB: string[]): number {
 
 // Get tier for given points (matches database function)
 export function getTierForPoints(points: number): string {
-  if (points >= 280) return 'Elite';      // ≥280 points
-  if (points >= 140) return 'Contender';   // 140-279 points
-  if (points >= 70) return 'Pro';          // 70-139 points
-  if (points >= 30) return 'Semi-Pro';    // 30-69 points
-  return 'Amateur';                        // ≤29 points (default start)
+  if (points >= 560) return 'Hall of famer';  // 560+ points
+  if (points >= 280) return 'Elite';          // 280-559 points
+  if (points >= 140) return 'Contender';       // 140-279 points
+  if (points >= 70) return 'Pro';              // 70-139 points
+  if (points >= 30) return 'Semi-Pro';         // 30-69 points
+  return 'Amateur';                            // 0-29 points (default start)
 }
 
 // Check if fighter should be demoted (5 losses in a row)

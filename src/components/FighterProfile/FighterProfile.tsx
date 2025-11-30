@@ -594,15 +594,15 @@ const FighterProfile: React.FC = () => {
 
   // Load other fighter's profile if viewing someone else
   useEffect(() => {
-    console.log('FighterProfile - urlUserId:', urlUserId, 'user?.id:', user?.id, 'location.pathname:', window.location.pathname);
+    // Removed console.log for performance
     if (urlUserId && urlUserId !== user?.id) {
-      console.log('Loading other fighter profile for userId:', urlUserId);
+      // Loading other fighter profile
       setIsViewingOtherFighter(true);
       setLoading(true);
       setError(null);
       const loadOtherFighterProfile = async () => {
         try {
-          console.log('Fetching fighter profile for user_id:', urlUserId);
+          // Fetching fighter profile
           const { data, error } = await supabase
             .from('fighter_profiles')
             .select('*')
@@ -622,7 +622,7 @@ const FighterProfile: React.FC = () => {
             throw new Error(`Fighter profile not found for user ID: ${urlUserId}`);
           }
           
-          console.log('Fighter profile loaded successfully:', data.name, data.id);
+          // Fighter profile loaded successfully
           setViewingFighterProfile(data);
           setLoading(false);
         } catch (error: any) {
@@ -634,7 +634,7 @@ const FighterProfile: React.FC = () => {
       loadOtherFighterProfile();
     } else if (urlUserId && urlUserId === user?.id) {
       // If viewing own profile via /fighter/:userId, redirect to /profile
-      console.log('Viewing own profile via /fighter route, redirecting to /profile');
+      // Redirecting to own profile
       navigate('/profile', { replace: true });
     } else {
       setIsViewingOtherFighter(false);
@@ -698,9 +698,8 @@ const FighterProfile: React.FC = () => {
           table: 'fight_url_submissions',
         },
         (payload) => {
-          console.log('Fight URL submission changed (real-time) in FighterProfile:', payload);
-          console.log('Event type:', payload.eventType);
-          console.log('Full payload:', JSON.stringify(payload, null, 2));
+          // Debounce reload to prevent excessive API calls
+          let reloadTimeout: NodeJS.Timeout | null = null;
           
           // For DELETE events, immediately filter out the deleted submission for instant UI update
           if (payload.eventType === 'DELETE') {
@@ -715,104 +714,117 @@ const FighterProfile: React.FC = () => {
             if (deletedId && belongsToFighter) {
               setFightUrlSubmissions(prevSubmissions => {
                 const filtered = prevSubmissions.filter(s => s.id !== deletedId);
-                console.log('Fighter: Filtered out deleted submission ID:', deletedId, 'Remaining:', filtered.length);
                 return filtered;
               });
             } else if ((deletedStatus === 'Approved' || deletedStatus === 'Rejected') && belongsToFighter) {
               // If we can't get the ID or it belongs to this fighter, filter by status (fallback for bulk deletes)
-              console.log('Fighter: DELETE event received, filtering all approved/rejected submissions');
               setFightUrlSubmissions(prevSubmissions => {
                 const filtered = prevSubmissions.filter(s => s.status !== 'Approved' && s.status !== 'Rejected');
-                console.log('Fighter: Filtered out approved/rejected submissions. Remaining:', filtered.length);
                 return filtered;
               });
             }
             
-            // Always reload for DELETE events to ensure consistency
-            setTimeout(() => {
-              console.log('Fighter: Reloading submissions after DELETE event');
+            // Single debounced reload for DELETE events
+            if (reloadTimeout) {
+              clearTimeout(reloadTimeout);
+            }
+            reloadTimeout = setTimeout(() => {
               loadFightUrlSubmissions();
-            }, 100);
-            
-            setTimeout(() => {
-              console.log('Fighter: Second reload after DELETE event');
-              loadFightUrlSubmissions();
-            }, 500);
-            
-            setTimeout(() => {
-              console.log('Fighter: Third reload after DELETE event (final check)');
-              loadFightUrlSubmissions();
-            }, 1500);
+              reloadTimeout = null;
+            }, 300); // Single reload after 300ms
           } else {
-            // For other events (INSERT, UPDATE), reload after a short delay
-            setTimeout(() => {
-              console.log('Fighter: Reloading submissions after real-time event');
+            // For other events (INSERT, UPDATE), debounced reload
+            if (reloadTimeout) {
+              clearTimeout(reloadTimeout);
+            }
+            reloadTimeout = setTimeout(() => {
               loadFightUrlSubmissions();
+              reloadTimeout = null;
             }, 200);
           }
         }
       )
       .subscribe();
 
-    // Set up polling as a fallback (every 3 seconds) to catch deletions that real-time might miss
-    const pollInterval = setInterval(() => {
-      console.log('Fighter: Polling for submission updates...');
-      if (fighterProfile?.id) {
-        loadFightUrlSubmissions();
-      }
-    }, 3000);
-
-    // Also reload when the window/tab regains focus (in case real-time events were missed)
+    // Debounced focus handler to avoid excessive reloads
+    let focusTimeout: NodeJS.Timeout | null = null;
     const handleFocus = () => {
-      console.log('Fighter: Window regained focus, reloading submissions');
-      if (fighterProfile?.id) {
-        loadFightUrlSubmissions();
+      if (focusTimeout) {
+        clearTimeout(focusTimeout);
       }
+      // Debounce focus reload to prevent excessive API calls
+      focusTimeout = setTimeout(() => {
+        if (fighterProfile?.id) {
+          loadFightUrlSubmissions();
+        }
+        focusTimeout = null;
+      }, 2000); // Only reload 2 seconds after focus, and only if no other reload happened
     };
     window.addEventListener('focus', handleFocus);
 
+    // Debounced reload functions for real-time subscriptions
+    let scheduledFightsTimeout: NodeJS.Timeout | null = null;
+    let fightRecordsTimeout: NodeJS.Timeout | null = null;
+    let fighterProfilesTimeout: NodeJS.Timeout | null = null;
+    let trainingCampTimeout: NodeJS.Timeout | null = null;
+    let calloutTimeout: NodeJS.Timeout | null = null;
+
     // Subscribe to real-time changes
     const unsubscribeScheduledFights = subscribeToScheduledFights((payload) => {
-      console.log('Scheduled fight changed - reloading:', payload);
-      // Reload scheduled fights in real-time (managed by Smart Matchmaking)
-      if (fighterProfile?.user_id) {
-        loadScheduledFights();
+      // Debounce reload to prevent excessive API calls
+      if (scheduledFightsTimeout) {
+        clearTimeout(scheduledFightsTimeout);
       }
+      scheduledFightsTimeout = setTimeout(() => {
+        if (fighterProfile?.user_id) {
+          loadScheduledFights();
+        }
+        scheduledFightsTimeout = null;
+      }, 200);
     });
 
     const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
-      console.log('Fight record changed - reloading:', payload);
-      // Reload fight records and stats
-      if (fighterProfile?.user_id) {
-        loadFightRecords();
-        loadRanking();
+      // Debounce reload to prevent excessive API calls
+      if (fightRecordsTimeout) {
+        clearTimeout(fightRecordsTimeout);
       }
+      fightRecordsTimeout = setTimeout(() => {
+        if (fighterProfile?.user_id) {
+          loadFightRecords();
+          loadRanking();
+        }
+        fightRecordsTimeout = null;
+      }, 200);
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      console.log('Fighter profile changed:', payload);
       // Update if it's the current fighter's profile
       if (fighterProfile?.user_id && payload.new?.user_id === fighterProfile.user_id) {
-        // Profile was updated (points, tier, weight_class, etc.), reload all data
-        console.log('Fighter profile updated - refreshing all data:', {
-          old: payload.old,
-          new: payload.new,
-          changes: {
-            points: payload.old?.points !== payload.new?.points,
-            tier: payload.old?.tier !== payload.new?.tier,
-            weight_class: payload.old?.weight_class !== payload.new?.weight_class,
-            wins: payload.old?.wins !== payload.new?.wins,
-            losses: payload.old?.losses !== payload.new?.losses,
-            draws: payload.old?.draws !== payload.new?.draws
+        // Check if significant changes occurred (points, tier, etc.)
+        const significantChange = 
+          payload.old?.points !== payload.new?.points ||
+          payload.old?.tier !== payload.new?.tier ||
+          payload.old?.weight_class !== payload.new?.weight_class ||
+          payload.old?.wins !== payload.new?.wins ||
+          payload.old?.losses !== payload.new?.losses ||
+          payload.old?.draws !== payload.new?.draws;
+        
+        if (significantChange) {
+          // Debounce reload to prevent excessive API calls
+          if (fighterProfilesTimeout) {
+            clearTimeout(fighterProfilesTimeout);
           }
-        });
-        // Refresh the fighter profile from context
-        refreshFighterProfile();
-        // Reload all related data
-        loadFightRecords();
-        loadScheduledFights();
-        loadRanking();
-        loadMyTournaments();
+          fighterProfilesTimeout = setTimeout(() => {
+            // Refresh the fighter profile from context
+            refreshFighterProfile();
+            // Reload all related data
+            loadFightRecords();
+            loadScheduledFights();
+            loadRanking();
+            loadMyTournaments();
+            fighterProfilesTimeout = null;
+          }, 300);
+        }
       }
     });
 
@@ -846,13 +858,19 @@ const FighterProfile: React.FC = () => {
           table: 'training_camp_invitations'
         },
         (payload) => {
-          console.log('Training camp invitation changed - reloading...', payload);
-          if (fighterProfile?.user_id) {
-            // Reload invitations - getPendingInvitations will filter to only show invitations for this fighter
-            loadTrainingCampInvitations();
-            // Also reload active camps in case an invitation was accepted
-            loadActiveTrainingCamps();
+          // Debounce reload to prevent excessive API calls
+          if (trainingCampTimeout) {
+            clearTimeout(trainingCampTimeout);
           }
+          trainingCampTimeout = setTimeout(() => {
+            if (fighterProfile?.user_id) {
+              // Reload invitations - getPendingInvitations will filter to only show invitations for this fighter
+              loadTrainingCampInvitations();
+              // Also reload active camps in case an invitation was accepted
+              loadActiveTrainingCamps();
+            }
+            trainingCampTimeout = null;
+          }, 200);
         }
       )
       .subscribe();
@@ -867,19 +885,31 @@ const FighterProfile: React.FC = () => {
           table: 'callout_requests'
         },
         (payload) => {
-          console.log('Callout request changed - reloading...', payload);
-          if (fighterProfile?.user_id) {
-            loadCalloutRequests();
-            loadScheduledCallouts();
+          // Debounce reload to prevent excessive API calls
+          if (calloutTimeout) {
+            clearTimeout(calloutTimeout);
           }
+          calloutTimeout = setTimeout(() => {
+            if (fighterProfile?.user_id) {
+              loadCalloutRequests();
+              loadScheduledCallouts();
+            }
+            calloutTimeout = null;
+          }, 200);
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(submissionsChannel);
-      clearInterval(pollInterval);
       window.removeEventListener('focus', handleFocus);
+      // Clear all debounce timeouts
+      if (focusTimeout) clearTimeout(focusTimeout);
+      if (scheduledFightsTimeout) clearTimeout(scheduledFightsTimeout);
+      if (fightRecordsTimeout) clearTimeout(fightRecordsTimeout);
+      if (fighterProfilesTimeout) clearTimeout(fighterProfilesTimeout);
+      if (trainingCampTimeout) clearTimeout(trainingCampTimeout);
+      if (calloutTimeout) clearTimeout(calloutTimeout);
       unsubscribeScheduledFights();
       unsubscribeFightRecords();
       unsubscribeFighterProfiles();

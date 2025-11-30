@@ -1651,7 +1651,7 @@ const FighterProfile: React.FC = () => {
       {/* OVERVIEW SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
           Overview
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -1737,7 +1737,7 @@ const FighterProfile: React.FC = () => {
       {/* PROFILE INFORMATION SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
           Profile Information
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -2511,7 +2511,7 @@ const FighterProfile: React.FC = () => {
       {/* TRAINING & MATCHMAKING SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
           Training & Matchmaking
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -2830,14 +2830,84 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box>
 
+        {/* Mandatory Fight Requests (Pending) */}
+        {pendingFightRequests.length > 0 && (
+          <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  Mandatory Fight Requests
+                </Typography>
+                <Stack spacing={2}>
+                  {pendingFightRequests.map((fight) => {
+                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
+                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
+                    const opponentName = opponent?.name || 'TBD';
+                    const isRequester = fight.match_type === 'manual' && 
+                                      fight.requested_by && 
+                                      fighterProfile?.id &&
+                                      fight.requested_by === fighterProfile.id;
+                    
+                    return (
+                      <Card key={fight.id} variant="outlined" sx={{ bgcolor: 'warning.light' }}>
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box flex={1}>
+                              <Chip label="Mandatory Fight Request" color="warning" size="small" sx={{ mb: 1 }} />
+                              {isRequester ? (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  You have sent a mandatory fight request to {opponentName}
+                                </Typography>
+                              ) : (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  {opponentName} has scheduled a mandatory fight with you
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color="text.secondary" mt={1}>
+                                {new Date(fight.scheduled_date).toLocaleDateString()} • {fight.weight_class}
+                              </Typography>
+                            </Box>
+                            {!isRequester && (
+                              <Box display="flex" gap={1} flexDirection="column">
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
+                                  onClick={() => handleAcceptFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
+                                  onClick={() => handleDenyFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Deny
+                                </Button>
+                              </Box>
+                            )}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
       </Box>
 
       {/* ============================================ */}
       {/* FIGHTING SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
-          Fighting
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
+          Resume
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
         
@@ -2978,76 +3048,6 @@ const FighterProfile: React.FC = () => {
           </Box>
         )}
 
-        {/* Mandatory Fight Requests (Pending) */}
-        {pendingFightRequests.length > 0 && (
-          <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                  Mandatory Fight Requests
-                </Typography>
-                <Stack spacing={2}>
-                  {pendingFightRequests.map((fight) => {
-                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
-                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
-                    const opponentName = opponent?.name || 'TBD';
-                    const isRequester = fight.match_type === 'manual' && 
-                                      fight.requested_by && 
-                                      fighterProfile?.id &&
-                                      fight.requested_by === fighterProfile.id;
-                    
-                    return (
-                      <Card key={fight.id} variant="outlined" sx={{ bgcolor: 'warning.light' }}>
-                        <CardContent>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Box flex={1}>
-                              <Chip label="Mandatory Fight Request" color="warning" size="small" sx={{ mb: 1 }} />
-                              {isRequester ? (
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                  You have sent a mandatory fight request to {opponentName}
-                                </Typography>
-                              ) : (
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                  {opponentName} has scheduled a mandatory fight with you
-                                </Typography>
-                              )}
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                {new Date(fight.scheduled_date).toLocaleDateString()} • {fight.weight_class}
-                              </Typography>
-                            </Box>
-                            {!isRequester && (
-                              <Box display="flex" gap={1} flexDirection="column">
-                                <Button
-                                  variant="contained"
-                                  color="success"
-                                  startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
-                                  onClick={() => handleAcceptFightRequest(fight.id)}
-                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                                >
-                                  Accept
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
-                                  onClick={() => handleDenyFightRequest(fight.id)}
-                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                                >
-                                  Deny
-                                </Button>
-                              </Box>
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
         {/* My Tournaments */}
         {myTournaments.length > 0 && (
           <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
@@ -3104,7 +3104,7 @@ const FighterProfile: React.FC = () => {
       {/* SUBMISSIONS & DISPUTES SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
           Submissions & Disputes
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -3268,7 +3268,7 @@ const FighterProfile: React.FC = () => {
       {/* ============================================ */}
       {!isViewingOtherFighter && (
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
             Messages
           </Typography>
           <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />

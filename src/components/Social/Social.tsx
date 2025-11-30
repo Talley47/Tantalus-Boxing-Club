@@ -63,6 +63,7 @@ const Social: React.FC = () => {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -714,9 +715,46 @@ const Social: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  // Load admin user IDs
+  useEffect(() => {
+    const loadAdminUserIds = async () => {
+      try {
+        // Check profiles table for admin role
+        const { data: adminProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'admin');
+        
+        const adminIds = new Set<string>();
+        if (adminProfiles) {
+          adminProfiles.forEach((profile: any) => {
+            adminIds.add(profile.id);
+          });
+        }
+        
+        // Also add the known admin email
+        // We'll check this when we have the user email
+        setAdminUserIds(adminIds);
+      } catch (error) {
+        console.error('Error loading admin user IDs:', error);
+      }
+    };
+    
+    loadAdminUserIds();
+  }, []);
+
   // Get display name for a message
   // SECURITY: Sanitize display names to prevent XSS
   const getDisplayName = (message: ChatMessage) => {
+    // Check if user is admin by user_id
+    const isAdminUser = adminUserIds.has(message.user_id) ||
+                       message.user?.email === 'tantalusboxingclub@gmail.com' ||
+                       (message.user as any)?.app_metadata?.role === 'admin';
+    
+    if (isAdminUser) {
+      return 'TBC Promoter';
+    }
+    
     let displayName = 'Unknown User';
     if (message.fighter_profile?.name) {
       displayName = message.fighter_profile.name;

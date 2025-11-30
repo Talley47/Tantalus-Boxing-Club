@@ -20,6 +20,7 @@ import TrainingCampsManagement from './TrainingCampsManagement';
 import CalloutsManagement from './CalloutsManagement';
 import ChatMessagesManagement from './ChatMessagesManagement';
 import ChampionshipBeltManagement from './ChampionshipBeltManagement';
+import AdminDirectMessages from './AdminDirectMessages';
 
 const AdminPanel: React.FC = () => {
   const [fightRecordsDialogOpen, setFightRecordsDialogOpen] = useState(false);
@@ -28,6 +29,7 @@ const AdminPanel: React.FC = () => {
   const [calloutsDialogOpen, setCalloutsDialogOpen] = useState(false);
   const [chatMessagesDialogOpen, setChatMessagesDialogOpen] = useState(false);
   const [championshipBeltDialogOpen, setChampionshipBeltDialogOpen] = useState(false);
+  const [adminDirectMessagesDialogOpen, setAdminDirectMessagesDialogOpen] = useState(false);
 
   return (
     <Box>
@@ -145,6 +147,17 @@ const AdminPanel: React.FC = () => {
             >
               Manage Championship Belts
             </Button>
+            <Button 
+              variant="contained" 
+              color="info"
+              fullWidth
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setAdminDirectMessagesDialogOpen(true);
+              }}
+            >
+              Send Direct Messages to Fighters
+            </Button>
           </Box>
         </CardContent>
       </Card>
@@ -183,6 +196,12 @@ const AdminPanel: React.FC = () => {
       <ChampionshipBeltManagement
         open={championshipBeltDialogOpen}
         onClose={() => setChampionshipBeltDialogOpen(false)}
+      />
+
+      {/* Admin Direct Messages Dialog */}
+      <AdminDirectMessages
+        open={adminDirectMessagesDialogOpen}
+        onClose={() => setAdminDirectMessagesDialogOpen(false)}
       />
     </Box>
   );

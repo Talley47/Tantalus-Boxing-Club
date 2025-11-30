@@ -70,6 +70,7 @@ import { calloutService, CalloutRequest } from '../../services/calloutService';
 import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from '../../services/championshipBeltService';
 import { mediaService } from '../../services/mediaService';
 import { SocialLink } from '../../types';
+import { adminMessageService, AdminDirectMessage } from '../../services/adminMessageService';
 import { 
   getAllowedWeightClasses, 
   isWeightClassAllowed, 
@@ -340,6 +341,9 @@ const FighterProfile: React.FC = () => {
   const [socialLinks, setSocialLinks] = useState<Array<{ id?: string; platform: string; url: string; handle: string }>>([]);
   const [newSocialLink, setNewSocialLink] = useState({ platform: 'Twitter', url: '', handle: '' });
   const [loadingSocialLinks, setLoadingSocialLinks] = useState(false);
+  const [adminMessages, setAdminMessages] = useState<AdminDirectMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { subscribeToFightRecords, subscribeToScheduledFights, subscribeToFighterProfiles } = useRealtime();
 
@@ -553,6 +557,40 @@ const FighterProfile: React.FC = () => {
     }
   }, [fighterProfile?.id]);
 
+  const loadAdminMessages = useCallback(async () => {
+    if (!fighterProfile?.user_id || isViewingOtherFighter) return;
+    try {
+      setLoadingMessages(true);
+      const messages = await adminMessageService.getFighterMessages(fighterProfile.user_id);
+      setAdminMessages(messages);
+      const unread = await adminMessageService.getUnreadCount(fighterProfile.user_id);
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error('Error loading admin messages:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, [fighterProfile?.user_id, isViewingOtherFighter]);
+
+  const handleMarkAsRead = async (messageId: string) => {
+    try {
+      await adminMessageService.markAsRead(messageId);
+      await loadAdminMessages();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!fighterProfile?.user_id) return;
+    try {
+      await adminMessageService.markAllAsRead(fighterProfile.user_id);
+      await loadAdminMessages();
+    } catch (error) {
+      console.error('Error marking all messages as read:', error);
+    }
+  };
+
   // Load other fighter's profile if viewing someone else
   useEffect(() => {
     console.log('FighterProfile - urlUserId:', urlUserId, 'user?.id:', user?.id, 'location.pathname:', window.location.pathname);
@@ -617,6 +655,7 @@ const FighterProfile: React.FC = () => {
       loadCalloutRequests();
       loadScheduledCallouts();
       loadChampionshipBelts();
+      loadAdminMessages();
       
       // Update edit form when fighter profile changes
       setEditForm({
@@ -1682,6 +1721,104 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box>
       </Box>
+
+      {/* Messages from TBC Promotions */}
+      {!isViewingOtherFighter && (
+        <Box sx={{ mb: 3 }}>
+          <Card>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Notifications sx={{ color: 'primary.main' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                    Messages from TBC Promotions
+                  </Typography>
+                  {unreadCount > 0 && (
+                    <Chip
+                      label={`${unreadCount} unread`}
+                      color="error"
+                      size="small"
+                    />
+                  )}
+                </Box>
+                {unreadCount > 0 && (
+                  <Button
+                    size="small"
+                    onClick={handleMarkAllAsRead}
+                    disabled={loadingMessages}
+                  >
+                    Mark All as Read
+                  </Button>
+                )}
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              {loadingMessages ? (
+                <Box display="flex" justifyContent="center" p={3}>
+                  <CircularProgress />
+                </Box>
+              ) : adminMessages.length === 0 ? (
+                <Alert severity="info">No messages from TBC Promotions yet.</Alert>
+              ) : (
+                <Stack spacing={2}>
+                  {adminMessages.map((msg) => (
+                    <Card
+                      key={msg.id}
+                      variant="outlined"
+                      sx={{
+                        bgcolor: msg.read_at ? 'background.paper' : 'action.selected',
+                        borderLeft: msg.read_at ? 'none' : '4px solid',
+                        borderLeftColor: 'primary.main',
+                      }}
+                    >
+                      <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                          <Box flex={1}>
+                            <Box display="flex" alignItems="center" gap={1} mb={1}>
+                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                {msg.subject}
+                              </Typography>
+                              <Chip
+                                label={msg.message_type === 'live_event_selection' ? 'Live Event' : msg.message_type === 'tournament_selection' ? 'Tournament' : msg.message_type}
+                                size="small"
+                                color={msg.message_type === 'live_event_selection' ? 'primary' : 'default'}
+                              />
+                              {!msg.read_at && (
+                                <Chip label="New" size="small" color="error" />
+                              )}
+                            </Box>
+                            {msg.event_name && (
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Event: {msg.event_name}
+                              </Typography>
+                            )}
+                            <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+                              {msg.message}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(msg.created_at).toLocaleString()}
+                            </Typography>
+                          </Box>
+                          {!msg.read_at && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleMarkAsRead(msg.id)}
+                              disabled={loadingMessages}
+                            >
+                              Mark as Read
+                            </Button>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         {/* Physical Information */}

@@ -1652,7 +1652,7 @@ const FighterProfile: React.FC = () => {
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
-          Overview
+          TBCREC
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
         
@@ -1738,7 +1738,7 @@ const FighterProfile: React.FC = () => {
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: '#FFD700' }}>
-          Profile Information
+          Fighter Information
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
         

@@ -86,6 +86,7 @@ class NotificationService {
   }
 
   // Create a notification (used by backend triggers and services)
+  // Uses RPC function to bypass RLS policies
   async createNotification(
     userId: string,
     type: Notification['type'],
@@ -94,21 +95,44 @@ class NotificationService {
     actionUrl?: string
   ): Promise<Notification> {
     try {
+      // Use the RPC function (bypasses RLS because it uses SECURITY DEFINER)
       const { data, error } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type,
-          title,
-          message,
-          action_url: actionUrl,
-          is_read: false,
-        })
-        .select()
-        .single();
+        .rpc('create_notification_rpc', {
+          p_user_id: userId,
+          p_type: type,
+          p_title: title,
+          p_message: message,
+          p_action_url: actionUrl || null,
+        });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        // If RPC function doesn't exist, fall back to direct insert
+        // This handles cases where the function hasn't been created yet
+        console.warn('RPC function failed, trying direct insert:', error);
+        
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            action_url: actionUrl,
+            is_read: false,
+          })
+          .select()
+          .single();
+
+        if (fallbackError) throw fallbackError;
+        return fallbackData;
+      }
+
+      // RPC returns an array, get the first element
+      if (data && Array.isArray(data) && data.length > 0) {
+        return data[0] as Notification;
+      }
+
+      throw new Error('Failed to create notification: No data returned from RPC');
     } catch (error) {
       console.error('Error creating notification:', error);
       throw error;

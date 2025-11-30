@@ -50,26 +50,38 @@ class ChatService {
   private async findFightersByMention(mention: string): Promise<Array<{ user_id: string; name: string; handle: string }>> {
     try {
       // Normalize mention: lowercase and replace spaces with underscores for handle matching
+      // Keep underscores as-is since handles can contain them (e.g., @tantalus_king)
       const normalizedMention = mention.toLowerCase().replace(/\s+/g, '_');
       
-      // Search by handle (exact match or starts with) - use separate queries
-      const handleQueries = [
-        supabase.from(TABLES.FIGHTER_PROFILES).select('user_id, name, handle').ilike('handle', normalizedMention).not('user_id', 'is', null),
-        supabase.from(TABLES.FIGHTER_PROFILES).select('user_id, name, handle').ilike('handle', `${normalizedMention}%`).not('user_id', 'is', null)
-      ];
-
-      const handleResults = await Promise.all(handleQueries);
-      const byHandle: Array<{ user_id: string; name: string; handle: string }> = [];
+      // First, try exact handle match (most specific)
+      const { data: exactHandleMatch, error: exactError } = await supabase
+        .from(TABLES.FIGHTER_PROFILES)
+        .select('user_id, name, handle')
+        .ilike('handle', normalizedMention)
+        .not('user_id', 'is', null);
       
-      for (const result of handleResults) {
-        if (result.error) {
-          console.error('Error searching fighters by handle:', result.error);
-        } else if (result.data) {
-          byHandle.push(...result.data);
-        }
+      if (exactError) {
+        console.error('Error searching fighters by exact handle:', exactError);
+      }
+      
+      // If we found exact match, return it (prioritize exact matches)
+      if (exactHandleMatch && exactHandleMatch.length > 0) {
+        return exactHandleMatch;
+      }
+      
+      // Search by handle (starts with) - for partial matches
+      const { data: handleMatches, error: handleError } = await supabase
+        .from(TABLES.FIGHTER_PROFILES)
+        .select('user_id, name, handle')
+        .ilike('handle', `${normalizedMention}%`)
+        .not('user_id', 'is', null);
+      
+      if (handleError) {
+        console.error('Error searching fighters by handle:', handleError);
       }
 
       // Search by name (case-insensitive, partial match)
+      // Use original mention (not normalized) for name search to preserve spaces
       const { data: byName, error: nameError } = await supabase
         .from(TABLES.FIGHTER_PROFILES)
         .select('user_id, name, handle')
@@ -81,7 +93,7 @@ class ChatService {
       }
 
       // Combine results and remove duplicates
-      const allResults = [...byHandle, ...(byName || [])];
+      const allResults = [...(handleMatches || []), ...(byName || [])];
       const uniqueResults = Array.from(
         new Map(allResults.map(f => [f.user_id, f])).values()
       );
@@ -126,8 +138,8 @@ class ChatService {
           await notificationService.createNotification(
             fighter.user_id,
             'General',
-            `@${senderName} mentioned you in Club Chat`,
-            `${senderName}: ${truncatedMessage}`,
+            `${senderName} mentioned you in Club Chat`,
+            truncatedMessage,
             `/social?message=${messageId}` // Link to the specific message
           );
         } catch (error) {
@@ -286,9 +298,30 @@ class ChatService {
       // Check for @mentions and send notifications
       // SECURITY: Use sanitized message for mentions (already sanitized above)
       const mentions = this.extractMentions(sanitizedMessage);
-      if (mentions.length > 0 && profile) {
+      if (mentions.length > 0) {
+        // Get sender name - use profile name, or check if admin, or use email
+        let senderName = 'Unknown Fighter';
+        if (profile?.name) {
+          senderName = profile.name;
+        } else {
+          // Check if user is admin
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle();
+          
+          if (userProfile?.role === 'admin') {
+            senderName = 'TBC Promoter';
+          } else {
+            // Try to get email from auth.users (if accessible)
+            // For now, use a generic name
+            senderName = 'A Fighter';
+          }
+        }
+        
         // Don't await - let it run in background to avoid blocking message send
-        this.notifyMentionedFighters(mentions, profile.name || 'Unknown Fighter', data.id, sanitizedMessage)
+        this.notifyMentionedFighters(mentions, senderName, data.id, sanitizedMessage)
           .catch(error => console.error('Background mention notification error:', error));
       }
 

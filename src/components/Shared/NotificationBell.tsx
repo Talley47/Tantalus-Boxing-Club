@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   IconButton,
   Badge,
@@ -666,62 +666,21 @@ const NotificationBell: React.FC = () => {
 
   // Removed debug logging to improve performance
 
-  // Play sound continuously when there are unread notifications
-  useEffect(() => {
-    // Stop any existing sound interval
-    if (soundIntervalRef.current) {
-      clearInterval(soundIntervalRef.current);
-      soundIntervalRef.current = null;
-    }
-
-    // If there are unread notifications, play sound on loop
-    if (unreadCount > 0 && notificationSoundRef.current) {
+  // Play sound when a new notification arrives (not continuously)
+  const playNotificationSound = useCallback(() => {
+    if (notificationSoundRef.current) {
       const audio = notificationSoundRef.current;
       audio.volume = 0.8;
-      audio.loop = true;
-
-      const playSound = () => {
-        if (audio && unreadCount > 0) {
-          audio.currentTime = 0;
-          audio.play().catch((error: any) => {
-            // Autoplay may be blocked, but we'll try again on next interval
-            console.log('Sound autoplay blocked, will retry:', error);
-          });
-        }
-      };
-
-      // Play immediately
-      playSound();
-
-      // Set up interval to play every 3 seconds while there are unread notifications
-      soundIntervalRef.current = setInterval(() => {
-        if (unreadCount > 0 && notificationSoundRef.current) {
-          playSound();
-        } else {
-          // Stop interval if no unread notifications
-          if (soundIntervalRef.current) {
-            clearInterval(soundIntervalRef.current);
-            soundIntervalRef.current = null;
-          }
-        }
-      }, 3000);
-    } else {
-      // Stop sound if no unread notifications
-      if (notificationSoundRef.current) {
-        notificationSoundRef.current.pause();
-        notificationSoundRef.current.currentTime = 0;
-        notificationSoundRef.current.loop = false;
-      }
+      audio.loop = false; // Don't loop - just play once
+      audio.currentTime = 0; // Reset to start
+      
+      audio.play().catch((error: any) => {
+        // Autoplay may be blocked - this is normal for browsers
+        // The sound will work once user interacts with the page
+        console.log('Notification sound autoplay blocked (normal):', error.message);
+      });
     }
-
-    // Cleanup on unmount or when unreadCount changes
-    return () => {
-      if (soundIntervalRef.current) {
-        clearInterval(soundIntervalRef.current);
-        soundIntervalRef.current = null;
-      }
-    };
-  }, [unreadCount]);
+  }, []);
 
   // Track notification read states in a ref to avoid dependency issues
   const notificationReadStatesRef = useRef<Map<string, boolean>>(new Map());
@@ -775,6 +734,8 @@ const NotificationBell: React.FC = () => {
               // Only increment if unread
               if (!newNotification.is_read) {
                 setUnreadCount(prev => (prev || 0) + 1);
+                // Play sound when a new unread notification arrives
+                playNotificationSound();
               }
             } else if (payload.eventType === 'UPDATE') {
               const updatedNotification = payload.new as Notification;
@@ -828,7 +789,7 @@ const NotificationBell: React.FC = () => {
       }
       supabase.removeChannel(channel);
     };
-  }, [user]); // Removed 'notifications' from dependencies - this was causing performance issues
+  }, [user, playNotificationSound]); // Added playNotificationSound dependency
 
   // Boxing Glove Icon Component
   const BoxingGloveIcon = ({ hasNotifications }: { hasNotifications: boolean }) => (

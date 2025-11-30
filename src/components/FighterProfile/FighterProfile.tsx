@@ -1734,121 +1734,6 @@ const FighterProfile: React.FC = () => {
       </Box>
 
       {/* ============================================ */}
-      {/* MESSAGES SECTION */}
-      {/* ============================================ */}
-      {!isViewingOtherFighter && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
-            Messages
-          </Typography>
-          <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
-          
-              {/* Direct Messages */}
-          {fighterProfile?.user_id && (
-            <Box sx={{ mb: 3 }}>
-              <FighterDirectMessages fighterId={fighterProfile.user_id} />
-            </Box>
-          )}
-
-          {/* Messages from TBC Promotions */}
-          <Box sx={{ mb: 3 }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Notifications sx={{ color: 'primary.main' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    Messages from TBC Promotions
-                  </Typography>
-                  {unreadCount > 0 && (
-                    <Chip
-                      label={`${unreadCount} unread`}
-                      color="error"
-                      size="small"
-                    />
-                  )}
-                </Box>
-                {unreadCount > 0 && (
-                  <Button
-                    size="small"
-                    onClick={handleMarkAllAsRead}
-                    disabled={loadingMessages}
-                  >
-                    Mark All as Read
-                  </Button>
-                )}
-              </Box>
-              <Divider sx={{ mb: 2 }} />
-
-              {loadingMessages ? (
-                <Box display="flex" justifyContent="center" p={3}>
-                  <CircularProgress />
-                </Box>
-              ) : adminMessages.length === 0 ? (
-                <Alert severity="info">No messages from TBC Promotions yet.</Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {adminMessages.map((msg) => (
-                    <Card
-                      key={msg.id}
-                      variant="outlined"
-                      sx={{
-                        bgcolor: msg.read_at ? 'background.paper' : 'action.selected',
-                        borderLeft: msg.read_at ? 'none' : '4px solid',
-                        borderLeftColor: 'primary.main',
-                      }}
-                    >
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                          <Box flex={1}>
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
-                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                {msg.subject}
-                              </Typography>
-                              <Chip
-                                label={msg.message_type === 'live_event_selection' ? 'Live Event' : msg.message_type === 'tournament_selection' ? 'Tournament' : msg.message_type}
-                                size="small"
-                                color={msg.message_type === 'live_event_selection' ? 'primary' : 'default'}
-                              />
-                              {!msg.read_at && (
-                                <Chip label="New" size="small" color="error" />
-                              )}
-                            </Box>
-                            {msg.event_name && (
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                Event: {msg.event_name}
-                              </Typography>
-                            )}
-                            <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
-                              {msg.message}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(msg.created_at).toLocaleString()}
-                            </Typography>
-                          </Box>
-                          {!msg.read_at && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => handleMarkAsRead(msg.id)}
-                              disabled={loadingMessages}
-                            >
-                              Mark as Read
-                            </Button>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-          </Box>
-        </Box>
-      )}
-
-      {/* ============================================ */}
       {/* PROFILE INFORMATION SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
@@ -2623,6 +2508,331 @@ const FighterProfile: React.FC = () => {
       </Box>
 
       {/* ============================================ */}
+      {/* TRAINING & MATCHMAKING SECTION */}
+      {/* ============================================ */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          Training & Matchmaking
+        </Typography>
+        <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+        
+        {/* Training Camp Invitations */}
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={3}>
+                <FitnessCenter sx={{ color: 'primary.main' }} />
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                  Training Camp Invitations
+                </Typography>
+              </Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Training camps last 72 hours. You cannot start a training camp within 3 days of a scheduled fight. 
+                Go to Matchmaking → Training Camp to send invitations to other fighters.
+              </Alert>
+              {trainingCampInvitations.length === 0 ? (
+                <Alert severity="info">
+                  No pending training camp invitations. Other fighters can invite you, or you can send invitations from the Matchmaking page.
+                </Alert>
+              ) : (
+                <Stack spacing={2}>
+                  {trainingCampInvitations.map((invitation) => (
+                    <Card key={invitation.id} variant="outlined">
+                      <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Box flex={1}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                              {invitation.inviter?.name || 'Unknown Fighter'} invited you to a Training Camp
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" mt={1}>
+                              Duration: 72 hours • Expires: {new Date(invitation.expires_at).toLocaleString()}
+                            </Typography>
+                            {invitation.message && (
+                              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                "{invitation.message}"
+                              </Typography>
+                            )}
+                          </Box>
+                          <Box display="flex" gap={1}>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              startIcon={acceptingInvitation === invitation.id ? <CircularProgress size={16} /> : <CheckCircle />}
+                              onClick={() => handleAcceptTrainingCamp(invitation.id)}
+                              disabled={acceptingInvitation === invitation.id || decliningInvitation === invitation.id}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              startIcon={decliningInvitation === invitation.id ? <CircularProgress size={16} /> : <CancelIcon />}
+                              onClick={() => handleDeclineTrainingCamp(invitation.id)}
+                              disabled={acceptingInvitation === invitation.id || decliningInvitation === invitation.id}
+                            >
+                              Decline
+                            </Button>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Active Training Camps */}
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={3}>
+                <FitnessCenter sx={{ color: 'success.main' }} />
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                  My Active Training Camps
+                </Typography>
+              </Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Your active training camps with sparring partners. Training camps last 72 hours. Maximum of 3 sparring partners allowed.
+              </Alert>
+              {activeTrainingCamps.length === 0 ? (
+                <Alert severity="info">
+                  You don't have any active training camps. Accept an invitation or send one from the Matchmaking page.
+                </Alert>
+              ) : (
+                <Stack spacing={3}>
+                  {activeTrainingCamps.map((campGroup, index) => {
+                    const expiresAt = new Date(campGroup.expiresAt);
+                    const now = new Date();
+                    const hoursRemaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
+                    const daysRemaining = Math.floor(hoursRemaining / 24);
+                    const hoursInDay = hoursRemaining % 24;
+
+                    return (
+                      <Card key={index} variant="outlined" sx={{ borderColor: 'success.main' }}>
+                        <CardContent>
+                          <Box display="flex" alignItems="center" mb={2}>
+                            <Box flex={1}>
+                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                {campGroup.fighter?.name || 'Unknown Fighter'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                @{campGroup.fighter?.handle || 'unknown'} • {campGroup.fighter?.tier || 'Amateur'} • {campGroup.fighter?.points || 0} pts
+                              </Typography>
+                            </Box>
+                            <Chip 
+                              label={`${daysRemaining}d ${hoursInDay}h remaining`}
+                              color={hoursRemaining < 24 ? 'error' : hoursRemaining < 48 ? 'warning' : 'success'}
+                              size="small"
+                            />
+                          </Box>
+                          
+                          <Divider sx={{ my: 2 }} />
+                          
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Sparring Partners ({campGroup.sparringPartners.length}/3):
+                          </Typography>
+                          
+                          {campGroup.sparringPartners.length === 0 ? (
+                            <Alert severity="info" sx={{ mt: 1 }}>
+                              No sparring partners yet.
+                            </Alert>
+                          ) : (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
+                              {campGroup.sparringPartners.map((sp, idx) => (
+                                <Card 
+                                  key={idx} 
+                                  variant="outlined" 
+                                  sx={{ 
+                                    p: 1.5, 
+                                    flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)' },
+                                    minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' }
+                                  }}
+                                >
+                                  <Box display="flex" alignItems="center" gap={1}>
+                                    <Avatar
+                                      sx={{
+                                        width: 40,
+                                        height: 40,
+                                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)'
+                                      }}
+                                    >
+                                      {sp.partner?.name?.charAt(0) || '?'}
+                                    </Avatar>
+                                    <Box flex={1}>
+                                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                        {sp.partner?.name || 'Unknown Fighter'}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        @{sp.partner?.handle || 'unknown'} • {sp.partner?.tier || 'Amateur'} • {sp.partner?.points || 0} pts
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                </Card>
+                              ))}
+                            </Box>
+                          )}
+                          
+                          <Box mt={2} display="flex" alignItems="center" gap={1}>
+                            <Schedule sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="caption" color="text.secondary">
+                              Started: {new Date(campGroup.startedAt).toLocaleString()} • Expires: {new Date(campGroup.expiresAt).toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Rematch Requests */}
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" gap={1} mb={3}>
+                <SportsMma sx={{ color: 'error.main' }} />
+                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                  Rematch Requests
+                </Typography>
+              </Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                When other fighters request a rematch with you, you'll receive the request here. Rematches are only available with fighters you have already fought. 
+                Go to Matchmaking → Rematches to request rematches with fighters you've fought before.
+              </Alert>
+              {calloutRequests.length === 0 ? (
+                <Alert severity="info">
+                  No pending rematch requests. Other fighters can request rematches with you, or you can request rematches from the Matchmaking page.
+                </Alert>
+              ) : (
+                <Stack spacing={2}>
+                  {calloutRequests.map((callout) => (
+                    <Card key={callout.id} variant="outlined" sx={{ borderColor: 'error.main' }}>
+                      <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Box flex={1}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                              {callout.caller?.name || 'Unknown Fighter'} requested a rematch!
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" mt={1}>
+                              {callout.weight_class} • {callout.tier_match ? 'Same Tier' : 'Different Tier'}
+                              {callout.rank_difference !== null && ` • Rank Diff: ${callout.rank_difference}`}
+                              {callout.points_difference !== null && ` • Points Diff: ${callout.points_difference}`}
+                            </Typography>
+                            {callout.match_score && (
+                              <Chip 
+                                label={`Fair Match Score: ${callout.match_score}%`} 
+                                size="small" 
+                                color={callout.match_score >= 60 ? 'success' : 'warning'}
+                                sx={{ mt: 1 }}
+                              />
+                            )}
+                            {callout.message && (
+                              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                "{callout.message}"
+                              </Typography>
+                            )}
+                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                              Expires: {new Date(callout.expires_at).toLocaleString()}
+                            </Typography>
+                          </Box>
+                          <Box display="flex" gap={1}>
+                            <Button
+                              variant="contained"
+                              color="success"
+                              startIcon={acceptingCallout === callout.id ? <CircularProgress size={16} /> : <CheckCircle />}
+                              onClick={() => handleAcceptCallout(callout.id)}
+                              disabled={acceptingCallout === callout.id || decliningCallout === callout.id}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              startIcon={decliningCallout === callout.id ? <CircularProgress size={16} /> : <CancelIcon />}
+                              onClick={() => handleDeclineCallout(callout.id)}
+                              disabled={acceptingCallout === callout.id || decliningCallout === callout.id}
+                            >
+                              Decline
+                            </Button>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Scheduled Rematches */}
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+                Scheduled Rematches
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Your accepted rematch requests that have been scheduled as fights.
+              </Alert>
+              {scheduledCallouts.length === 0 ? (
+                <Alert severity="info">
+                  You don't have any scheduled rematches. Accept a rematch request to schedule a fight.
+                </Alert>
+              ) : (
+                <Stack spacing={2}>
+                  {scheduledCallouts.map((callout) => {
+                    const isCaller = callout.caller?.user_id === fighterProfile?.user_id;
+                    const opponent = isCaller ? callout.target : callout.caller;
+
+                    return (
+                      <Card key={callout.id} variant="outlined" sx={{ borderLeft: '4px solid', borderLeftColor: 'error.main' }}>
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box flex={1}>
+                              <Chip 
+                                label="Scheduled Rematch" 
+                                color="error" 
+                                size="small" 
+                                sx={{ mb: 1 }}
+                              />
+                              <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                {callout.caller?.name || 'Unknown Fighter'} vs {callout.target?.name || 'Unknown Fighter'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" mt={1}>
+                                {callout.weight_class} • Rematch
+                              </Typography>
+                              {callout.message && (
+                                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                  "{callout.message}"
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color="text.secondary" mt={1}>
+                                Scheduled: {callout.scheduled_date ? new Date(callout.scheduled_date).toLocaleString() : 'TBD'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Opponent: {opponent?.name || 'Unknown'} • @{opponent?.handle || 'unknown'} • {opponent?.tier || 'Amateur'} • {opponent?.points || 0} pts
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+      </Box>
+
+      {/* ============================================ */}
       {/* FIGHTING SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
@@ -2652,13 +2862,6 @@ const FighterProfile: React.FC = () => {
                   </Button>
                 )}
               </Box>
-              {isViewingOtherFighter && (
-                <Box sx={{ mt: 2 }}>
-                  <Alert severity="info">
-                    You are viewing {fighterProfile?.name}'s profile. You cannot edit their information.
-                  </Alert>
-                </Box>
-              )}
               {isViewingOtherFighter && (
                 <Box sx={{ mt: 2 }}>
                   <Alert severity="info">
@@ -2895,566 +3098,19 @@ const FighterProfile: React.FC = () => {
             </Card>
           </Box>
         )}
-
-        {/* HIDDEN: Mandatory Fights (Auto-Matched) */}
-        {/* <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card sx={{ border: '2px solid', borderColor: 'warning.main' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <Notifications sx={{ color: 'warning.main' }} />
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  Mandatory Fights
-                </Typography>
-              </Box>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                These fights were automatically matched based on your rankings, weight class, tier, and points. 
-                You must complete these fights. Go to Matchmaking → Smart Matchmaking to trigger automatic matching.
-              </Alert>
-              {mandatoryFights.length === 0 ? (
-                <Alert severity="info">
-                  No mandatory fights at the moment. Use the Smart Matchmaking system to get automatically matched with opponents.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {mandatoryFights.map((fight) => (
-                    <Card key={fight.id} variant="outlined" sx={{ bgcolor: 'rgba(255, 152, 0, 0.1)' }}>
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box flex={1}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              {fight.fighter1?.name || 'TBD'} vs {fight.fighter2?.name || 'TBD'}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" mt={1}>
-                              {fight.scheduled_date ? new Date(fight.scheduled_date).toLocaleDateString() : 'TBD'} • {fight.weight_class}
-                            </Typography>
-                            {fight.match_score && (
-                              <Chip 
-                                label={`Match Score: ${fight.match_score}%`} 
-                                size="small" 
-                                color="warning" 
-                                sx={{ mt: 1 }}
-                              />
-                            )}
-                          </Box>
-                          <Chip label="MANDATORY" color="warning" />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box> */}
-
       </Box>
 
       {/* ============================================ */}
-      {/* TRAINING & MATCHMAKING SECTION */}
+      {/* SUBMISSIONS & DISPUTES SECTION */}
       {/* ============================================ */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
-          Training & Matchmaking
+          Submissions & Disputes
         </Typography>
         <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
         
-        {/* Training Camp Invitations */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <FitnessCenter sx={{ color: 'primary.main' }} />
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  Training Camp Invitations
-                </Typography>
-              </Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Training camps last 72 hours. You cannot start a training camp within 3 days of a scheduled fight. 
-                Go to Matchmaking → Training Camp to send invitations to other fighters.
-              </Alert>
-              {trainingCampInvitations.length === 0 ? (
-                <Alert severity="info">
-                  No pending training camp invitations. Other fighters can invite you, or you can send invitations from the Matchmaking page.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {trainingCampInvitations.map((invitation) => (
-                    <Card key={invitation.id} variant="outlined">
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box flex={1}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              {invitation.inviter?.name || 'Unknown Fighter'} invited you to a Training Camp
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" mt={1}>
-                              Duration: 72 hours • Expires: {new Date(invitation.expires_at).toLocaleString()}
-                            </Typography>
-                            {invitation.message && (
-                              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                "{invitation.message}"
-                              </Typography>
-                            )}
-                          </Box>
-                          <Box display="flex" gap={1}>
-                            <Button
-                              variant="contained"
-                              color="success"
-                              startIcon={acceptingInvitation === invitation.id ? <CircularProgress size={16} /> : <CheckCircle />}
-                              onClick={() => handleAcceptTrainingCamp(invitation.id)}
-                              disabled={acceptingInvitation === invitation.id || decliningInvitation === invitation.id}
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              startIcon={decliningInvitation === invitation.id ? <CircularProgress size={16} /> : <CancelIcon />}
-                              onClick={() => handleDeclineTrainingCamp(invitation.id)}
-                              disabled={acceptingInvitation === invitation.id || decliningInvitation === invitation.id}
-                            >
-                              Decline
-                            </Button>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Active Training Camps */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <FitnessCenter sx={{ color: 'success.main' }} />
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  My Active Training Camps
-                </Typography>
-              </Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Your active training camps with sparring partners. Training camps last 72 hours. Maximum of 3 sparring partners allowed.
-              </Alert>
-              {activeTrainingCamps.length === 0 ? (
-                <Alert severity="info">
-                  You don't have any active training camps. Accept an invitation or send one from the Matchmaking page.
-                </Alert>
-              ) : (
-                <Stack spacing={3}>
-                  {activeTrainingCamps.map((campGroup, index) => {
-                    const expiresAt = new Date(campGroup.expiresAt);
-                    const now = new Date();
-                    const hoursRemaining = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
-                    const daysRemaining = Math.floor(hoursRemaining / 24);
-                    const hoursInDay = hoursRemaining % 24;
-
-                    return (
-                      <Card key={index} variant="outlined" sx={{ borderColor: 'success.main' }}>
-                        <CardContent>
-                          <Box display="flex" alignItems="center" mb={2}>
-                            <Box flex={1}>
-                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                {campGroup.fighter?.name || 'Unknown Fighter'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                @{campGroup.fighter?.handle || 'unknown'} • {campGroup.fighter?.tier || 'Amateur'} • {campGroup.fighter?.points || 0} pts
-                              </Typography>
-                            </Box>
-                            <Chip 
-                              label={`${daysRemaining}d ${hoursInDay}h remaining`}
-                              color={hoursRemaining < 24 ? 'error' : hoursRemaining < 48 ? 'warning' : 'success'}
-                              size="small"
-                            />
-                          </Box>
-                          
-                          <Divider sx={{ my: 2 }} />
-                          
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Sparring Partners ({campGroup.sparringPartners.length}/3):
-                          </Typography>
-                          
-                          {campGroup.sparringPartners.length === 0 ? (
-                            <Alert severity="info" sx={{ mt: 1 }}>
-                              No sparring partners yet.
-                            </Alert>
-                          ) : (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-                              {campGroup.sparringPartners.map((sp, idx) => (
-                                <Card 
-                                  key={idx} 
-                                  variant="outlined" 
-                                  sx={{ 
-                                    p: 1.5, 
-                                    flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)' },
-                                    minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' }
-                                  }}
-                                >
-                                  <Box display="flex" alignItems="center" gap={1}>
-                                    <Avatar
-                                      sx={{
-                                        width: 40,
-                                        height: 40,
-                                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)'
-                                      }}
-                                    >
-                                      {sp.partner?.name?.charAt(0) || '?'}
-                                    </Avatar>
-                                    <Box flex={1}>
-                                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                        {sp.partner?.name || 'Unknown Fighter'}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        @{sp.partner?.handle || 'unknown'} • {sp.partner?.tier || 'Amateur'} • {sp.partner?.points || 0} pts
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-                                </Card>
-                              ))}
-                            </Box>
-                          )}
-                          
-                          <Box mt={2} display="flex" alignItems="center" gap={1}>
-                            <Schedule sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
-                              Started: {new Date(campGroup.startedAt).toLocaleString()} • Expires: {new Date(campGroup.expiresAt).toLocaleString()}
-                            </Typography>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Rematch Requests */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={3}>
-                <SportsMma sx={{ color: 'error.main' }} />
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  Rematch Requests
-                </Typography>
-              </Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                When other fighters request a rematch with you, you'll receive the request here. Rematches are only available with fighters you have already fought. 
-                Go to Matchmaking → Rematches to request rematches with fighters you've fought before.
-              </Alert>
-              {calloutRequests.length === 0 ? (
-                <Alert severity="info">
-                  No pending rematch requests. Other fighters can request rematches with you, or you can request rematches from the Matchmaking page.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {calloutRequests.map((callout) => (
-                    <Card key={callout.id} variant="outlined" sx={{ borderColor: 'error.main' }}>
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box flex={1}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              {callout.caller?.name || 'Unknown Fighter'} requested a rematch!
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" mt={1}>
-                              {callout.weight_class} • {callout.tier_match ? 'Same Tier' : 'Different Tier'}
-                              {callout.rank_difference !== null && ` • Rank Diff: ${callout.rank_difference}`}
-                              {callout.points_difference !== null && ` • Points Diff: ${callout.points_difference}`}
-                            </Typography>
-                            {callout.match_score && (
-                              <Chip 
-                                label={`Fair Match Score: ${callout.match_score}%`} 
-                                size="small" 
-                                color={callout.match_score >= 60 ? 'success' : 'warning'}
-                                sx={{ mt: 1 }}
-                              />
-                            )}
-                            {callout.message && (
-                              <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                "{callout.message}"
-                              </Typography>
-                            )}
-                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                              Expires: {new Date(callout.expires_at).toLocaleString()}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" gap={1}>
-                            <Button
-                              variant="contained"
-                              color="success"
-                              startIcon={acceptingCallout === callout.id ? <CircularProgress size={16} /> : <CheckCircle />}
-                              onClick={() => handleAcceptCallout(callout.id)}
-                              disabled={acceptingCallout === callout.id || decliningCallout === callout.id}
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              startIcon={decliningCallout === callout.id ? <CircularProgress size={16} /> : <CancelIcon />}
-                              onClick={() => handleDeclineCallout(callout.id)}
-                              disabled={acceptingCallout === callout.id || decliningCallout === callout.id}
-                            >
-                              Decline
-                            </Button>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Scheduled Rematches */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Scheduled Rematches
-              </Typography>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Your accepted rematch requests that have been scheduled as fights.
-              </Alert>
-              {scheduledCallouts.length === 0 ? (
-                <Alert severity="info">
-                  You don't have any scheduled rematches. Accept a rematch request to schedule a fight.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {scheduledCallouts.map((callout) => {
-                    const isCaller = callout.caller?.user_id === fighterProfile?.user_id;
-                    const opponent = isCaller ? callout.target : callout.caller;
-
-                    return (
-                      <Card key={callout.id} variant="outlined" sx={{ borderLeft: '4px solid', borderLeftColor: 'error.main' }}>
-                        <CardContent>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Box flex={1}>
-                              <Chip 
-                                label="Scheduled Rematch" 
-                                color="error" 
-                                size="small" 
-                                sx={{ mb: 1 }}
-                              />
-                              <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                {callout.caller?.name || 'Unknown Fighter'} vs {callout.target?.name || 'Unknown Fighter'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                {callout.weight_class} • Rematch
-                              </Typography>
-                              {callout.message && (
-                                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                  "{callout.message}"
-                                </Typography>
-                              )}
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                Scheduled: {callout.scheduled_date ? new Date(callout.scheduled_date).toLocaleString() : 'TBD'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Opponent: {opponent?.name || 'Unknown'} • @{opponent?.handle || 'unknown'} • {opponent?.tier || 'Amateur'} • {opponent?.points || 0} pts
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Mandatory Fight Requests (Pending) */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Mandatory Fight Requests
-              </Typography>
-              {pendingFightRequests.length === 0 ? (
-                <Alert severity="info">
-                  No pending mandatory fight requests at the moment.
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {pendingFightRequests.map((fight) => {
-                    // Determine which fighter is the current user and which is the opponent
-                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
-                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
-                    const currentFighter = isFighter1 ? fight.fighter1 : fight.fighter2;
-                    const opponentName = opponent?.name || 'TBD';
-                    const currentFighterName = currentFighter?.name || fighterProfile?.name || 'You';
-                    
-                    // Check if current fighter is the requester (for mandatory fights)
-                    // requested_by is a profile ID, so we compare with fighterProfile.id
-                    const isRequester = fight.match_type === 'manual' && 
-                                      fight.requested_by && 
-                                      fighterProfile?.id &&
-                                      fight.requested_by === fighterProfile.id;
-                    
-                    // Format: Fighter1 vs Fighter2 (opponent first if they requested it)
-                    const fightersDisplay = isFighter1 
-                      ? `${currentFighterName} vs ${opponentName}`
-                      : `${opponentName} vs ${currentFighterName}`;
-                    
-                    return (
-                      <Card key={fight.id} variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
-                        <CardContent>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Box flex={1}>
-                              <Chip 
-                                label="Mandatory Fight Request" 
-                                color="warning" 
-                                size="small"
-                                sx={{ mb: 1 }}
-                              />
-                              {isRequester ? (
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                  You have sent a mandatory fight request to {opponentName}
-                                </Typography>
-                              ) : (
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                  {opponentName} has scheduled a mandatory fight with you
-                                </Typography>
-                              )}
-                              <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                {fightersDisplay}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                {new Date(fight.scheduled_date).toLocaleDateString()}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                TBD • {fight.weight_class} • {fight.timezone}
-                              </Typography>
-                              {isRequester && (
-                                <Alert severity="info" sx={{ mt: 2 }}>
-                                  Waiting for {opponentName} to accept your mandatory fight request.
-                                </Alert>
-                              )}
-                            </Box>
-                            {!isRequester && (
-                              <Box display="flex" gap={1} flexDirection="column">
-                                <Button
-                                  variant="contained"
-                                  color="success"
-                                  startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
-                                  onClick={() => handleAcceptFightRequest(fight.id)}
-                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                                >
-                                  Accept
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
-                                  onClick={() => handleDenyFightRequest(fight.id)}
-                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
-                                >
-                                  Deny
-                                </Button>
-                              </Box>
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Scheduled Fights */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Scheduled Fights
-              </Typography>
-              {scheduledFights.length === 0 ? (
-                <Alert severity="info">
-                  No scheduled fights at the moment. Check the matchmaking system for opportunities!
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {scheduledFights.map((fight) => {
-                    // Determine which fighter is the current user and which is the opponent
-                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
-                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
-                    const opponentName = opponent?.name || 'TBD';
-                    const isMandatory = fight.match_type === 'manual' || fight.match_type === 'auto_mandatory';
-                    
-                    return (
-                      <Card key={fight.id} variant="outlined">
-                        <CardContent>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Box flex={1}>
-                              {isMandatory ? (
-                                <Box mb={1}>
-                                  <Chip 
-                                    label="Mandatory Fight Request" 
-                                    color="warning" 
-                                    size="small"
-                                    sx={{ mb: 1 }}
-                                  />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {isFighter1 ? fight.fighter2?.name : fight.fighter1?.name} has scheduled a mandatory fight with you
-                                  </Typography>
-                                </Box>
-                              ) : null}
-                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                You vs {opponentName}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" mt={1}>
-                                {new Date(fight.scheduled_date).toLocaleDateString()} at{' '}
-                                {fight.scheduled_time}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {fight.venue} • {fight.weight_class} • {fight.timezone}
-                              </Typography>
-                            </Box>
-                            <Box display="flex" gap={1} alignItems="center" flexDirection="column">
-                              <Chip label={fight.status} color="primary" />
-                              {isMandatory && (
-                                <Chip 
-                                  label="Mandatory" 
-                                  color="warning" 
-                                  size="small"
-                                  sx={{ mt: 1 }}
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Dispute Resolution */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
-          <Card>
-            <CardContent>
-              <DisputeResolution />
-            </CardContent>
-          </Card>
-        </Box>
-
         {/* Fight URL Submissions */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -3597,86 +3253,130 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box>
 
-        {/* My Tournaments */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
+        {/* Dispute Resolution */}
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
           <Card>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  My Tournaments
-                </Typography>
-              </Box>
-              
-              {myTournaments.length === 0 ? (
-                <Alert severity="info">You haven't joined any tournaments yet. Visit the Tournaments page to join!</Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {myTournaments.map((tournament) => (
-                    <Card key={tournament.id} variant="outlined">
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="start">
-                          <Box>
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
-                              <Typography variant="h6">{tournament.name}</Typography>
-                              <Chip
-                                label={tournament.status}
-                                size="small"
-                                color={
-                                  tournament.status === 'Open' ? 'success' :
-                                  tournament.status === 'In Progress' ? 'warning' :
-                                  tournament.status === 'Completed' ? 'info' : 'default'
-                                }
-                              />
-                              {tournament.winner_id === fighterProfile?.id && (
-                                <Chip
-                                  label="Champion"
-                                  size="small"
-                                  color="warning"
-                                  icon={<EmojiEvents />}
-                                />
-                              )}
-                            </Box>
-                            {tournament.description && (
-                              <Typography variant="body2" color="text.secondary" mb={1}>
-                                {tournament.description}
-                              </Typography>
-                            )}
-                            <Box display="flex" gap={2} flexWrap="wrap">
-                              <Typography variant="body2" color="text.secondary">
-                                <CalendarToday sx={{ verticalAlign: 'middle', fontSize: 16, mr: 0.5 }} />
-                                Start: {new Date(tournament.start_date).toLocaleDateString()}
-                              </Typography>
-                              {tournament.registration_deadline && (
-                                <Typography variant="body2" color="error">
-                                  Deadline: {new Date(tournament.registration_deadline).toLocaleDateString()}
-                                </Typography>
-                              )}
-                            </Box>
-                            <Typography variant="body2" color="text.secondary" mt={1}>
-                              {tournament.weight_class} • {tournament.format} • Prize Pool: ${tournament.prize_pool}
-                            </Typography>
-                          </Box>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<SportsMma />}
-                            onClick={() => {
-                              // Navigate to tournaments page
-                              navigate('/tournaments');
-                            }}
-                          >
-                            View Details
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Stack>
-              )}
+              <DisputeResolution />
             </CardContent>
           </Card>
         </Box>
       </Box>
+
+      {/* ============================================ */}
+      {/* MESSAGES SECTION */}
+      {/* ============================================ */}
+      {!isViewingOtherFighter && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+            Messages
+          </Typography>
+          <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+          {/* Direct Messages */}
+          {fighterProfile?.user_id && (
+            <Box sx={{ mb: 3 }}>
+              <FighterDirectMessages fighterId={fighterProfile.user_id} />
+            </Box>
+          )}
+
+          {/* Messages from TBC Promotions */}
+          <Box sx={{ mb: 3 }}>
+            <Card>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Notifications sx={{ color: 'primary.main' }} />
+                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                      Messages from TBC Promotions
+                    </Typography>
+                    {unreadCount > 0 && (
+                      <Chip
+                        label={`${unreadCount} unread`}
+                        color="error"
+                        size="small"
+                      />
+                    )}
+                  </Box>
+                  {unreadCount > 0 && (
+                    <Button
+                      size="small"
+                      onClick={handleMarkAllAsRead}
+                      disabled={loadingMessages}
+                    >
+                      Mark All as Read
+                    </Button>
+                  )}
+                </Box>
+                <Divider sx={{ mb: 2 }} />
+
+                {loadingMessages ? (
+                  <Box display="flex" justifyContent="center" p={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : adminMessages.length === 0 ? (
+                  <Alert severity="info">No messages from TBC Promotions yet.</Alert>
+                ) : (
+                  <Stack spacing={2}>
+                    {adminMessages.map((msg) => (
+                      <Card
+                        key={msg.id}
+                        variant="outlined"
+                        sx={{
+                          bgcolor: msg.read_at ? 'background.paper' : 'action.selected',
+                          borderLeft: msg.read_at ? 'none' : '4px solid',
+                          borderLeftColor: 'primary.main',
+                        }}
+                      >
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                            <Box flex={1}>
+                              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                  {msg.subject}
+                                </Typography>
+                                <Chip
+                                  label={msg.message_type === 'live_event_selection' ? 'Live Event' : msg.message_type === 'tournament_selection' ? 'Tournament' : msg.message_type}
+                                  size="small"
+                                  color={msg.message_type === 'live_event_selection' ? 'primary' : 'default'}
+                                />
+                                {!msg.read_at && (
+                                  <Chip label="New" size="small" color="error" />
+                                )}
+                              </Box>
+                              {msg.event_name && (
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                  Event: {msg.event_name}
+                                </Typography>
+                              )}
+                              <Typography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
+                                {msg.message}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(msg.created_at).toLocaleString()}
+                              </Typography>
+                            </Box>
+                            {!msg.read_at && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => handleMarkAsRead(msg.id)}
+                                disabled={loadingMessages}
+                              >
+                                Mark as Read
+                              </Button>
+                            )}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+      )}
 
       {/* Add Fight Dialog */}
       <Dialog 

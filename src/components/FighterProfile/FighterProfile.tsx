@@ -71,6 +71,7 @@ import { championshipBeltService, ChampionshipBelt, GOVERNING_BODY_LABELS } from
 import { mediaService } from '../../services/mediaService';
 import { SocialLink } from '../../types';
 import { adminMessageService, AdminDirectMessage } from '../../services/adminMessageService';
+import FighterDirectMessages from './FighterDirectMessages';
 import { 
   getAllowedWeightClasses, 
   isWeightClassAllowed, 
@@ -1646,8 +1647,17 @@ const FighterProfile: React.FC = () => {
         <Divider />
       </Box>
 
-      {/* Stats Cards */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+      {/* ============================================ */}
+      {/* OVERVIEW SECTION */}
+      {/* ============================================ */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          Overview
+        </Typography>
+        <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+        
+        {/* Stats Cards */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' } }}>
           <Card>
             <CardContent>
@@ -1721,10 +1731,27 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box>
       </Box>
+      </Box>
 
-      {/* Messages from TBC Promotions */}
+      {/* ============================================ */}
+      {/* MESSAGES SECTION */}
+      {/* ============================================ */}
       {!isViewingOtherFighter && (
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+            Messages
+          </Typography>
+          <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+              {/* Direct Messages */}
+          {fighterProfile?.user_id && (
+            <Box sx={{ mb: 3 }}>
+              <FighterDirectMessages fighterId={fighterProfile.user_id} />
+            </Box>
+          )}
+
+          {/* Messages from TBC Promotions */}
+          <Box sx={{ mb: 3 }}>
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -1817,11 +1844,21 @@ const FighterProfile: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          </Box>
         </Box>
       )}
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        {/* Physical Information */}
+      {/* ============================================ */}
+      {/* PROFILE INFORMATION SECTION */}
+      {/* ============================================ */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          Profile Information
+        </Typography>
+        <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+        
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {/* Physical Information */}
         <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' }, minWidth: { xs: '100%', md: 'calc(50% - 12px)' } }}>
           <Card>
             <CardContent>
@@ -2582,9 +2619,20 @@ const FighterProfile: React.FC = () => {
             </CardContent>
           </Card>
         </Box>
+        </Box>
+      </Box>
 
+      {/* ============================================ */}
+      {/* FIGHTING SECTION */}
+      {/* ============================================ */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          Fighting
+        </Typography>
+        <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+        
         {/* Fight Records */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%' }}>
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -2677,6 +2725,177 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box>
 
+        {/* Scheduled Fights */}
+        {scheduledFights.length > 0 && (
+          <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  Scheduled Fights
+                </Typography>
+                <Stack spacing={2}>
+                  {scheduledFights.map((fight) => {
+                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
+                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
+                    const opponentName = opponent?.name || 'TBD';
+                    const isMandatory = fight.match_type === 'manual' || fight.match_type === 'auto_mandatory';
+                    
+                    return (
+                      <Card key={fight.id} variant="outlined">
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box flex={1}>
+                              {isMandatory && (
+                                <Chip 
+                                  label="Mandatory" 
+                                  color="warning" 
+                                  size="small"
+                                  sx={{ mb: 1 }}
+                                />
+                              )}
+                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                You vs {opponentName}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" mt={1}>
+                                {new Date(fight.scheduled_date).toLocaleDateString()} at {fight.scheduled_time}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {fight.venue} • {fight.weight_class} • {fight.timezone}
+                              </Typography>
+                            </Box>
+                            <Chip label={fight.status} color="primary" />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Mandatory Fight Requests (Pending) */}
+        {pendingFightRequests.length > 0 && (
+          <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  Mandatory Fight Requests
+                </Typography>
+                <Stack spacing={2}>
+                  {pendingFightRequests.map((fight) => {
+                    const isFighter1 = fight.fighter1_id === fighterProfile?.user_id;
+                    const opponent = isFighter1 ? fight.fighter2 : fight.fighter1;
+                    const opponentName = opponent?.name || 'TBD';
+                    const isRequester = fight.match_type === 'manual' && 
+                                      fight.requested_by && 
+                                      fighterProfile?.id &&
+                                      fight.requested_by === fighterProfile.id;
+                    
+                    return (
+                      <Card key={fight.id} variant="outlined" sx={{ bgcolor: 'warning.light' }}>
+                        <CardContent>
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Box flex={1}>
+                              <Chip label="Mandatory Fight Request" color="warning" size="small" sx={{ mb: 1 }} />
+                              {isRequester ? (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  You have sent a mandatory fight request to {opponentName}
+                                </Typography>
+                              ) : (
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                  {opponentName} has scheduled a mandatory fight with you
+                                </Typography>
+                              )}
+                              <Typography variant="body2" color="text.secondary" mt={1}>
+                                {new Date(fight.scheduled_date).toLocaleDateString()} • {fight.weight_class}
+                              </Typography>
+                            </Box>
+                            {!isRequester && (
+                              <Box display="flex" gap={1} flexDirection="column">
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={acceptingFight === fight.id ? <CircularProgress size={16} /> : <CheckCircle />}
+                                  onClick={() => handleAcceptFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  startIcon={denyingFight === fight.id ? <CircularProgress size={16} /> : <CancelIcon />}
+                                  onClick={() => handleDenyFightRequest(fight.id)}
+                                  disabled={acceptingFight === fight.id || denyingFight === fight.id}
+                                >
+                                  Deny
+                                </Button>
+                              </Box>
+                            )}
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* My Tournaments */}
+        {myTournaments.length > 0 && (
+          <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  My Tournaments
+                </Typography>
+                <Stack spacing={2}>
+                  {myTournaments.map((tournament) => (
+                    <Card key={tournament.id} variant="outlined">
+                      <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="start">
+                          <Box>
+                            <Box display="flex" alignItems="center" gap={1} mb={1}>
+                              <Typography variant="h6">{tournament.name}</Typography>
+                              <Chip
+                                label={tournament.status}
+                                size="small"
+                                color={
+                                  tournament.status === 'Open' ? 'success' :
+                                  tournament.status === 'In Progress' ? 'warning' :
+                                  tournament.status === 'Completed' ? 'info' : 'default'
+                                }
+                              />
+                              {tournament.winner_id === fighterProfile?.id && (
+                                <Chip label="Champion" size="small" color="warning" icon={<EmojiEvents />} />
+                              )}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" mt={1}>
+                              {tournament.weight_class} • {tournament.format} • Prize Pool: ${tournament.prize_pool}
+                            </Typography>
+                          </Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<SportsMma />}
+                            onClick={() => navigate('/tournaments')}
+                          >
+                            View Details
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
         {/* HIDDEN: Mandatory Fights (Auto-Matched) */}
         {/* <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
           <Card sx={{ border: '2px solid', borderColor: 'warning.main' }}>
@@ -2728,8 +2947,19 @@ const FighterProfile: React.FC = () => {
           </Card>
         </Box> */}
 
+      </Box>
+
+      {/* ============================================ */}
+      {/* TRAINING & MATCHMAKING SECTION */}
+      {/* ============================================ */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3, color: 'white' }}>
+          Training & Matchmaking
+        </Typography>
+        <Divider sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+        
         {/* Training Camp Invitations */}
-        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mt: 3 }}>
+        <Box sx={{ flex: '1 1 100%', minWidth: '100%', mb: 3 }}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={3}>

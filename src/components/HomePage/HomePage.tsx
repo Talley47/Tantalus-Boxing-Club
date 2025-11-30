@@ -443,6 +443,18 @@ const HomePage: React.FC = () => {
       const camps = results[4].status === 'fulfilled' ? results[4].value : [];
       const callouts = results[5].status === 'fulfilled' ? results[5].value : [];
 
+      // Log news loading result for debugging
+      if (results[2].status === 'rejected') {
+        console.error('Failed to load news items:', results[2].reason);
+      } else if (news && news.length === 0) {
+        console.log('News items loaded successfully but array is empty. This could mean:');
+        console.log('1. No news items exist in the database');
+        console.log('2. All news items have is_published = false');
+        console.log('3. RLS policies are blocking access');
+      } else {
+        console.log(`Successfully loaded ${news?.length || 0} news items`);
+      }
+
       setTopFighters(fighters || []);
       setScheduledFights(fights || []);
       setNewsItems(news || []);
@@ -1407,7 +1419,7 @@ const HomePage: React.FC = () => {
 
           {/* Main Content Tabs */}
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
               <Tabs 
                 value={tabValue} 
                 onChange={handleTabChange} 
@@ -1415,7 +1427,22 @@ const HomePage: React.FC = () => {
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile
-                sx={{ '& .MuiTab-root': { color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' } }}
+                sx={{ 
+                  '& .MuiTab-root': { 
+                    color: 'white', 
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                    fontWeight: 500,
+                    minHeight: 48,
+                    '&.Mui-selected': {
+                      color: '#FFD700',
+                      fontWeight: 'bold',
+                    }
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#FFD700',
+                    height: 3,
+                  }
+                }}
               >
                 <Tab label="Top Fighters" value={0} />
                 <Tab label="Scheduled Fights" value={1} />
@@ -1723,12 +1750,17 @@ const HomePage: React.FC = () => {
 
             {/* News & Announcements Tab */}
             <TabPanel value={tabValue} index={4}>
-              <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+              <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 'bold' }}>
                 Latest News & Announcements
               </Typography>
               {newsItems.length === 0 ? (
-                <Alert severity="info">
-                  No news or announcements at the moment.
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  <Typography variant="body1">
+                    No news or announcements at the moment.
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    Check back later for updates from TBC Promotions!
+                  </Typography>
                 </Alert>
               ) : (
                 <Stack spacing={2}>

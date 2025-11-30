@@ -76,9 +76,17 @@ export class NewsService {
       const { data, error } = await query;
 
       if (error) {
+        // Log the error for debugging
+        console.error('Error fetching news items:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
         // If error is related to is_published column, try without it
-        if (error.message?.includes('is_published') || error.code === '42703') {
-          console.warn('is_published column may not exist, retrying without filter');
+        if (error.message?.includes('is_published') || error.code === '42703' || error.code === 'PGRST116') {
+          console.warn('is_published column may not exist or RLS issue, retrying without filter');
           let retryQuery = supabase
             .from('news_announcements')
             .select('*')
@@ -91,7 +99,12 @@ export class NewsService {
           
           const { data: retryData, error: retryError } = await retryQuery;
           if (retryError) {
-            console.error('Error fetching news items (retry failed):', retryError);
+            console.error('Error fetching news items (retry failed):', {
+              message: retryError.message,
+              code: retryError.code,
+              details: retryError.details,
+              hint: retryError.hint
+            });
             return []; // Return empty array instead of throwing
           }
           

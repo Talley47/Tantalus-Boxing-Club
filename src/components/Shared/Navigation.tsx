@@ -32,7 +32,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const drawerWidth = 200;
+const drawerWidth = 240;
 
 const Navigation: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);

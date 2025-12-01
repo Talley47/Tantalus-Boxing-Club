@@ -179,20 +179,20 @@ const Tournaments: React.FC = () => {
 
   return (
     <>
-      {/* Full-screen background layer with TBC Tournamement page.png */}
+      {/* Full-screen background layer with KOTH Tournament.png */}
       <Box
         component="div"
         sx={{
           position: 'fixed',
           top: 0,
-          left: { xs: 0, sm: '200px' },
+          left: { xs: 0, sm: '240px' },
           right: 0,
           bottom: 0,
-          width: { xs: '100%', sm: 'calc(100% - 200px)' },
+          width: { xs: '100%', sm: 'calc(100% - 240px)' },
           height: '100vh',
           backgroundImage: tournamentBackground ? `url("${tournamentBackground}")` : 'url("/TBC Tournamement page.png")',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
           zIndex: -1,

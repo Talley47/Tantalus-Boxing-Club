@@ -44,3 +44,4 @@ CREATE POLICY "Admin manage news" ON news_announcements
     WITH CHECK (is_admin_user());
 
 
+

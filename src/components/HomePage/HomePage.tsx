@@ -438,26 +438,48 @@ const HomePage: React.FC = () => {
       // Extract results, defaulting to empty arrays on failure
       const fighters = results[0].status === 'fulfilled' ? results[0].value : [];
       const fights = results[1].status === 'fulfilled' ? results[1].value : [];
-      const news = results[2].status === 'fulfilled' ? results[2].value : [];
       const tournaments = results[3].status === 'fulfilled' ? results[3].value : [];
       const camps = results[4].status === 'fulfilled' ? results[4].value : [];
       const callouts = results[5].status === 'fulfilled' ? results[5].value : [];
 
-      // Log news loading result for debugging
+      // Handle news items separately to prevent clearing on failed reloads
       if (results[2].status === 'rejected') {
-        console.error('Failed to load news items:', results[2].reason);
-      } else if (news && news.length === 0) {
-        console.log('News items loaded successfully but array is empty. This could mean:');
-        console.log('1. No news items exist in the database');
-        console.log('2. All news items have is_published = false');
-        console.log('3. RLS policies are blocking access');
-      } else {
-        console.log(`Successfully loaded ${news?.length || 0} news items`);
+        console.error('❌ Failed to load news items:', results[2].reason);
+        // Don't clear existing news items if reload fails - preserve what we have
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ News reload failed, preserving existing news items to prevent disappearing');
+        }
+        // Keep existing newsItems - don't update
+      } else if (results[2].status === 'fulfilled') {
+        const news = results[2].value || [];
+        if (news.length > 0) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Successfully loaded ${news.length} news items`);
+          }
+          setNewsItems(news);
+        } else {
+          // Only clear news items if this is the initial load (newsItems is empty)
+          // If we already have news items, don't clear them on a reload that returns empty
+          if (newsItems.length === 0) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('News items loaded successfully but array is empty. This could mean:');
+              console.log('1. No news items exist in the database');
+              console.log('2. All news items have is_published = false');
+              console.log('3. RLS policies are blocking access');
+            }
+            setNewsItems([]);
+          } else {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ News reload returned empty array, but preserving existing news items to prevent disappearing');
+            }
+            // Don't update - keep existing news items
+          }
+        }
       }
 
       setTopFighters(fighters || []);
       setScheduledFights(fights || []);
-      setNewsItems(news || []);
+      // Note: newsItems is set conditionally above to prevent clearing on failed reloads
       setActiveTournaments(tournaments?.length || 0);
       // Map training camps to the expected format
       setTrainingCamps((camps || []).map(camp => ({

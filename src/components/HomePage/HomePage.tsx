@@ -427,7 +427,7 @@ const HomePage: React.FC = () => {
 
       // Load data using Promise.allSettled so individual failures don't block others
       const results = await Promise.allSettled([
-        createTimeoutPromise(HomePageService.getTopFighters(20), 10000, 'Top Fighters'), // Reduced from 30 to 20, timeout from 15s to 10s
+        createTimeoutPromise(HomePageService.getTopFighters(50), 10000, 'Top Fighters'), // Increased to 50 to ensure all fighters are visible
         createTimeoutPromise(HomePageService.getScheduledFights(10), 10000, 'Scheduled Fights'), // Reduced timeout
         createTimeoutPromise(NewsService.getNewsItems(15), 10000, 'News Items'), // Reduced from 20 to 15, timeout from 15s to 10s
         createTimeoutPromise(TournamentService.getTournaments('In Progress'), 10000, 'Tournaments'), // Reduced timeout

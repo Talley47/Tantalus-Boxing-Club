@@ -80,10 +80,11 @@ const Rankings: React.FC = () => {
         clearTimeout(reloadTimeoutRef.current);
       }
       // Use setTimeout to defer heavy operation and prevent blocking message handler
+      // Increased debounce to reduce frequency of expensive ranking calculations
       reloadTimeoutRef.current = setTimeout(() => {
         loadRankings();
         reloadTimeoutRef.current = null;
-      }, 100); // 100ms debounce
+      }, 1000); // 1000ms debounce - rankings are expensive to calculate
     };
 
     // Subscribe to real-time changes

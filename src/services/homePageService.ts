@@ -67,7 +67,7 @@ export class HomePageService {
   // Get top fighters by points
   static async getTopFighters(limit: number = 30): Promise<Fighter[]> {
     try {
-      console.log('Fetching top fighters...');
+      // Removed console.log to improve performance
       
       // Try to get all fighter profiles - check if RLS allows public read
       // Note: Using application-level filtering since there's no FK relationship for JOIN
@@ -102,10 +102,7 @@ export class HomePageService {
         return [];
       }
 
-      // Only log if we have fighters (reduce console noise)
-      if (data && data.length > 0) {
-        console.log(`Found ${data.length} fighters`);
-      }
+      // Removed console.log to improve performance
       
       if (!data || data.length === 0) {
         if (!(window as any).__fighterWarningShown) {

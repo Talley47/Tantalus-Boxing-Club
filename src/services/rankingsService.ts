@@ -73,12 +73,10 @@ export const getOverallRankings = async (limit: number = 1000): Promise<RankingE
     if (error) throw error;
     if (!fighters || fighters.length === 0) return [];
 
-    console.log(`[getOverallRankings] Fetched ${fighters.length} fighters from database`);
+    // Removed console.log to improve performance
 
     // Filter out admin users
     const filteredFighters = await filterAdminFighters(fighters);
-    
-    console.log(`[getOverallRankings] After admin filter: ${filteredFighters.length} fighters`);
     
     if (filteredFighters.length === 0) return [];
 
@@ -132,12 +130,10 @@ export const getRankingsByWeightClass = async (
     if (error) throw error;
     if (!fighters || fighters.length === 0) return [];
 
-    console.log(`[getRankingsByWeightClass] Fetched ${fighters.length} fighters for ${weightClass} from database`);
+    // Removed console.log to improve performance
 
     // Filter out admin users
     let filteredFighters = await filterAdminFighters(fighters);
-    
-    console.log(`[getRankingsByWeightClass] After admin filter: ${filteredFighters.length} fighters for ${weightClass}`);
     
     if (filteredFighters.length === 0) return [];
 

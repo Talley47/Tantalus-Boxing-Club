@@ -67,12 +67,12 @@ const TierSystem: React.FC = () => {
   // Real-time updates for tier system
   useEffect(() => {
     const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
-      console.log('Fight record changed - reloading tier data:', payload);
+      // Removed console.log to improve performance
       loadTierData();
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      console.log('Fighter profile changed - reloading tier data:', payload);
+      // Removed console.log to improve performance
       // Reload if tier changed (affects tier distribution and stats)
       const tierChanged = payload.new?.tier !== payload.old?.tier;
       const pointsChanged = payload.new?.points !== payload.old?.points;

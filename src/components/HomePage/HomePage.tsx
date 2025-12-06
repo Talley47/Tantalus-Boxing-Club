@@ -427,12 +427,12 @@ const HomePage: React.FC = () => {
 
       // Load data using Promise.allSettled so individual failures don't block others
       const results = await Promise.allSettled([
-        createTimeoutPromise(HomePageService.getTopFighters(30), 15000, 'Top Fighters'),
-        createTimeoutPromise(HomePageService.getScheduledFights(10), 15000, 'Scheduled Fights'),
-        createTimeoutPromise(NewsService.getNewsItems(20), 15000, 'News Items'),
-        createTimeoutPromise(TournamentService.getTournaments('In Progress'), 15000, 'Tournaments'),
-        createTimeoutPromise(trainingCampService.getAllActiveTrainingCamps(), 20000, 'Training Camps'), // Training camps might take longer
-        createTimeoutPromise(calloutService.getScheduledCallouts(), 15000, 'Scheduled Callouts')
+        createTimeoutPromise(HomePageService.getTopFighters(20), 10000, 'Top Fighters'), // Reduced from 30 to 20, timeout from 15s to 10s
+        createTimeoutPromise(HomePageService.getScheduledFights(10), 10000, 'Scheduled Fights'), // Reduced timeout
+        createTimeoutPromise(NewsService.getNewsItems(15), 10000, 'News Items'), // Reduced from 20 to 15, timeout from 15s to 10s
+        createTimeoutPromise(TournamentService.getTournaments('In Progress'), 10000, 'Tournaments'), // Reduced timeout
+        createTimeoutPromise(trainingCampService.getAllActiveTrainingCamps(), 15000, 'Training Camps'), // Reduced timeout from 20s to 15s
+        createTimeoutPromise(calloutService.getScheduledCallouts(), 10000, 'Scheduled Callouts') // Reduced timeout
       ]);
 
       // Extract results, defaulting to empty arrays on failure
@@ -520,15 +520,17 @@ const HomePage: React.FC = () => {
     loadDashboardData();
 
     // Debounced reload function to prevent blocking message handlers
+    // Increased debounce time to reduce frequency of heavy reloads
     const debouncedReload = () => {
       if (reloadTimeoutRef.current) {
         clearTimeout(reloadTimeoutRef.current);
       }
       // Use setTimeout to defer heavy operation and prevent blocking message handler
+      // Increased from 100ms to 500ms to reduce load
       reloadTimeoutRef.current = setTimeout(() => {
         loadDashboardData();
         reloadTimeoutRef.current = null;
-      }, 100); // 100ms debounce
+      }, 500); // 500ms debounce - reduced frequency
     };
 
     // Set up real-time subscriptions for fight records, fighter profiles, scheduled fights, and rankings
@@ -538,8 +540,8 @@ const HomePage: React.FC = () => {
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      // Reload dashboard data when profiles change (affects top fighters, points, tier, etc.)
-      // Check if points, tier, or weight_class changed - these affect rankings
+      // Only reload if significant ranking-affecting changes occurred
+      // Skip reload for minor changes like name, physical info, etc.
       const significantChange = 
         payload.old?.points !== payload.new?.points ||
         payload.old?.tier !== payload.new?.tier ||
@@ -548,13 +550,11 @@ const HomePage: React.FC = () => {
         payload.old?.losses !== payload.new?.losses ||
         payload.old?.draws !== payload.new?.draws;
       
+      // Only reload if significant change - skip minor updates
       if (significantChange) {
-        // Defer heavy reload operation
-        debouncedReload();
-      } else {
-        // Still reload for other changes (name, physical info, etc.) but debounced
         debouncedReload();
       }
+      // Skip reload for non-significant changes to reduce load
     });
 
     const unsubscribeScheduledFights = subscribeToScheduledFights(() => {

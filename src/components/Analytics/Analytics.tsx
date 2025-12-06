@@ -61,7 +61,7 @@ const Analytics: React.FC = () => {
   // Real-time updates
   useEffect(() => {
     const unsubscribeFightRecords = subscribeToFightRecords((payload) => {
-      console.log('Fight record changed - reloading analytics:', payload);
+      // Removed console.log to improve performance
       // Reload analytics when fight records change (affects stats)
       if (fighterProfile && (
         payload.new?.fighter_id === fighterProfile.id || 
@@ -74,7 +74,7 @@ const Analytics: React.FC = () => {
     });
 
     const unsubscribeFighterProfiles = subscribeToFighterProfiles((payload) => {
-      console.log('Fighter profile changed - reloading analytics:', payload);
+      // Removed console.log to improve performance
       // Reload analytics when fighter profile changes (affects stats, tier, etc.)
       if (fighterProfile && payload.new?.user_id === fighterProfile.user_id) {
         loadAnalytics();

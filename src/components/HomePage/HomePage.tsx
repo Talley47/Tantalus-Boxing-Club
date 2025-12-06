@@ -427,12 +427,12 @@ const HomePage: React.FC = () => {
 
       // Load data using Promise.allSettled so individual failures don't block others
       const results = await Promise.allSettled([
-        createTimeoutPromise(HomePageService.getTopFighters(50), 10000, 'Top Fighters'), // Increased to 50 to ensure all fighters are visible
-        createTimeoutPromise(HomePageService.getScheduledFights(10), 10000, 'Scheduled Fights'), // Reduced timeout
-        createTimeoutPromise(NewsService.getNewsItems(15), 10000, 'News Items'), // Reduced from 20 to 15, timeout from 15s to 10s
-        createTimeoutPromise(TournamentService.getTournaments('In Progress'), 10000, 'Tournaments'), // Reduced timeout
-        createTimeoutPromise(trainingCampService.getAllActiveTrainingCamps(), 15000, 'Training Camps'), // Reduced timeout from 20s to 15s
-        createTimeoutPromise(calloutService.getScheduledCallouts(), 10000, 'Scheduled Callouts') // Reduced timeout
+        createTimeoutPromise(HomePageService.getTopFighters(50), 20000, 'Top Fighters'), // Increased to 50 fighters, longer timeout to ensure all load
+        createTimeoutPromise(HomePageService.getScheduledFights(10), 15000, 'Scheduled Fights'), // Restored timeout
+        createTimeoutPromise(NewsService.getNewsItems(20), 15000, 'News Items'), // Restored to 20 items, restored timeout
+        createTimeoutPromise(TournamentService.getTournaments('In Progress'), 15000, 'Tournaments'), // Restored timeout
+        createTimeoutPromise(trainingCampService.getAllActiveTrainingCamps(), 20000, 'Training Camps'), // Restored timeout
+        createTimeoutPromise(calloutService.getScheduledCallouts(), 15000, 'Scheduled Callouts') // Restored timeout
       ]);
 
       // Extract results, defaulting to empty arrays on failure

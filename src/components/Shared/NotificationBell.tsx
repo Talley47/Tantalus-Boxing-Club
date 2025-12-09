@@ -167,6 +167,20 @@ const NotificationBell: React.FC = () => {
 
     tryLoadAudio(0);
 
+    // Expose diagnostic function for debugging (development only)
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+      (window as any).__TEST_NOTIFICATION_SOUND__ = () => {
+        console.log('🔔 Testing notification sound...');
+        console.log('Audio loaded:', !!notificationSoundRef.current);
+        if (notificationSoundRef.current) {
+          playNotificationSound();
+          console.log('✅ Sound test triggered');
+        } else {
+          console.warn('❌ Audio not loaded. Check console for loading errors.');
+        }
+      };
+    }
+
     // Cleanup on unmount
     return () => {
       if (soundIntervalRef.current) {
@@ -225,23 +239,43 @@ const NotificationBell: React.FC = () => {
     }
   };
 
-  // Handle click on bell icon
+  // Handle click on bell icon - toggle popover open/closed
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.blur();
-    setAnchorEl(event.currentTarget);
-    loadNotifications();
+    event.stopPropagation(); // Prevent event from bubbling
     
-    // Test sound on first click (helps unlock audio for future notifications)
-    if (notificationSoundRef.current && unreadCount === 0) {
-      // Silently try to play to unlock audio
-      notificationSoundRef.current.play().catch(() => {
-        // Ignore - this is just to unlock audio for future notifications
-      });
+    const buttonElement = event.currentTarget;
+    const isCurrentlyOpen = Boolean(anchorEl);
+    
+    console.log('🔔 Notification bell clicked', { 
+      isCurrentlyOpen, 
+      hasAnchorEl: !!anchorEl,
+      anchorElType: anchorEl?.constructor?.name,
+      buttonType: buttonElement?.constructor?.name
+    });
+    
+    if (isCurrentlyOpen) {
+      console.log('🔔 Closing popover');
+      // Close: clear anchorEl
+      setAnchorEl(null);
+    } else {
+      console.log('🔔 Opening popover');
+      // Open: set anchorEl to this button
+      setAnchorEl(buttonElement);
+      loadNotifications();
+      
+      // Test sound on first click (helps unlock audio for future notifications)
+      if (notificationSoundRef.current && unreadCount === 0) {
+        // Silently try to play to unlock audio
+        notificationSoundRef.current.play().catch(() => {
+          // Ignore - this is just to unlock audio for future notifications
+        });
+      }
     }
   };
 
   // Handle close
   const handleClose = () => {
+    console.log('🔔 Closing notification popover');
     setAnchorEl(null);
   };
 
@@ -677,8 +711,16 @@ const NotificationBell: React.FC = () => {
       audio.play().catch((error: any) => {
         // Autoplay may be blocked - this is normal for browsers
         // The sound will work once user interacts with the page
-        console.log('Notification sound autoplay blocked (normal):', error.message);
+        const errorMessage = error?.message || error?.toString() || 'Unknown error';
+        if (errorMessage.includes('play') || errorMessage.includes('autoplay') || errorMessage.includes('user gesture')) {
+          console.log('🔔 Notification sound autoplay blocked (normal browser behavior). Click anywhere on the page to unlock audio.');
+        } else {
+          console.warn('🔔 Notification sound error:', errorMessage);
+        }
       });
+    } else {
+      // Audio not loaded - log helpful message
+      console.warn('🔔 Notification sound not loaded. Check browser console for audio loading errors.');
     }
   }, []);
 
@@ -735,7 +777,16 @@ const NotificationBell: React.FC = () => {
               if (!newNotification.is_read) {
                 setUnreadCount(prev => (prev || 0) + 1);
                 // Play sound when a new unread notification arrives
+                console.log('🔔 New notification received:', {
+                  id: newNotification.id,
+                  type: newNotification.type,
+                  title: newNotification.title,
+                  is_read: newNotification.is_read,
+                  audioLoaded: !!notificationSoundRef.current
+                });
                 playNotificationSound();
+              } else {
+                console.log('🔔 Notification received but already read (no sound):', newNotification.id);
               }
             } else if (payload.eventType === 'UPDATE') {
               const updatedNotification = payload.new as Notification;
@@ -803,6 +854,7 @@ const NotificationBell: React.FC = () => {
         height: 28,
         transition: 'all 0.3s ease',
         filter: hasNotifications ? 'drop-shadow(0 0 4px rgba(255, 68, 68, 0.6))' : 'none',
+        pointerEvents: 'none', // SVG should not block clicks
       }}
     >
       {/* Boxing Glove - Main body */}
@@ -846,13 +898,21 @@ const NotificationBell: React.FC = () => {
         ref={anchorRef}
         color="inherit"
         onClick={handleClick}
+        aria-label="Notifications"
+        aria-expanded={open}
         sx={{ 
           color: 'white',
           position: 'relative',
+          cursor: 'pointer',
+          zIndex: open ? 1002 : 10, // Higher z-index when open to ensure it's clickable
           '&:hover': {
             transform: 'scale(1.1)',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
           },
-          transition: 'transform 0.2s ease',
+          transition: 'transform 0.2s ease, background-color 0.2s ease',
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
         }}
       >
         <Badge 
@@ -867,6 +927,7 @@ const NotificationBell: React.FC = () => {
           }}
           invisible={unreadCount === 0}
           sx={{
+            pointerEvents: 'none', // Allow clicks to pass through to IconButton
             '& .MuiBadge-badge': {
               fontSize: '0.7rem',
               fontWeight: 'bold',
@@ -876,6 +937,7 @@ const NotificationBell: React.FC = () => {
               right: '4px',
               top: '4px',
               zIndex: 1001,
+              pointerEvents: 'none', // Badge should not block clicks
               boxShadow: '0 2px 8px rgba(0,0,0,0.8)',
               border: '2px solid white',
               backgroundColor: '#dc2626 !important',
@@ -888,14 +950,27 @@ const NotificationBell: React.FC = () => {
             },
           }}
         >
-          <BoxingGloveIcon hasNotifications={unreadCount > 0} />
+          <Box
+            sx={{
+              pointerEvents: 'none', // SVG should not block clicks
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <BoxingGloveIcon hasNotifications={unreadCount > 0} />
+          </Box>
         </Badge>
       </IconButton>
 
       <Popover
         open={open}
         anchorEl={anchorEl}
-        onClose={handleClose}
+        onClose={(event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+          // Close on backdrop click or escape key
+          // Anchor click is handled by handleClick toggle
+          handleClose();
+        }}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'right',
@@ -904,8 +979,16 @@ const NotificationBell: React.FC = () => {
           vertical: 'top',
           horizontal: 'right',
         }}
-        hideBackdrop
+        hideBackdrop={false}
         disableRestoreFocus
+        disableAutoFocus
+        onClick={(e: React.MouseEvent) => {
+          // Prevent clicks inside popover from bubbling up to parent
+          e.stopPropagation();
+        }}
+        sx={{
+          zIndex: 1001, // Lower than button when open
+        }}
         PaperProps={{
           sx: {
             width: 400,

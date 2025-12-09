@@ -137,6 +137,39 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
 // Suppress WebSocket connection errors from Supabase Realtime
 // These errors are harmless and occur when Realtime is disabled or during cleanup
 if (typeof window !== 'undefined') {
+  // Set up early global error handlers to catch browser extension errors before they're logged
+  // This must be done before console.error override to catch errors as early as possible
+  const suppressBrowserExtensionError = (error: any): boolean => {
+    const errorMessage = error?.message || error?.toString() || String(error || '');
+    const errorString = JSON.stringify(error) || '';
+    const errorStack = error?.stack || '';
+    const errorName = error?.name || '';
+    const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`.toLowerCase();
+    
+    return (
+      allErrorText.includes('listener indicated an asynchronous response') ||
+      allErrorText.includes('message channel closed before a response was received') ||
+      allErrorText.includes('by returning true, but the message channel closed') ||
+      (allErrorText.includes('asynchronous response') && allErrorText.includes('message channel')) ||
+      allErrorText.includes('runtime.lasterror') ||
+      allErrorText.includes('unchecked runtime.lasterror') ||
+      allErrorText.includes('cannot create item with duplicate id') ||
+      allErrorText.includes('no tab with id') ||
+      allErrorText.includes('background-redux') ||
+      allErrorText.includes('chrome-extension://')
+    );
+  };
+  
+  // Catch unhandled promise rejections early (before console.error override)
+  window.addEventListener('unhandledrejection', (event) => {
+    if (suppressBrowserExtensionError(event.reason)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }, true); // Use capture phase for earliest possible interception
+  
   // Override console.error and console.warn to filter out Realtime errors
   const originalError = console.error;
   const originalWarn = console.warn;
@@ -510,11 +543,14 @@ if (typeof window !== 'undefined') {
   // Also suppress unhandled promise rejections from browser extensions
   // Use capture phase to catch errors early
   window.addEventListener('unhandledrejection', (event) => {
-    const errorMessage = event.reason?.message || event.reason?.toString() || '';
+    // Handle both Error objects and string errors
+    const errorMessage = event.reason?.message || (typeof event.reason === 'string' ? event.reason : event.reason?.toString()) || '';
     const errorString = JSON.stringify(event.reason) || '';
     const errorStack = event.reason?.stack || '';
     const errorName = event.reason?.name || '';
-    const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName}`.toLowerCase();
+    // Also check the error as a string directly
+    const errorAsString = String(event.reason || '');
+    const allErrorText = `${errorMessage} ${errorString} ${errorStack} ${errorName} ${errorAsString}`.toLowerCase();
     
     // Suppress cache errors for audio files (harmless browser cache warnings)
     if (
@@ -575,12 +611,19 @@ if (typeof window !== 'undefined') {
                         lowerErrorString.includes('matchmaking:');
     
     // Check if this is a browser extension error - check both error message and allErrorText
+    // Also check errorAsString for cases where error is just a string
+    const errorAsStringLower = errorAsString.toLowerCase();
     const isBrowserExtensionError = 
       lowerErrorMsg.includes('listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('message channel closed before a response was received') ||
       lowerErrorMsg.includes('a listener indicated an asynchronous response') ||
       lowerErrorMsg.includes('by returning true, but the message channel closed') ||
       (lowerErrorMsg.includes('asynchronous response') && lowerErrorMsg.includes('message channel')) ||
+      // Check errorAsString directly
+      errorAsStringLower.includes('listener indicated an asynchronous response') ||
+      errorAsStringLower.includes('message channel closed before a response was received') ||
+      errorAsStringLower.includes('by returning true, but the message channel closed') ||
+      (errorAsStringLower.includes('asynchronous response') && errorAsStringLower.includes('message channel')) ||
       // Also check allErrorText for the error message (catches errors in error string/stack)
       allErrorText.includes('listener indicated an asynchronous response') ||
       allErrorText.includes('message channel closed before a response was received') ||

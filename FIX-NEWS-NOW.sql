@@ -49,3 +49,4 @@ CREATE POLICY "Admin manage news" ON news_announcements
 
 
 
+

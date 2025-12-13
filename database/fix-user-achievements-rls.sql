@@ -32,7 +32,7 @@ CREATE POLICY "Users can view their own achievements" ON user_achievements
 -- This allows viewing achievements for public display
 CREATE POLICY "Users can view public achievements" ON user_achievements
     FOR SELECT
-    USING (auth.role() = 'authenticated' OR auth.role() = 'anon');
+    USING ((select auth.role()) = 'authenticated' OR (select auth.role()) = 'anon');
 
 -- Policy 3: Admins can view all achievements
 DO $$

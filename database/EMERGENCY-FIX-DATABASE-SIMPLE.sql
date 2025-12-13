@@ -165,7 +165,7 @@ CREATE POLICY "Public read scheduled fights" ON scheduled_fights
 
 CREATE POLICY "Authenticated manage fights" ON scheduled_fights
     FOR ALL 
-    USING (auth.uid() IS NOT NULL);
+    USING ((select auth.uid()) IS NOT NULL);
 
 -- TOURNAMENTS
 DO $$

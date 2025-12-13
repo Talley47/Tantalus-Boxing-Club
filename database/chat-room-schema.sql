@@ -1,75 +1,98 @@
--- Chat Room Schema
--- This creates a real-time chat room system for fighters
+-- Fix Chat Messages Update and Delete RLS Policies
+-- This ensures users can update and delete their own messages
 
--- Create chat_messages table
-CREATE TABLE IF NOT EXISTS chat_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    fighter_profile_id UUID REFERENCES fighter_profiles(id) ON DELETE CASCADE,
-    message TEXT NOT NULL,
-    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'link', 'file')),
-    metadata JSONB DEFAULT '{}', -- For storing image URLs, link previews, etc.
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Drop ALL existing policies to avoid conflicts
+-- Using DO block to handle errors gracefully
+DO $$
+DECLARE
+    policy_record RECORD;
+BEGIN
+    -- Drop all policies for chat_messages table
+    FOR policy_record IN 
+        SELECT policyname 
+        FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'chat_messages'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON chat_messages', policy_record.policyname);
+    END LOOP;
+END $$;
 
--- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_fighter_profile_id ON chat_messages(fighter_profile_id);
+-- Policy: Authenticated users can view all chat messages
+CREATE POLICY "Authenticated users can view chat messages" ON chat_messages
+    FOR SELECT
+    USING (auth.role() = 'authenticated');
 
--- Enable RLS
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+-- Policy: Authenticated users can create chat messages
+CREATE POLICY "Authenticated users can create chat messages" ON chat_messages
+    FOR INSERT
+    WITH CHECK (auth.role() = 'authenticated' AND (select auth.uid()) = user_id);
 
--- RLS Policies
-
--- Anyone authenticated can view all messages (public chat room)
-CREATE POLICY "Anyone authenticated can view chat messages" ON chat_messages
-    FOR SELECT USING (auth.role() = 'authenticated');
-
--- Anyone authenticated can send messages
-CREATE POLICY "Anyone authenticated can send chat messages" ON chat_messages
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
-
--- Users can update their own messages (for editing)
-CREATE POLICY "Users can update own messages" ON chat_messages
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Users can delete their own messages
-CREATE POLICY "Users can delete own messages" ON chat_messages
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Admins can delete any message
-CREATE POLICY "Admins can delete any message" ON chat_messages
-    FOR DELETE USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
-        )
+-- Policy: Users can update their own messages
+-- Both USING and WITH CHECK clauses are required for UPDATE policies
+CREATE POLICY "Users can update their own messages" ON chat_messages
+    FOR UPDATE
+    USING (
+        auth.role() = 'authenticated' 
+        AND (select auth.uid()) = user_id
+    )
+    WITH CHECK (
+        auth.role() = 'authenticated' 
+        AND (select auth.uid()) = user_id
     );
 
--- Grant permissions
+-- Policy: Users can delete their own messages
+CREATE POLICY "Users can delete their own messages" ON chat_messages
+    FOR DELETE
+    USING (
+        auth.role() = 'authenticated' 
+        AND (select auth.uid()) = user_id
+    );
+
+-- Policy: Admins can delete all messages
+DO $$
+BEGIN
+    -- Try to use is_admin_user function if it exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
+            FOR DELETE USING (is_admin_user())';
+    ELSE
+        -- Fallback: check profiles table
+        EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
+            FOR DELETE USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Grant necessary permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_messages TO authenticated;
 GRANT SELECT ON chat_messages TO anon;
 
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_chat_messages_updated_at()
-RETURNS TRIGGER AS $$
+-- Verify the policies exist
+DO $$
+DECLARE
+    policy_count INTEGER;
 BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger to update updated_at
-CREATE TRIGGER update_chat_messages_updated_at
-    BEFORE UPDATE ON chat_messages
-    FOR EACH ROW
-    EXECUTE FUNCTION update_chat_messages_updated_at();
-
--- Add helpful comments
-COMMENT ON TABLE chat_messages IS 'Stores messages for the public chat room';
-COMMENT ON COLUMN chat_messages.message_type IS 'Type of message: text, image, link, or file';
-COMMENT ON COLUMN chat_messages.metadata IS 'JSON object for storing additional data like image URLs, link previews, etc.';
+    SELECT COUNT(*) INTO policy_count
+    FROM pg_policies 
+    WHERE schemaname = 'public' 
+    AND tablename = 'chat_messages';
+    
+    IF policy_count < 4 THEN
+        RAISE NOTICE 'Warning: Expected at least 4 policies, found %', policy_count;
+    ELSE
+        RAISE NOTICE 'Success: Created % policies for chat_messages', policy_count;
+    END IF;
+END $$;
 

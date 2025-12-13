@@ -26,7 +26,7 @@ CREATE POLICY "Authenticated users can view chat messages" ON chat_messages
 -- Policy: Authenticated users can create chat messages
 CREATE POLICY "Authenticated users can create chat messages" ON chat_messages
     FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
+    WITH CHECK (auth.role() = 'authenticated' AND (select auth.uid()) = user_id);
 
 -- Policy: Users can update their own messages
 -- Both USING and WITH CHECK clauses are required for UPDATE policies
@@ -34,11 +34,11 @@ CREATE POLICY "Users can update their own messages" ON chat_messages
     FOR UPDATE
     USING (
         auth.role() = 'authenticated' 
-        AND auth.uid() = user_id
+        AND (select auth.uid()) = user_id
     )
     WITH CHECK (
         auth.role() = 'authenticated' 
-        AND auth.uid() = user_id
+        AND (select auth.uid()) = user_id
     );
 
 -- Policy: Users can delete their own messages
@@ -46,7 +46,7 @@ CREATE POLICY "Users can delete their own messages" ON chat_messages
     FOR DELETE
     USING (
         auth.role() = 'authenticated' 
-        AND auth.uid() = user_id
+        AND (select auth.uid()) = user_id
     );
 
 -- Policy: Admins can delete all messages
@@ -66,7 +66,7 @@ BEGIN
             FOR DELETE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

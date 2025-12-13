@@ -32,6 +32,7 @@ DO $$
 BEGIN
     DROP POLICY IF EXISTS "Admins can view all messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Admins can send messages" ON admin_direct_messages;
+    DROP POLICY IF EXISTS "Admins can insert messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Admins can delete messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Fighters can view their own messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Fighters can mark messages as read" ON admin_direct_messages;

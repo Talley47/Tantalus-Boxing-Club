@@ -93,22 +93,22 @@ DROP POLICY IF EXISTS "Admins can manage all training camp invitations" ON train
 CREATE POLICY "Fighters can view own training camp invitations" ON training_camp_invitations
     FOR SELECT
     USING (
-        inviter_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid()) OR
-        invitee_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        inviter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+        invitee_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Fighters can create invitations
 CREATE POLICY "Fighters can create training camp invitations" ON training_camp_invitations
     FOR INSERT
     WITH CHECK (
-        inviter_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        inviter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Invitees can update (accept/decline) their invitations
 CREATE POLICY "Invitees can update training camp invitations" ON training_camp_invitations
     FOR UPDATE
     USING (
-        invitee_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        invitee_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Admins can manage all invitations
@@ -117,7 +117,7 @@ CREATE POLICY "Admins can manage all training camp invitations" ON training_camp
     USING (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
+            WHERE profiles.id = (select auth.uid()) 
             AND profiles.role = 'admin'
         )
     );

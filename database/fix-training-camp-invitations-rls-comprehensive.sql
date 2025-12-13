@@ -22,11 +22,11 @@ CREATE POLICY "Fighters can view own training camp invitations" ON training_camp
     FOR SELECT USING (
         inviter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
         OR invitee_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -36,7 +36,7 @@ CREATE POLICY "Fighters can create training camp invitations" ON training_camp_i
     FOR INSERT WITH CHECK (
         inviter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -45,7 +45,7 @@ CREATE POLICY "Invitees can update training camp invitations" ON training_camp_i
     FOR UPDATE USING (
         invitee_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -64,7 +64,7 @@ BEGIN
             FOR ALL USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

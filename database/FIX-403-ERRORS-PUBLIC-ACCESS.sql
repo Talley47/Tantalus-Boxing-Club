@@ -95,13 +95,18 @@ CREATE POLICY "Public read scheduled fights" ON scheduled_fights
 -- Drop the problematic "Admins can manage all callouts" policy that uses FOR ALL
 DROP POLICY IF EXISTS "Admins can manage all callouts" ON callout_requests;
 
+-- Drop individual admin policies if they exist (to avoid conflicts when recreating)
+DROP POLICY IF EXISTS "Admins can insert callouts" ON callout_requests;
+DROP POLICY IF EXISTS "Admins can update callouts" ON callout_requests;
+DROP POLICY IF EXISTS "Admins can delete callouts" ON callout_requests;
+
 -- Recreate admin policy for INSERT, UPDATE, DELETE only (not SELECT)
 CREATE POLICY "Admins can insert callouts" ON callout_requests
     FOR INSERT 
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );
@@ -111,14 +116,14 @@ CREATE POLICY "Admins can update callouts" ON callout_requests
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );
@@ -128,7 +133,7 @@ CREATE POLICY "Admins can delete callouts" ON callout_requests
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );

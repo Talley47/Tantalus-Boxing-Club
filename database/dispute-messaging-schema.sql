@@ -69,7 +69,7 @@ CREATE POLICY "Admin can view all dispute messages" ON dispute_messages
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
+            WHERE id = (select auth.uid()) AND role = 'admin'
         )
     );
 
@@ -80,18 +80,18 @@ CREATE POLICY "Fighters can view their dispute messages" ON dispute_messages
             SELECT 1 FROM disputes d
             WHERE d.id = dispute_messages.dispute_id
             AND (
-                d.disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
-                OR d.opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+                d.disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
+                OR d.opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
             )
         )
     );
 
--- Admin can insert messages
+-- Admin can insert dispute messages
 CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
+            WHERE id = (select auth.uid()) AND role = 'admin'
         )
     );
 
@@ -102,12 +102,12 @@ CREATE POLICY "Fighters can insert their dispute messages" ON dispute_messages
             SELECT 1 FROM disputes d
             WHERE d.id = dispute_messages.dispute_id
             AND (
-                d.disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
-                OR d.opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+                d.disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
+                OR d.opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
             )
         )
         AND sender_type = 'fighter'
-        AND sender_id = auth.uid()
+        AND sender_id = (select auth.uid())
     );
 
 -- Admin can update messages (mark as read, etc.)
@@ -115,7 +115,7 @@ CREATE POLICY "Admin can update dispute messages" ON dispute_messages
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
+            WHERE id = (select auth.uid()) AND role = 'admin'
         )
     );
 

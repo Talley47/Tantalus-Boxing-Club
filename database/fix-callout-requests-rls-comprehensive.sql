@@ -23,11 +23,11 @@ CREATE POLICY "Fighters can view own callouts" ON callout_requests
     USING (
         caller_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         ) OR
         target_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -39,7 +39,7 @@ CREATE POLICY "Fighters can create callouts" ON callout_requests
         -- Check that caller_id matches a fighter profile owned by the current user
         caller_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -49,13 +49,13 @@ CREATE POLICY "Targets can update callouts" ON callout_requests
     USING (
         target_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     )
     WITH CHECK (
         target_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -81,14 +81,14 @@ BEGIN
             USING (
                 EXISTS (
                     SELECT 1 FROM profiles
-                    WHERE id = auth.uid()
+                    WHERE id = (select auth.uid())
                     AND role = ''admin''
                 )
             )
             WITH CHECK (
                 EXISTS (
                     SELECT 1 FROM profiles
-                    WHERE id = auth.uid()
+                    WHERE id = (select auth.uid())
                     AND role = ''admin''
                 )
             )';

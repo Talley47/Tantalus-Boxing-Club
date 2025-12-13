@@ -33,7 +33,7 @@ BEGIN
             FOR SELECT USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() AND role = ' || quote_literal('admin') || '
+                    WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
                 )
             )';
     END IF;
@@ -49,8 +49,8 @@ CREATE POLICY "Fighters can view their dispute messages" ON dispute_messages
             LEFT JOIN fighter_profiles fp_opponent ON fp_opponent.id = d.opponent_id
             WHERE d.id = dispute_messages.dispute_id
             AND (
-                fp_disputer.user_id = auth.uid()
-                OR (fp_opponent.id IS NOT NULL AND fp_opponent.user_id = auth.uid())
+                fp_disputer.user_id = (select auth.uid())
+                OR (fp_opponent.id IS NOT NULL AND fp_opponent.user_id = (select auth.uid()))
             )
         )
     );
@@ -68,17 +68,17 @@ BEGIN
             FOR INSERT WITH CHECK (
                 is_admin_user()
                 AND sender_type = ' || quote_literal('admin') || '
-                AND sender_id = auth.uid()
+                AND sender_id = (select auth.uid())
             )';
     ELSE
         EXECUTE 'CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
             FOR INSERT WITH CHECK (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() AND role = ' || quote_literal('admin') || '
+                    WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
                 )
                 AND sender_type = ' || quote_literal('admin') || '
-                AND sender_id = auth.uid()
+                AND sender_id = (select auth.uid())
             )';
     END IF;
 END $$;
@@ -93,12 +93,12 @@ CREATE POLICY "Fighters can insert their dispute messages" ON dispute_messages
             LEFT JOIN fighter_profiles fp_opponent ON fp_opponent.id = d.opponent_id
             WHERE d.id = dispute_messages.dispute_id
             AND (
-                fp_disputer.user_id = auth.uid()
-                OR (fp_opponent.id IS NOT NULL AND fp_opponent.user_id = auth.uid())
+                fp_disputer.user_id = (select auth.uid())
+                OR (fp_opponent.id IS NOT NULL AND fp_opponent.user_id = (select auth.uid()))
             )
         )
         AND sender_type = 'fighter'
-        AND sender_id = auth.uid()
+        AND sender_id = (select auth.uid())
     );
 
 -- Admin can update messages (mark as read, etc.)
@@ -117,7 +117,7 @@ BEGIN
             FOR UPDATE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() AND role = ' || quote_literal('admin') || '
+                    WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
                 )
             )';
     END IF;
@@ -126,7 +126,7 @@ END $$;
 -- Fighters can update their own messages (mark as read, etc.)
 CREATE POLICY "Fighters can update their dispute messages" ON dispute_messages
     FOR UPDATE USING (
-        sender_id = auth.uid()
+        sender_id = (select auth.uid())
         AND sender_type = 'fighter'
     );
 

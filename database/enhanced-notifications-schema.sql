@@ -69,12 +69,12 @@ END $$;
 -- Policy: Users can view their own notifications
 CREATE POLICY "Users can view their own notifications" ON notifications
     FOR SELECT
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Policy: Authenticated users can create notifications (for system triggers)
 CREATE POLICY "Authenticated users can create notifications" ON notifications
     FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated');
+    WITH CHECK ((select auth.role()) = 'authenticated');
 
 -- Policy: Users can update their own notifications
 CREATE POLICY "Users can update their own notifications" ON notifications

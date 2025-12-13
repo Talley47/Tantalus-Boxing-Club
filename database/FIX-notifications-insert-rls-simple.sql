@@ -28,7 +28,7 @@ CREATE POLICY "Users can view their own notifications" ON notifications
 -- This allows @mentions, callouts, invitations, etc.
 CREATE POLICY "Authenticated users can create notifications" ON notifications
     FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated');
+    WITH CHECK ((select auth.role()) = 'authenticated');
 
 -- Users can update their own notifications
 CREATE POLICY "Users can update their own notifications" ON notifications

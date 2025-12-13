@@ -37,7 +37,7 @@ BEGIN
             FOR SELECT USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';
@@ -47,8 +47,8 @@ END $$;
 -- Fighters can view their own disputes (where they are the disputer or opponent)
 CREATE POLICY "Fighters can view their disputes" ON disputes
     FOR SELECT USING (
-        disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
-        OR opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        disputer_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
+        OR opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Fighters can create their own disputes
@@ -57,7 +57,7 @@ CREATE POLICY "Fighters can create their disputes" ON disputes
     FOR INSERT WITH CHECK (
         disputer_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -79,7 +79,7 @@ BEGIN
             FOR UPDATE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

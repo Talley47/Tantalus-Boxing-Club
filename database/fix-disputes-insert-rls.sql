@@ -24,7 +24,7 @@ CREATE POLICY "Fighters can create their disputes" ON disputes
         -- Use a subquery that checks if the disputer_id belongs to the current user
         disputer_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 

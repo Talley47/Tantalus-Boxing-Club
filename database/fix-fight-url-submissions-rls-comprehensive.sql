@@ -24,7 +24,7 @@ CREATE POLICY "Fighters can view their own submissions" ON fight_url_submissions
     FOR SELECT USING (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -34,7 +34,7 @@ CREATE POLICY "Fighters can create their submissions" ON fight_url_submissions
     FOR INSERT WITH CHECK (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -43,7 +43,7 @@ CREATE POLICY "Fighters can update their own pending submissions" ON fight_url_s
     FOR UPDATE USING (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
         AND status = 'Pending'
     );
@@ -63,7 +63,7 @@ BEGIN
             FOR SELECT USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';
@@ -85,7 +85,7 @@ BEGIN
             FOR UPDATE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';
@@ -107,7 +107,7 @@ BEGIN
             FOR DELETE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

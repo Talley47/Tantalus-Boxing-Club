@@ -21,7 +21,7 @@ CREATE POLICY "Fighters can create their submissions" ON fight_url_submissions
         -- Check if fighter_id matches a fighter profile owned by the current user
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 

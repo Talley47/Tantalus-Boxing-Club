@@ -31,8 +31,8 @@ CREATE POLICY "Fighters can mark messages as read"
 ON admin_direct_messages
 FOR UPDATE
 TO authenticated
-USING (fighter_id = auth.uid())
-WITH CHECK (fighter_id = auth.uid());
+USING (fighter_id = (select auth.uid()))
+WITH CHECK (fighter_id = (select auth.uid()));
 
 -- Verify everything is set up correctly
 DO $$

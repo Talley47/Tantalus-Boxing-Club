@@ -47,7 +47,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
+        WHERE profiles.id = (select auth.uid())
         AND profiles.role = 'admin'
     )
 );
@@ -60,10 +60,10 @@ TO authenticated
 WITH CHECK (
     EXISTS (
         SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
+        WHERE profiles.id = (select auth.uid())
         AND profiles.role = 'admin'
     )
-    AND admin_id = auth.uid()
+    AND admin_id = (select auth.uid())
 );
 
 -- Admins can delete messages
@@ -74,7 +74,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
+        WHERE profiles.id = (select auth.uid())
         AND profiles.role = 'admin'
     )
 );
@@ -84,7 +84,7 @@ CREATE POLICY "Fighters can view their own messages"
 ON admin_direct_messages
 FOR SELECT
 TO authenticated
-USING (fighter_id = auth.uid());
+USING (fighter_id = (select auth.uid()));
 
 -- Fighters can mark messages as read (UPDATE only for read_at)
 -- Note: RLS policies cannot check OLD/NEW values, so we rely on application logic
@@ -94,8 +94,8 @@ CREATE POLICY "Fighters can mark messages as read"
 ON admin_direct_messages
 FOR UPDATE
 TO authenticated
-USING (fighter_id = auth.uid())
-WITH CHECK (fighter_id = auth.uid());
+USING (fighter_id = (select auth.uid()))
+WITH CHECK (fighter_id = (select auth.uid()));
 
 -- Create trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_admin_direct_messages_updated_at()

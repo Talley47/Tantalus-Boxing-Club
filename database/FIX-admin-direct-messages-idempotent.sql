@@ -24,6 +24,28 @@ CREATE TRIGGER update_admin_direct_messages_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_admin_direct_messages_updated_at();
 
+-- Fix the RLS policy for admins updating messages
+DROP POLICY IF EXISTS "Admins can update messages" ON admin_direct_messages;
+
+CREATE POLICY "Admins can update messages"
+ON admin_direct_messages
+FOR UPDATE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = (select auth.uid())
+        AND profiles.role = 'admin'
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = (select auth.uid())
+        AND profiles.role = 'admin'
+    )
+);
+
 -- Fix the RLS policy for fighters marking messages as read
 DROP POLICY IF EXISTS "Fighters can mark messages as read" ON admin_direct_messages;
 

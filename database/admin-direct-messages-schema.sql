@@ -33,6 +33,7 @@ BEGIN
     DROP POLICY IF EXISTS "Admins can view all messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Admins can send messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Admins can insert messages" ON admin_direct_messages;
+    DROP POLICY IF EXISTS "Admins can update messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Admins can delete messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Fighters can view their own messages" ON admin_direct_messages;
     DROP POLICY IF EXISTS "Fighters can mark messages as read" ON admin_direct_messages;
@@ -65,6 +66,26 @@ WITH CHECK (
         AND profiles.role = 'admin'
     )
     AND admin_id = (select auth.uid())
+);
+
+-- Admins can update messages
+CREATE POLICY "Admins can update messages"
+ON admin_direct_messages
+FOR UPDATE
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = (select auth.uid())
+        AND profiles.role = 'admin'
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = (select auth.uid())
+        AND profiles.role = 'admin'
+    )
 );
 
 -- Admins can delete messages

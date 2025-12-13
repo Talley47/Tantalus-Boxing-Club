@@ -12,7 +12,7 @@ DROP POLICY IF EXISTS "Admins can insert notifications" ON notifications;
 -- This is necessary for the system to send notifications when users interact (callouts, invitations, etc.)
 CREATE POLICY "Users can insert notifications" ON notifications
     FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Also ensure admins can insert notifications
 CREATE POLICY "Admins can insert notifications" ON notifications
@@ -20,7 +20,7 @@ CREATE POLICY "Admins can insert notifications" ON notifications
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
+            WHERE profiles.id = (select auth.uid()) 
             AND profiles.role = 'admin'
         )
     );

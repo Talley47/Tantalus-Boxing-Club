@@ -42,24 +42,24 @@ END $$;
 -- Policy 1: Users can view their own notifications
 CREATE POLICY "Users can view their own notifications" ON notifications
     FOR SELECT
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Policy 2: CRITICAL - Allow ANY authenticated user to INSERT notifications for ANY user_id
--- This uses auth.uid() IS NOT NULL which is more reliable than auth.role()
+-- This uses (select auth.uid()) IS NOT NULL which is more reliable than auth.role()
 CREATE POLICY "Authenticated users can create notifications" ON notifications
     FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Policy 3: Users can update their own notifications
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Policy 4: Users can delete their own notifications
 CREATE POLICY "Users can delete their own notifications" ON notifications
     FOR DELETE
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Step 4: Grant necessary permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON notifications TO authenticated;

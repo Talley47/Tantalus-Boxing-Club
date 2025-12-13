@@ -79,13 +79,13 @@ CREATE POLICY "Authenticated users can create notifications" ON notifications
 -- Policy: Users can update their own notifications
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Policy: Users can delete their own notifications
 CREATE POLICY "Users can delete their own notifications" ON notifications
     FOR DELETE
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON notifications TO authenticated;

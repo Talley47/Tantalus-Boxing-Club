@@ -25,7 +25,7 @@ END $$;
 -- Policy 1: Users can view their own notifications
 CREATE POLICY "Users can view their own notifications" ON notifications
     FOR SELECT
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Policy 2: Authenticated users can create notifications for any user
 -- This is needed for system notifications (@mentions, callouts, invitations, etc.)
@@ -36,13 +36,13 @@ CREATE POLICY "Authenticated users can create notifications" ON notifications
 -- Policy 3: Users can update their own notifications (mark as read, etc.)
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Policy 4: Users can delete their own notifications
 CREATE POLICY "Users can delete their own notifications" ON notifications
     FOR DELETE
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Policy 5: Admins can view all notifications
 DO $$
@@ -62,7 +62,7 @@ BEGIN
             FOR SELECT USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

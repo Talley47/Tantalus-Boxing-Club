@@ -22,7 +22,7 @@ END $$;
 -- Users can view their own notifications
 CREATE POLICY "Users can view their own notifications" ON notifications
     FOR SELECT
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- CRITICAL: Authenticated users can INSERT notifications for ANY user
 -- This allows @mentions, callouts, invitations, etc.
@@ -33,13 +33,13 @@ CREATE POLICY "Authenticated users can create notifications" ON notifications
 -- Users can update their own notifications
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Users can delete their own notifications
 CREATE POLICY "Users can delete their own notifications" ON notifications
     FOR DELETE
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Step 3: Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON notifications TO authenticated;

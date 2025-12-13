@@ -58,7 +58,7 @@ CREATE POLICY "Admins can insert championship belts"
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     );
@@ -70,14 +70,14 @@ CREATE POLICY "Admins can update championship belts"
     USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     );
@@ -89,7 +89,7 @@ CREATE POLICY "Admins can delete championship belts"
     USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     );

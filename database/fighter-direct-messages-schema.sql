@@ -43,7 +43,7 @@ ON fighter_direct_messages
 FOR SELECT
 TO authenticated
 USING (
-    sender_id = auth.uid() OR recipient_id = auth.uid()
+    sender_id = (select auth.uid()) OR recipient_id = (select auth.uid())
 );
 
 -- Fighters can send messages (must be authenticated and sender_id must match auth.uid())
@@ -52,7 +52,7 @@ ON fighter_direct_messages
 FOR INSERT
 TO authenticated
 WITH CHECK (
-    sender_id = auth.uid()
+    sender_id = (select auth.uid())
     AND sender_id != recipient_id
 );
 
@@ -64,15 +64,15 @@ CREATE POLICY "Fighters can mark messages as read"
 ON fighter_direct_messages
 FOR UPDATE
 TO authenticated
-USING (recipient_id = auth.uid())
-WITH CHECK (recipient_id = auth.uid());
+USING (recipient_id = (select auth.uid()))
+WITH CHECK (recipient_id = (select auth.uid()));
 
 -- Fighters can delete their own sent messages
 CREATE POLICY "Fighters can delete their own messages"
 ON fighter_direct_messages
 FOR DELETE
 TO authenticated
-USING (sender_id = auth.uid());
+USING (sender_id = (select auth.uid()));
 
 -- Create trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_fighter_direct_messages_updated_at()

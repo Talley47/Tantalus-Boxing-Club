@@ -41,26 +41,26 @@ CREATE POLICY "Public can view fight records" ON fight_records
 -- Since fighter_id references fighter_profiles(user_id), we can check directly
 CREATE POLICY "Fighters can view their fight records" ON fight_records
     FOR SELECT USING (
-        fighter_id = auth.uid()
+        fighter_id = (select auth.uid())
     );
 
 -- Fighters can insert their own fight records
 -- Since fighter_id references fighter_profiles(user_id), we can check directly
 CREATE POLICY "Fighters can insert their fight records" ON fight_records
     FOR INSERT WITH CHECK (
-        fighter_id = auth.uid()
+        fighter_id = (select auth.uid())
     );
 
 -- Fighters can update their own fight records
 CREATE POLICY "Fighters can update their fight records" ON fight_records
     FOR UPDATE USING (
-        fighter_id = auth.uid()
+        fighter_id = (select auth.uid())
     );
 
 -- Fighters can delete their own fight records
 CREATE POLICY "Fighters can delete their fight records" ON fight_records
     FOR DELETE USING (
-        fighter_id = auth.uid()
+        fighter_id = (select auth.uid())
     );
 
 -- Admins can manage all fight records
@@ -81,7 +81,7 @@ BEGIN
             FOR ALL USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

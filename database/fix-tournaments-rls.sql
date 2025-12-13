@@ -31,7 +31,7 @@ BEGIN
             FOR ALL USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() AND role = ' || quote_literal('admin') || '
+                    WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
                 )
             )';
         RAISE NOTICE 'Created Admin manage tournaments policy using profiles table check';

@@ -191,7 +191,7 @@ CREATE POLICY "Admin manage tournaments" ON tournaments
         EXISTS (
             SELECT 1 FROM fighter_profiles fp
             JOIN auth.users u ON fp.user_id = u.id
-            WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1)
+            WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
             AND u.email LIKE '%@admin.tantalus%'
         )
     );

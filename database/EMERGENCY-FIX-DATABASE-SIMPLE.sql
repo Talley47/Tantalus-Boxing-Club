@@ -182,7 +182,7 @@ CREATE POLICY "Public read tournaments" ON tournaments
 
 CREATE POLICY "Authenticated manage tournaments" ON tournaments
     FOR ALL 
-    USING (auth.uid() IS NOT NULL);
+    USING ((select auth.uid()) IS NOT NULL);
 
 -- TRAINING_CAMP_INVITATIONS
 DO $$

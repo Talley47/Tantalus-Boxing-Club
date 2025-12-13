@@ -38,8 +38,8 @@ CREATE POLICY "Fighters can join sanctions"
     ON public.fighter_sanctions FOR INSERT
     TO authenticated
     WITH CHECK (
-        auth.uid() IS NOT NULL 
-        AND auth.uid() = user_id
+        (select auth.uid()) IS NOT NULL 
+        AND (select auth.uid()) = user_id
     );
 
 -- 3. Fighters can leave their own sanctions
@@ -47,8 +47,8 @@ CREATE POLICY "Fighters can leave their own sanctions"
     ON public.fighter_sanctions FOR DELETE
     TO authenticated
     USING (
-        auth.uid() IS NOT NULL 
-        AND auth.uid() = user_id
+        (select auth.uid()) IS NOT NULL 
+        AND (select auth.uid()) = user_id
     );
 
 -- 4. Admins can manage all fighter sanctions
@@ -58,14 +58,14 @@ CREATE POLICY "Admins can manage fighter sanctions"
     USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     );

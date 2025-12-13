@@ -49,13 +49,13 @@ CREATE POLICY "Public can view all fighter sanctions"
 CREATE POLICY "Fighters can join sanctions"
     ON public.fighter_sanctions FOR INSERT
     TO authenticated
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Fighters can leave their own sanctions
 CREATE POLICY "Fighters can leave their own sanctions"
     ON public.fighter_sanctions FOR DELETE
     TO authenticated
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Admins can manage all fighter sanctions
 CREATE POLICY "Admins can manage fighter sanctions"
@@ -64,14 +64,14 @@ CREATE POLICY "Admins can manage fighter sanctions"
     USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profiles.id = auth.uid()
+            WHERE profiles.id = (select auth.uid())
             AND profiles.role = 'admin'
         )
     );

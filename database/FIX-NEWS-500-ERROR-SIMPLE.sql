@@ -54,14 +54,14 @@ CREATE POLICY "Admin update news" ON news_announcements
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );
@@ -72,7 +72,7 @@ CREATE POLICY "Admin delete news" ON news_announcements
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );

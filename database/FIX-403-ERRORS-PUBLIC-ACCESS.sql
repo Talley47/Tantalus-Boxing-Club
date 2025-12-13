@@ -29,6 +29,11 @@ GRANT SELECT ON profiles TO anon;
 -- This policy tries to access auth.users on SELECT, which fails for anonymous users
 DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
 
+-- Drop individual admin policies if they exist (to avoid conflicts when recreating)
+DROP POLICY IF EXISTS "Admin insert news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
+
 -- Recreate admin policy for INSERT, UPDATE, DELETE only (not SELECT)
 -- This prevents it from being evaluated on SELECT queries
 CREATE POLICY "Admin insert news" ON news_announcements
@@ -36,7 +41,7 @@ CREATE POLICY "Admin insert news" ON news_announcements
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );
@@ -46,14 +51,14 @@ CREATE POLICY "Admin update news" ON news_announcements
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );
@@ -63,7 +68,7 @@ CREATE POLICY "Admin delete news" ON news_announcements
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND role = 'admin'
         )
     );

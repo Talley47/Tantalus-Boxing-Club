@@ -40,7 +40,7 @@ CREATE POLICY "Only admins can manage scheduled fights" ON scheduled_fights
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
+      WHERE profiles.id = (select auth.uid()) 
       AND profiles.role = 'admin'
     )
   );

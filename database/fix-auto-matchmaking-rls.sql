@@ -74,8 +74,8 @@ CREATE POLICY "Fighters can create scheduled fights" ON scheduled_fights
     FOR INSERT
     WITH CHECK (
         -- Allow if the user is one of the fighters (for manual fights)
-        fighter1_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid()) OR
-        fighter2_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        fighter1_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+        fighter2_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Verify the function was created

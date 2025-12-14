@@ -79,7 +79,8 @@ END $$;
 
 -- RLS Policies for profiles
 CREATE POLICY "Users can view own profile" 
-    ON public.profiles FOR SELECT 
+    ON public.profiles FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) = id);
 
 CREATE POLICY "Users can update own profile" 

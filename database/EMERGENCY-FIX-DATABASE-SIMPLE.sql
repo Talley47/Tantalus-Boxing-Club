@@ -196,15 +196,15 @@ END $$;
 CREATE POLICY "Users read own invitations" ON training_camp_invitations
     FOR SELECT 
     USING (
-        inviter_id = auth.uid() 
-        OR invitee_id = auth.uid()
+        inviter_id = (select auth.uid()) 
+        OR invitee_id = (select auth.uid())
     );
 
 CREATE POLICY "Users manage own invitations" ON training_camp_invitations
     FOR ALL 
     USING (
-        inviter_id = auth.uid() 
-        OR invitee_id = auth.uid()
+        inviter_id = (select auth.uid()) 
+        OR invitee_id = (select auth.uid())
     );
 
 -- PROFILES

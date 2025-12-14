@@ -87,14 +87,41 @@ BEGIN
         AND tablename = 'tournament_participants' 
         AND policyname = 'Tournament creators and admins can manage participants'
     ) THEN
+        -- Drop the old FOR ALL policy and any split policies
+        DROP POLICY IF EXISTS "Tournament creators and admins can manage participants" ON tournament_participants;
+        DROP POLICY IF EXISTS "Tournament creators and admins can view participants" ON tournament_participants;
+        DROP POLICY IF EXISTS "Tournament creators and admins can insert participants" ON tournament_participants;
+        DROP POLICY IF EXISTS "Tournament creators and admins can update participants" ON tournament_participants;
+        DROP POLICY IF EXISTS "Tournament creators and admins can delete participants" ON tournament_participants;
         IF EXISTS (
             SELECT 1 FROM pg_proc 
             WHERE proname = 'is_admin_user' 
             AND pronamespace = 'public'::regnamespace
         ) THEN
             -- Use is_admin_user function
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can manage participants" ON tournament_participants
-                FOR ALL TO authenticated USING (
+            -- Split FOR ALL into separate policies for SELECT, INSERT, UPDATE, DELETE
+            -- DELETE is handled by combined policy in comprehensive file
+            -- Note: This policy is being split to avoid multiple permissive policies
+            -- For now, we'll only create SELECT, INSERT, UPDATE policies here
+            -- DELETE is handled by "Tournament creators and admins can delete participants" in comprehensive file
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can view participants" ON tournament_participants
+                FOR SELECT TO authenticated USING (
+                    EXISTS (
+                        SELECT 1 FROM tournaments 
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
+                    ) OR is_admin_user()
+                )';
+            
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can insert participants" ON tournament_participants
+                FOR INSERT TO authenticated WITH CHECK (
+                    EXISTS (
+                        SELECT 1 FROM tournaments 
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
+                    ) OR is_admin_user()
+                )';
+            
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
+                FOR UPDATE TO authenticated USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
                         WHERE id = tournament_id AND created_by = (select auth.uid())
@@ -103,8 +130,33 @@ BEGIN
             RAISE NOTICE 'Created Tournament creators and admins can manage participants policy using is_admin_user()';
         ELSE
             -- Fallback: check profiles table
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can manage participants" ON tournament_participants
-                FOR ALL TO authenticated USING (
+            -- Split FOR ALL into separate policies for SELECT, INSERT, UPDATE, DELETE
+            -- DELETE is handled by combined policy in comprehensive file
+            -- Note: This policy is being split to avoid multiple permissive policies
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can view participants" ON tournament_participants
+                FOR SELECT TO authenticated USING (
+                    EXISTS (
+                        SELECT 1 FROM tournaments 
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
+                    ) OR EXISTS (
+                        SELECT 1 FROM profiles 
+                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
+                    )
+                )';
+            
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can insert participants" ON tournament_participants
+                FOR INSERT TO authenticated WITH CHECK (
+                    EXISTS (
+                        SELECT 1 FROM tournaments 
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
+                    ) OR EXISTS (
+                        SELECT 1 FROM profiles 
+                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
+                    )
+                )';
+            
+            EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
+                FOR UPDATE TO authenticated USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
                         WHERE id = tournament_id AND created_by = (select auth.uid())

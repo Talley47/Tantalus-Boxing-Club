@@ -93,6 +93,7 @@ DROP POLICY IF EXISTS "Admins can manage all participants" ON tournament_partici
 DROP POLICY IF EXISTS "Admins can insert participants" ON tournament_participants;
 -- Note: "Admins can update participants" UPDATE policy removed - handled by "Fighters and admins can update participations"
 DROP POLICY IF EXISTS "Admins can delete participants" ON tournament_participants;
+DROP POLICY IF EXISTS "Tournament creators and admins can delete participants" ON tournament_participants;
 DROP POLICY IF EXISTS "Authenticated and admins can view participants" ON tournament_participants;
 
 -- Combined SELECT policy: Fighters can view their own participations OR admins can view all
@@ -145,9 +146,17 @@ BEGIN
         
         -- Note: UPDATE is handled by "Fighters and admins can update participations" policy above
         
-        EXECUTE 'CREATE POLICY "Admins can delete participants" ON tournament_participants
+        -- Combined DELETE policy: Tournament creators OR admins can delete participants
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Tournament creators and admins can delete participants" ON tournament_participants
             FOR DELETE TO authenticated
-            USING (is_admin_user())';
+            USING (
+                EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
+                OR is_admin_user()
+            )';
     ELSE
         EXECUTE 'CREATE POLICY "Admins can insert participants" ON tournament_participants
             FOR INSERT TO authenticated
@@ -161,10 +170,16 @@ BEGIN
         
         -- Note: UPDATE is handled by "Fighters and admins can update participations" policy above
         
-        EXECUTE 'CREATE POLICY "Admins can delete participants" ON tournament_participants
+        -- Combined DELETE policy: Tournament creators OR admins can delete participants
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Tournament creators and admins can delete participants" ON tournament_participants
             FOR DELETE TO authenticated
             USING (
                 EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
+                OR EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
                     AND role = ''admin''
@@ -207,6 +222,6 @@ COMMENT ON POLICY "Fighters and admins can update participations" ON tournament_
 COMMENT ON POLICY "Admins can insert participants" ON tournament_participants IS 
     'Allows admins to insert tournament participants';
 -- Note: "Admins can update participants" policy has been merged into "Fighters and admins can update participations"
-COMMENT ON POLICY "Admins can delete participants" ON tournament_participants IS 
-    'Allows admins to delete tournament participants';
+COMMENT ON POLICY "Tournament creators and admins can delete participants" ON tournament_participants IS 
+    'Allows tournament creators to delete participants from their tournaments or admins to delete any. Combined policy to avoid multiple permissive policies.';
 

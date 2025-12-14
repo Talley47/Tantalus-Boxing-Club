@@ -40,7 +40,9 @@ CREATE POLICY "Public can view fight records" ON fight_records
 -- Fighters can view their own fight records
 -- Since fighter_id references fighter_profiles(user_id), we can check directly
 CREATE POLICY "Fighters can view their fight records" ON fight_records
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         fighter_id = (select auth.uid())
     );
 
@@ -59,7 +61,9 @@ CREATE POLICY "Fighters can update their fight records" ON fight_records
 
 -- Fighters can delete their own fight records
 CREATE POLICY "Fighters can delete their fight records" ON fight_records
-    FOR DELETE USING (
+    FOR DELETE
+    TO authenticated
+    USING (
         fighter_id = (select auth.uid())
     );
 
@@ -74,11 +78,11 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admins can manage all fight records" ON fight_records
-            FOR ALL USING (is_admin_user())';
+            FOR ALL TO authenticated USING (is_admin_user())';
     ELSE
         -- Fallback: check profiles table only
         EXECUTE 'CREATE POLICY "Admins can manage all fight records" ON fight_records
-            FOR ALL USING (
+            FOR ALL TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 

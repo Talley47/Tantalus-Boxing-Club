@@ -146,14 +146,18 @@ END $$;
 
 -- Fighters can view their own submissions
 CREATE POLICY "Fighters can view their submissions" ON fight_record_submissions
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
         OR opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Admins can view all submissions
 CREATE POLICY "Admin can view all submissions" ON fight_record_submissions
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = (select auth.uid()) AND role = 'admin'
@@ -168,14 +172,18 @@ CREATE POLICY "Fighters can insert their submissions" ON fight_record_submission
 
 -- Fighters can update their own submissions (before confirmation)
 CREATE POLICY "Fighters can update their submissions" ON fight_record_submissions
-    FOR UPDATE USING (
+    FOR UPDATE
+    TO authenticated
+    USING (
         fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
         AND status = 'Pending'
     );
 
 -- Admin can update all submissions
 CREATE POLICY "Admin can update all submissions" ON fight_record_submissions
-    FOR UPDATE USING (
+    FOR UPDATE
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = (select auth.uid()) AND role = 'admin'

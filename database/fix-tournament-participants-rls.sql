@@ -64,12 +64,8 @@ BEGIN
         AND tablename = 'tournament_participants' 
         AND policyname = 'Users can update own participations'
     ) THEN
-        -- Restricted to authenticated only to avoid multiple permissive policies for anon role
-        -- Note: This policy is redundant with "Fighters and admins can update participations" in comprehensive file
-        EXECUTE 'CREATE POLICY "Users can update own participations" ON tournament_participants
-            FOR UPDATE TO authenticated USING (
-                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-            )';
+        -- Note: "Users can update own participations" policy has been removed - handled by "Fighters and admins can update participations" in comprehensive file
+        -- This avoids multiple permissive policies for the same role and action
         RAISE NOTICE 'Created Users can update own participations policy';
     ELSE
         RAISE NOTICE 'Users can update own participations policy already exists';
@@ -108,13 +104,8 @@ BEGIN
             -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
             -- This policy creation is removed to avoid multiple permissive policies
             
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
-                FOR UPDATE TO authenticated USING (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR is_admin_user()
-                )';
+            -- Note: UPDATE is handled by "Fighters and admins can update participations" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             RAISE NOTICE 'Created Tournament creators and admins can manage participants policy using is_admin_user()';
         ELSE
             -- Fallback: check profiles table
@@ -127,16 +118,8 @@ BEGIN
             -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
             -- This policy creation is removed to avoid multiple permissive policies
             
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
-                FOR UPDATE TO authenticated USING (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR EXISTS (
-                        SELECT 1 FROM profiles 
-                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
-                    )
-                )';
+            -- Note: UPDATE is handled by "Fighters and admins can update participations" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             RAISE NOTICE 'Created Tournament creators and admins can manage participants policy using profiles table';
         END IF;
     ELSE

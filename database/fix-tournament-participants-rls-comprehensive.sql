@@ -82,10 +82,12 @@ END $$;
 -- This avoids multiple permissive policies for the same role and action
 
 -- 4. Fighters can update their own participations (e.g., check in)
--- Combined UPDATE policy: Fighters can update their own participations OR admins can update any
+-- Combined UPDATE policy: Fighters can update their own participations OR tournament creators can update their tournament's participants OR admins can update any
 -- This avoids multiple permissive policies for the same role and action
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
 DROP POLICY IF EXISTS "Fighters and admins can update participations" ON tournament_participants;
+DROP POLICY IF EXISTS "Tournament creators and admins can update participants" ON tournament_participants;
+DROP POLICY IF EXISTS "Admins can update participants" ON tournament_participants;
 DO $$
 BEGIN
     IF EXISTS (
@@ -93,6 +95,7 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
+        -- Combined UPDATE policy: Fighters can update their own participations OR tournament creators can update their tournament's participants OR admins can update any
         EXECUTE 'CREATE POLICY "Fighters and admins can update participations" ON tournament_participants
             FOR UPDATE TO authenticated
             USING (
@@ -100,15 +103,24 @@ BEGIN
                     SELECT id FROM fighter_profiles 
                     WHERE user_id = (select auth.uid())
                 )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
                 OR is_admin_user()
             )';
     ELSE
+        -- Combined UPDATE policy: Fighters can update their own participations OR tournament creators can update their tournament's participants OR admins can update any
         EXECUTE 'CREATE POLICY "Fighters and admins can update participations" ON tournament_participants
             FOR UPDATE TO authenticated
             USING (
                 fighter_id IN (
                     SELECT id FROM fighter_profiles 
                     WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
                 )
                 OR EXISTS (
                     SELECT 1 FROM profiles 
@@ -253,7 +265,7 @@ COMMENT ON POLICY "Fighters and creators and admins can insert participants" ON 
 COMMENT ON POLICY "Authenticated and admins can view participants" ON tournament_participants IS 
     'Allows fighters to view their own tournament participations, tournament creators to view participants for their tournaments, or admins to view all. Combined policy to avoid multiple permissive policies.';
 COMMENT ON POLICY "Fighters and admins can update participations" ON tournament_participants IS 
-    'Allows fighters to update their own participations or admins to update any. Combined policy to avoid multiple permissive policies.';
+    'Allows fighters to update their own participations, tournament creators to update participants for their tournaments, or admins to update any. Combined policy to avoid multiple permissive policies.';
 -- Note: "Admins can insert participants" policy has been merged into "Fighters and creators and admins can insert participants"
 -- Note: "Admins can update participants" policy has been merged into "Fighters and admins can update participations"
 COMMENT ON POLICY "Tournament creators and admins can delete participants" ON tournament_participants IS 

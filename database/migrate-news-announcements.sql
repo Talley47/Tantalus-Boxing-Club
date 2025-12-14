@@ -110,7 +110,12 @@ CREATE TABLE IF NOT EXISTS news_fight_results (
 CREATE INDEX IF NOT EXISTS idx_news_announcements_type ON news_announcements(type);
 CREATE INDEX IF NOT EXISTS idx_news_announcements_published ON news_announcements(is_published, published_at);
 CREATE INDEX IF NOT EXISTS idx_news_announcements_featured ON news_announcements(is_featured);
-CREATE INDEX IF NOT EXISTS idx_news_announcements_created ON news_announcements(created_at DESC);
+-- Drop duplicate indexes if they exist
+DROP INDEX IF EXISTS idx_news_announcements_created;
+DROP INDEX IF EXISTS idx_news_created_at;
+
+-- Create index with consistent naming (idx_news_announcements_created_at)
+CREATE INDEX IF NOT EXISTS idx_news_announcements_created_at ON news_announcements(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_news_fight_results_news ON news_fight_results(news_id);
 
 -- Update RLS policies to use is_published
@@ -122,5 +127,6 @@ EXCEPTION
 END $$;
 
 CREATE POLICY "Public read published news" ON news_announcements
-    FOR SELECT USING (is_published = TRUE);
+    FOR SELECT TO anon
+    USING (is_published = TRUE);
 

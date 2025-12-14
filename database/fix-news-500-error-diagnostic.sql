@@ -243,7 +243,12 @@ CREATE INDEX IF NOT EXISTS idx_news_published_created
 ON news_announcements(is_published, created_at DESC)
 WHERE is_published = TRUE;
 
-CREATE INDEX IF NOT EXISTS idx_news_created_at 
+-- Drop duplicate indexes if they exist
+DROP INDEX IF EXISTS idx_news_created_at;
+DROP INDEX IF EXISTS idx_news_announcements_created;
+
+-- Create index with consistent naming (idx_news_announcements_created_at)
+CREATE INDEX IF NOT EXISTS idx_news_announcements_created_at 
 ON news_announcements(created_at DESC);
 
 -- ============================================

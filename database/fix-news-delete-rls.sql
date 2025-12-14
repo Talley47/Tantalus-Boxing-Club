@@ -88,7 +88,7 @@ BEGIN
         AND policyname = 'Public read published news'
     ) THEN
         EXECUTE 'CREATE POLICY "Public read published news" ON news_announcements
-            FOR SELECT USING (is_published = TRUE)';
+            FOR SELECT TO anon USING (is_published = TRUE)';
     END IF;
 END $$;
 

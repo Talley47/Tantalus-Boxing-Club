@@ -13,7 +13,7 @@ END $$;
 -- Create optimized RLS policy
 -- Simple check: is_published = TRUE (no complex joins or subqueries)
 CREATE POLICY "Public read published news" ON news_announcements
-    FOR SELECT
+    FOR SELECT TO anon
     USING (is_published = TRUE);
 
 -- Ensure the index exists to support this policy

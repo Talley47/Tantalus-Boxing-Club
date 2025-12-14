@@ -439,7 +439,12 @@ CREATE POLICY "Users can update own profile" ON profiles
 -- STEP 4: Add critical indexes
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_news_published ON news_announcements(is_published) WHERE is_published = TRUE;
-CREATE INDEX IF NOT EXISTS idx_news_created_at ON news_announcements(created_at DESC);
+-- Drop duplicate indexes if they exist
+DROP INDEX IF EXISTS idx_news_created_at;
+DROP INDEX IF EXISTS idx_news_announcements_created;
+
+-- Create index with consistent naming (idx_news_announcements_created_at)
+CREATE INDEX IF NOT EXISTS idx_news_announcements_created_at ON news_announcements(created_at DESC);
 -- Drop duplicate index if it exists (idx_fighters_user_id is duplicate of idx_fighter_profiles_user_id)
 DROP INDEX IF EXISTS idx_fighters_user_id;
 

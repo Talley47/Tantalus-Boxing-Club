@@ -32,7 +32,7 @@ CREATE POLICY "Fighters can insert fight results" ON news_announcements
         type = 'fight_result' AND
         EXISTS (
             SELECT 1 FROM fighter_profiles
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -58,12 +58,12 @@ BEGIN
             FOR ALL USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
                 OR EXISTS (
                     SELECT 1 FROM auth.users
-                    WHERE id = auth.uid()
+                    WHERE id = (select auth.uid())
                     AND (email = ''tantalusboxingclub@gmail.com'' OR email LIKE ''%@admin.tantalus%'')
                 )
             )';
@@ -73,12 +73,12 @@ BEGIN
                 is_published = TRUE OR
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
                 OR EXISTS (
                     SELECT 1 FROM auth.users
-                    WHERE id = auth.uid()
+                    WHERE id = (select auth.uid())
                     AND (email = ''tantalusboxingclub@gmail.com'' OR email LIKE ''%@admin.tantalus%'')
                 )
             )';
@@ -109,7 +109,7 @@ BEGIN
             FOR INSERT WITH CHECK (
                 EXISTS (
                     SELECT 1 FROM fighter_profiles
-                    WHERE user_id = auth.uid()
+                    WHERE user_id = (select auth.uid())
                 )
             )';
         
@@ -126,12 +126,12 @@ BEGIN
                 FOR ALL USING (
                     EXISTS (
                         SELECT 1 FROM profiles 
-                        WHERE id = auth.uid() 
+                        WHERE id = (select auth.uid()) 
                         AND role = ''admin''
                     )
                     OR EXISTS (
                         SELECT 1 FROM auth.users
-                        WHERE id = auth.uid()
+                        WHERE id = (select auth.uid())
                         AND (email = ''tantalusboxingclub@gmail.com'' OR email LIKE ''%@admin.tantalus%'')
                     )
                 )';

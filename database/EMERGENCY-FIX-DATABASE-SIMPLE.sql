@@ -93,6 +93,7 @@ DROP POLICY IF EXISTS "Users manage own invitations" ON training_camp_invitation
 -- Profiles policies
 DROP POLICY IF EXISTS "Public read profiles for filtering" ON profiles;
 DROP POLICY IF EXISTS "Users update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can check roles for filtering" ON profiles;
 
 -- ============================================
@@ -228,8 +229,9 @@ CREATE POLICY "Public read profiles for filtering" ON profiles
     FOR SELECT 
     USING (true);
 
-CREATE POLICY "Users update own profile" ON profiles
-    FOR UPDATE 
+CREATE POLICY "Users can update own profile" ON profiles
+    FOR UPDATE
+    TO authenticated
     USING (id = (select auth.uid()))
     WITH CHECK (id = (select auth.uid()));
 

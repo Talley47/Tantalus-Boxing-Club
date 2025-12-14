@@ -62,7 +62,9 @@ CREATE POLICY "Users can view own profile" ON public.profiles
     USING ((select auth.uid()) = id);
 
 CREATE POLICY "Users can update own profile" ON public.profiles
-    FOR UPDATE USING ((select auth.uid()) = id);
+    FOR UPDATE
+    TO authenticated
+    USING ((select auth.uid()) = id);
 
 CREATE POLICY "Users can insert own profile" ON public.profiles
     FOR INSERT WITH CHECK ((select auth.uid()) = id);

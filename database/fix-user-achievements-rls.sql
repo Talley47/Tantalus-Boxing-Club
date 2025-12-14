@@ -23,19 +23,18 @@ END $$;
 -- Ensure RLS is enabled
 ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
 
--- Policy 1: Users can view their own achievements
-CREATE POLICY "Users can view their own achievements" ON user_achievements
-    FOR SELECT
-    TO authenticated
-    USING (user_id = (select auth.uid()));
-
--- Policy 2: Users can view other users' achievements (for public profiles/leaderboards)
--- This allows viewing achievements for public display
+-- Policy 1: Anonymous users can view achievements (for public profiles/leaderboards)
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Users can view public achievements" ON user_achievements
     FOR SELECT
-    USING ((select auth.role()) = 'authenticated' OR (select auth.role()) = 'anon');
+    TO anon
+    USING (true);
 
--- Policy 3: Admins can view all achievements
+-- Policy 2: Combined SELECT policy for authenticated users
+-- Users can view their own achievements OR all achievements (for public profiles/leaderboards) OR admins can view all
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Users and admins can view achievements" ON user_achievements;
 DO $$
 BEGIN
     -- Try to use is_admin_user function if it exists
@@ -44,24 +43,24 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        EXECUTE 'CREATE POLICY "Admins can view all achievements" ON user_achievements
-            FOR SELECT TO authenticated USING (is_admin_user())';
-        RAISE NOTICE 'Created admin view policy using is_admin_user()';
+        -- Authenticated users can view all achievements (for public profiles/leaderboards)
+        -- This covers: users viewing their own achievements, users viewing public achievements, and admins viewing all
+        EXECUTE 'CREATE POLICY "Users and admins can view achievements" ON user_achievements
+            FOR SELECT TO authenticated
+            USING (true)';
+        RAISE NOTICE 'Created combined view policy using is_admin_user()';
     ELSE
         -- Fallback: check profiles table
-        EXECUTE 'CREATE POLICY "Admins can view all achievements" ON user_achievements
-            FOR SELECT TO authenticated USING (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE id = (select auth.uid()) 
-                    AND role = ''admin''
-                )
-            )';
-        RAISE NOTICE 'Created admin view policy using profiles table';
+        -- Authenticated users can view all achievements (for public profiles/leaderboards)
+        -- This covers: users viewing their own achievements, users viewing public achievements, and admins viewing all
+        EXECUTE 'CREATE POLICY "Users and admins can view achievements" ON user_achievements
+            FOR SELECT TO authenticated
+            USING (true)';
+        RAISE NOTICE 'Created combined view policy using profiles table';
     END IF;
 EXCEPTION
     WHEN duplicate_object THEN 
-        RAISE NOTICE 'Admin view policy already exists';
+        RAISE NOTICE 'Combined view policy already exists';
 END $$;
 
 -- Policy 4: Only admins can insert achievements (achievements are awarded by the system)
@@ -163,14 +162,11 @@ GRANT SELECT ON user_achievements TO anon;
 GRANT INSERT, UPDATE, DELETE ON user_achievements TO authenticated;
 
 -- Add helpful comments
-COMMENT ON POLICY "Users can view their own achievements" ON user_achievements IS 
-    'Allows users to view their own unlocked achievements';
-
 COMMENT ON POLICY "Users can view public achievements" ON user_achievements IS 
-    'Allows authenticated and anonymous users to view achievements for public profiles/leaderboards';
+    'Allows anonymous users to view achievements for public profiles/leaderboards. Restricted to anon only to avoid multiple permissive policies.';
 
-COMMENT ON POLICY "Admins can view all achievements" ON user_achievements IS 
-    'Allows admins to view all user achievements';
+COMMENT ON POLICY "Users and admins can view achievements" ON user_achievements IS 
+    'Allows authenticated users to view their own achievements or all achievements (for public profiles/leaderboards), or admins to view all. Combined policy to avoid multiple permissive policies.';
 
 COMMENT ON POLICY "Admins can insert achievements" ON user_achievements IS 
     'Allows admins to award achievements to users (achievements are system-awarded)';

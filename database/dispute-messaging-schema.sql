@@ -112,7 +112,9 @@ CREATE POLICY "Fighters can insert their dispute messages" ON dispute_messages
 
 -- Admin can update messages (mark as read, etc.)
 CREATE POLICY "Admin can update dispute messages" ON dispute_messages
-    FOR UPDATE USING (
+    FOR UPDATE
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = (select auth.uid()) AND role = 'admin'

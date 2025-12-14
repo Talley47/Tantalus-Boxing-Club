@@ -111,10 +111,10 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admin can update dispute messages" ON dispute_messages
-            FOR UPDATE USING (is_admin_user())';
+            FOR UPDATE TO authenticated USING (is_admin_user())';
     ELSE
         EXECUTE 'CREATE POLICY "Admin can update dispute messages" ON dispute_messages
-            FOR UPDATE USING (
+            FOR UPDATE TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
@@ -125,7 +125,9 @@ END $$;
 
 -- Fighters can update their own messages (mark as read, etc.)
 CREATE POLICY "Fighters can update their dispute messages" ON dispute_messages
-    FOR UPDATE USING (
+    FOR UPDATE
+    TO authenticated
+    USING (
         sender_id = (select auth.uid())
         AND sender_type = 'fighter'
     );

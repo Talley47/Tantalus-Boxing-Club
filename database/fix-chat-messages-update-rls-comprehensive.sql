@@ -44,6 +44,7 @@ CREATE POLICY "Users can update their own messages" ON chat_messages
 -- Policy: Users can delete their own messages
 CREATE POLICY "Users can delete their own messages" ON chat_messages
     FOR DELETE
+    TO authenticated
     USING (
         (select auth.role()) = 'authenticated' 
         AND (select auth.uid()) = user_id
@@ -59,11 +60,11 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
-            FOR DELETE USING (is_admin_user())';
+            FOR DELETE TO authenticated USING (is_admin_user())';
     ELSE
         -- Fallback: check profiles table
         EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
-            FOR DELETE USING (
+            FOR DELETE TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 

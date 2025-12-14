@@ -355,8 +355,10 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE '⚠️ Could not enable RLS on profiles: %', SQLERRM;
 END $$;
 
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read profiles for filtering" ON profiles
     FOR SELECT 
+    TO anon
     USING (true);
 
 CREATE POLICY "Users can update own profile" ON profiles

@@ -233,8 +233,10 @@ CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
 -- Ensure profiles are publicly readable for filtering
 DROP POLICY IF EXISTS "Public read profiles for filtering" ON profiles;
 
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read profiles for filtering" ON profiles
     FOR SELECT 
+    TO anon
     USING (true);
 
 -- ============================================

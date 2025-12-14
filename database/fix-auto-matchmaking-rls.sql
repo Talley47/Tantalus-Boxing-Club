@@ -70,13 +70,44 @@ DROP POLICY IF EXISTS "Allow auto-matched fights" ON scheduled_fights;
 -- Create a new policy that allows both manual and auto-matched fights
 -- Note: The SECURITY DEFINER function bypasses RLS, but we still need a policy
 -- for direct inserts (manual fights)
-CREATE POLICY "Fighters can create scheduled fights" ON scheduled_fights
-    FOR INSERT
-    WITH CHECK (
-        -- Allow if the user is one of the fighters (for manual fights)
-        fighter1_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
-        fighter2_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
-    );
+-- Combined INSERT policy: Fighters can create scheduled fights OR admins can create any
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Fighters and admins can create scheduled fights" ON scheduled_fights;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Fighters and admins can create scheduled fights" ON scheduled_fights
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                -- Allow if the user is one of the fighters (for manual fights) OR user is admin
+                fighter1_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+                fighter2_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+                is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Fighters and admins can create scheduled fights" ON scheduled_fights
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                -- Allow if the user is one of the fighters (for manual fights) OR user is admin
+                fighter1_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+                fighter2_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid())) OR
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE profiles.id = (select auth.uid()) 
+                    AND profiles.role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Verify the function was created
 SELECT 

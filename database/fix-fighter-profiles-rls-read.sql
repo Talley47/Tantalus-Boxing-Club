@@ -49,7 +49,9 @@ CREATE POLICY "Public can view fight records" ON fight_records
 -- 6. Also ensure scheduled_fights can be read
 ALTER TABLE scheduled_fights ENABLE ROW LEVEL SECURITY;
 
+-- Consolidated policy name to avoid multiple permissive policies
 DROP POLICY IF EXISTS "Public can view scheduled fights" ON scheduled_fights;
+DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Anyone can view scheduled fights" ON scheduled_fights;
 
 CREATE POLICY "Public can view scheduled fights" ON scheduled_fights

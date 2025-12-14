@@ -93,7 +93,9 @@ CREATE POLICY "Authenticated read all news" ON news_announcements
 -- Ensure scheduled fights are publicly readable
 DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;
 
-CREATE POLICY "Public read scheduled fights" ON scheduled_fights
+-- Consolidated policy name to avoid multiple permissive policies
+DROP POLICY IF EXISTS "Public can view scheduled fights" ON scheduled_fights;
+CREATE POLICY "Public can view scheduled fights" ON scheduled_fights
     FOR SELECT 
     USING (true);
 

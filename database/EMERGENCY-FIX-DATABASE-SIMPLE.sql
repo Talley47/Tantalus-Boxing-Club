@@ -307,6 +307,7 @@ DROP POLICY IF EXISTS "Authenticated manage fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Authenticated can view scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Authenticated can insert scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Authenticated can update scheduled fights" ON scheduled_fights;
+DROP POLICY IF EXISTS "Fighters and admins can update scheduled fights" ON scheduled_fights;
 
 -- Authenticated users can view scheduled fights
 CREATE POLICY "Authenticated can view scheduled fights" ON scheduled_fights
@@ -318,12 +319,9 @@ CREATE POLICY "Authenticated can view scheduled fights" ON scheduled_fights
 -- This avoids multiple permissive policies for the same role and action
 -- The combined policy allows fighters (who are one of the fighters) or admins to insert
 
--- Authenticated users can update scheduled fights (if they're one of the fighters)
--- Note: UPDATE may also be handled by fighter-specific policies
-CREATE POLICY "Authenticated can update scheduled fights" ON scheduled_fights
-    FOR UPDATE
-    TO authenticated
-    USING ((select auth.uid()) IS NOT NULL);
+-- Note: UPDATE is handled by "Fighters and admins can update scheduled fights" policy
+-- This avoids multiple permissive policies for the same role and action
+-- The combined policy allows fighters (who are one of the fighters) or admins to update
 
 -- Note: DELETE is handled by "Admins can delete scheduled fights" policy only
 -- This avoids multiple permissive policies for the same role and action

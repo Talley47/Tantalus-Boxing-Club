@@ -11,6 +11,8 @@ DO $$
 BEGIN
     DROP POLICY IF EXISTS "Public read published news" ON news_announcements;
     DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+    DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
+    DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
     DROP POLICY IF EXISTS "Fighters can insert fight results" ON news_announcements;
     DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
     DROP POLICY IF EXISTS "Public read fight results" ON news_fight_results;
@@ -48,17 +50,34 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        -- Admin can manage all news (insert, update, delete)
-        EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL TO authenticated USING (is_admin_user())';
+        -- Create separate admin policies for UPDATE and DELETE (INSERT is handled by combined policy, SELECT by separate policy)
+        EXECUTE 'CREATE POLICY "Admin update news" ON news_announcements
+            FOR UPDATE TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin delete news" ON news_announcements
+            FOR DELETE TO authenticated
+            USING (is_admin_user())';
         
         -- Admin can read all news (including unpublished)
         EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
-            FOR SELECT USING (is_published = TRUE OR is_admin_user())';
+            FOR SELECT TO authenticated
+            USING (is_published = TRUE OR is_admin_user())';
     ELSE
         -- Fallback: check profiles table only
-        EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL TO authenticated USING (
+        EXECUTE 'CREATE POLICY "Admin update news" ON news_announcements
+            FOR UPDATE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin delete news" ON news_announcements
+            FOR DELETE TO authenticated
+            USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
@@ -101,10 +120,10 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admin manage fight results" ON news_fight_results
-            FOR ALL USING (is_admin_user())';
+            FOR ALL TO authenticated USING (is_admin_user())';
     ELSE
         EXECUTE 'CREATE POLICY "Admin manage fight results" ON news_fight_results
-            FOR ALL USING (
+            FOR ALL TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
@@ -127,8 +146,11 @@ COMMENT ON POLICY "Fighters can insert fight results" ON news_announcements IS
 COMMENT ON POLICY "Public read published news" ON news_announcements IS 
     'Allows anyone to view published news items';
 
-COMMENT ON POLICY "Admin manage news" ON news_announcements IS 
-    'Allows admins to create, update, and delete all news items';
+COMMENT ON POLICY "Admin update news" ON news_announcements IS 
+    'Allows admins to update all news items';
+
+COMMENT ON POLICY "Admin delete news" ON news_announcements IS 
+    'Allows admins to delete all news items';
 
 -- Success message
 DO $$

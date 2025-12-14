@@ -60,9 +60,26 @@ END $$;
 CREATE POLICY "Public read published news" ON news_announcements
     FOR SELECT USING (is_published = TRUE);
 
--- Admin write access for news
-CREATE POLICY "Admin manage news" ON news_announcements
-    FOR ALL
+-- Admin write access for news (UPDATE and DELETE only - INSERT is handled by combined policy, SELECT by separate policy)
+-- Split into separate policies to avoid multiple permissive policies for the same role and action
+DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
+
+CREATE POLICY "Admin update news" ON news_announcements
+    FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM fighter_profiles fp
+            JOIN auth.users u ON fp.user_id = u.id
+            WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+            AND u.email LIKE '%@admin.tantalus%'
+        )
+    );
+
+CREATE POLICY "Admin delete news" ON news_announcements
+    FOR DELETE
     TO authenticated
     USING (
         EXISTS (
@@ -78,8 +95,11 @@ CREATE POLICY "Public read fight results" ON news_fight_results
     FOR SELECT USING (true);
 
 -- Admin write access for fight results
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
 CREATE POLICY "Admin manage fight results" ON news_fight_results
-    FOR ALL USING (
+    FOR ALL
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM fighter_profiles fp
             JOIN auth.users u ON fp.user_id = u.id

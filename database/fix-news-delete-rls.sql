@@ -11,12 +11,15 @@ BEGIN
     DROP POLICY IF EXISTS "Admins can delete news" ON news_announcements;
     DROP POLICY IF EXISTS "Admins can delete all news" ON news_announcements;
     DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+    DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
+    DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
     DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
 EXCEPTION
     WHEN undefined_object THEN NULL;
 END $$;
 
--- Create comprehensive admin policy that covers all operations (INSERT, UPDATE, DELETE, SELECT)
+-- Create separate admin policies for UPDATE and DELETE (INSERT and SELECT are handled by other policies)
+-- This avoids multiple permissive policies for the same role and action
 -- Use is_admin_user function if available, otherwise check profiles table
 DO $$
 BEGIN
@@ -26,17 +29,35 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        -- Admin can manage all news (insert, update, delete, select)
-        EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL TO authenticated USING (is_admin_user())';
+        -- Create separate admin policies for UPDATE and DELETE only
+        -- (INSERT is handled by combined policy, SELECT is handled by "Admin read all news")
+        EXECUTE 'CREATE POLICY "Admin update news" ON news_announcements
+            FOR UPDATE TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin delete news" ON news_announcements
+            FOR DELETE TO authenticated
+            USING (is_admin_user())';
         
         -- Admin can read all news (including unpublished)
         EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
-            FOR SELECT USING (is_published = TRUE OR is_admin_user())';
+            FOR SELECT TO authenticated
+            USING (is_published = TRUE OR is_admin_user())';
     ELSE
         -- Fallback: check profiles table only
-        EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL TO authenticated USING (
+        EXECUTE 'CREATE POLICY "Admin update news" ON news_announcements
+            FOR UPDATE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin delete news" ON news_announcements
+            FOR DELETE TO authenticated
+            USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
@@ -45,7 +66,8 @@ BEGIN
             )';
         
         EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
-            FOR SELECT USING (
+            FOR SELECT TO authenticated
+            USING (
                 is_published = TRUE OR
                 EXISTS (
                     SELECT 1 FROM profiles 
@@ -73,7 +95,10 @@ END $$;
 -- Grant DELETE permission
 GRANT DELETE ON news_announcements TO authenticated;
 
--- Add helpful comment
-COMMENT ON POLICY "Admin manage news" ON news_announcements IS 
-    'Allows admins to create, update, and delete all news items';
+-- Add helpful comments
+COMMENT ON POLICY "Admin update news" ON news_announcements IS 
+    'Allows admins to update all news items';
+
+COMMENT ON POLICY "Admin delete news" ON news_announcements IS 
+    'Allows admins to delete all news items';
 

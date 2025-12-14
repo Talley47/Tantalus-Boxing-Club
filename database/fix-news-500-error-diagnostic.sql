@@ -100,8 +100,14 @@ CREATE POLICY "Authenticated insert news" ON news_announcements
     WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Admin policies (simplified)
-CREATE POLICY "Admin manage news" ON news_announcements
-    FOR ALL
+-- Admin write access for news (UPDATE and DELETE only - INSERT is handled by combined policy, SELECT by separate policy)
+-- Split into separate policies to avoid multiple permissive policies for the same role and action
+DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
+
+CREATE POLICY "Admin update news" ON news_announcements
+    FOR UPDATE
     TO authenticated
     USING (
         EXISTS (
@@ -111,6 +117,17 @@ CREATE POLICY "Admin manage news" ON news_announcements
         )
     )
     WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = (select auth.uid())
+            AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admin delete news" ON news_announcements
+    FOR DELETE
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM profiles
             WHERE id = (select auth.uid())

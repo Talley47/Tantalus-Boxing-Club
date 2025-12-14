@@ -86,7 +86,8 @@ CREATE POLICY "Public read published news" ON news_announcements
 DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
 
 CREATE POLICY "Authenticated read all news" ON news_announcements
-    FOR SELECT 
+    FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
 
 -- Ensure scheduled fights are publicly readable

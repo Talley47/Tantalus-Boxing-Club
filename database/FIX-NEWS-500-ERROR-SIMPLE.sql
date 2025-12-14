@@ -40,7 +40,8 @@ CREATE POLICY "Public read published news" ON news_announcements
 
 -- Policy 2: Authenticated users can read all news (simple check)
 CREATE POLICY "Authenticated read all news" ON news_announcements
-    FOR SELECT 
+    FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
 
 -- Policy 3: Authenticated users can insert news

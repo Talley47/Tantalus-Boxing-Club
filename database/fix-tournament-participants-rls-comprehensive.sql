@@ -130,9 +130,10 @@ DROP POLICY IF EXISTS "Admins can delete participants" ON tournament_participant
 DROP POLICY IF EXISTS "Tournament creators and admins can delete participants" ON tournament_participants;
 DROP POLICY IF EXISTS "Authenticated and admins can view participants" ON tournament_participants;
 
--- Combined SELECT policy: Fighters can view their own participations OR admins can view all
+-- Combined SELECT policy: Fighters can view their own participations OR tournament creators can view their tournament's participants OR admins can view all
 -- This avoids multiple permissive policies for the same role and action
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Tournament creators and admins can view participants" ON tournament_participants;
 DO $$
 BEGIN
     IF EXISTS (
@@ -140,6 +141,7 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
+        -- Combined SELECT policy: Fighters can view their own participations OR tournament creators can view their tournament's participants OR admins can view all
         EXECUTE 'CREATE POLICY "Authenticated and admins can view participants" ON tournament_participants
             FOR SELECT TO authenticated
             USING (
@@ -147,15 +149,24 @@ BEGIN
                     SELECT id FROM fighter_profiles 
                     WHERE user_id = (select auth.uid())
                 )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
                 OR is_admin_user()
             )';
     ELSE
+        -- Combined SELECT policy: Fighters can view their own participations OR tournament creators can view their tournament's participants OR admins can view all
         EXECUTE 'CREATE POLICY "Authenticated and admins can view participants" ON tournament_participants
             FOR SELECT TO authenticated
             USING (
                 fighter_id IN (
                     SELECT id FROM fighter_profiles 
                     WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
                 )
                 OR EXISTS (
                     SELECT 1 FROM profiles 
@@ -240,7 +251,7 @@ COMMENT ON POLICY "Public read tournament participants" ON tournament_participan
 COMMENT ON POLICY "Fighters and creators and admins can insert participants" ON tournament_participants IS 
     'Allows fighters to join tournaments, tournament creators to insert participants for their tournaments, or admins to insert any. Combined policy to avoid multiple permissive policies.';
 COMMENT ON POLICY "Authenticated and admins can view participants" ON tournament_participants IS 
-    'Allows fighters to view their own tournament participations or admins to view all. Combined policy to avoid multiple permissive policies.';
+    'Allows fighters to view their own tournament participations, tournament creators to view participants for their tournaments, or admins to view all. Combined policy to avoid multiple permissive policies.';
 COMMENT ON POLICY "Fighters and admins can update participations" ON tournament_participants IS 
     'Allows fighters to update their own participations or admins to update any. Combined policy to avoid multiple permissive policies.';
 -- Note: "Admins can insert participants" policy has been merged into "Fighters and creators and admins can insert participants"

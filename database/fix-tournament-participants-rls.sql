@@ -102,13 +102,8 @@ BEGIN
             -- Note: This policy is being split to avoid multiple permissive policies
             -- For now, we'll only create SELECT, INSERT, UPDATE policies here
             -- DELETE is handled by "Tournament creators and admins can delete participants" in comprehensive file
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can view participants" ON tournament_participants
-                FOR SELECT TO authenticated USING (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR is_admin_user()
-                )';
+            -- Note: SELECT is handled by "Authenticated and admins can view participants" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             
             -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
             -- This policy creation is removed to avoid multiple permissive policies
@@ -126,16 +121,8 @@ BEGIN
             -- Split FOR ALL into separate policies for SELECT, INSERT, UPDATE, DELETE
             -- DELETE is handled by combined policy in comprehensive file
             -- Note: This policy is being split to avoid multiple permissive policies
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can view participants" ON tournament_participants
-                FOR SELECT TO authenticated USING (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR EXISTS (
-                        SELECT 1 FROM profiles 
-                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
-                    )
-                )';
+            -- Note: SELECT is handled by "Authenticated and admins can view participants" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             
             -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
             -- This policy creation is removed to avoid multiple permissive policies

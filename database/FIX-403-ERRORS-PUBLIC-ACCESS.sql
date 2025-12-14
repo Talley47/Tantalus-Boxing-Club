@@ -36,9 +36,10 @@ DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
 DROP POLICY IF EXISTS "Authenticated insert news" ON news_announcements;
 DROP POLICY IF EXISTS "Authenticated and admins can insert news" ON news_announcements;
 
--- Combined INSERT policy: Authenticated users OR admins can insert news
+-- Combined INSERT policy: Authenticated users OR admins OR fighters (for fight_result type) can insert news
 -- This avoids multiple permissive policies for the same role and action
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Fighters can insert fight results" ON news_announcements;
 DO $$
 BEGIN
     -- Check if is_admin_user function exists
@@ -52,6 +53,13 @@ BEGIN
             WITH CHECK (
                 (select auth.uid()) IS NOT NULL 
                 OR is_admin_user()
+                OR (
+                    type = ''fight_result'' AND
+                    EXISTS (
+                        SELECT 1 FROM fighter_profiles
+                        WHERE user_id = (select auth.uid())
+                    )
+                )
             )';
     ELSE
         -- Fallback: check profiles table for admin role
@@ -63,6 +71,13 @@ BEGIN
                     SELECT 1 FROM profiles
                     WHERE id = (select auth.uid())
                     AND role = ''admin''
+                )
+                OR (
+                    type = ''fight_result'' AND
+                    EXISTS (
+                        SELECT 1 FROM fighter_profiles
+                        WHERE user_id = (select auth.uid())
+                    )
                 )
             )';
     END IF;

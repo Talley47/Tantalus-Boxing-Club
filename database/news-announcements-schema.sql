@@ -96,19 +96,116 @@ CREATE POLICY "Admin delete news" ON news_announcements
 CREATE POLICY "Public read fight results" ON news_fight_results
     FOR SELECT USING (true);
 
--- Admin write access for fight results
+-- Combined INSERT policy: Fighters can insert fight results data OR admins can insert any
+-- This avoids multiple permissive policies for the same role and action
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
-CREATE POLICY "Admin manage fight results" ON news_fight_results
-    FOR ALL
-    TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM fighter_profiles fp
-            JOIN auth.users u ON fp.user_id = u.id
-            WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-            AND u.email LIKE '%@admin.tantalus%'
-        )
-    );
+DROP POLICY IF EXISTS "Fighters can insert fight results data" ON news_fight_results;
+DROP POLICY IF EXISTS "Fighters and admins can insert fight results data" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can view fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can update fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can delete fight results" ON news_fight_results;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        -- Combined INSERT policy
+        EXECUTE 'CREATE POLICY "Fighters and admins can insert fight results data" ON news_fight_results
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles
+                    WHERE user_id = (select auth.uid())
+                )
+                OR is_admin_user()
+            )';
+        
+        -- Admin policies for SELECT, UPDATE, DELETE
+        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            FOR SELECT TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
+            FOR UPDATE TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete fight results" ON news_fight_results
+            FOR DELETE TO authenticated
+            USING (is_admin_user())';
+    ELSE
+        -- Fallback: check profiles table and email for admin role
+        EXECUTE 'CREATE POLICY "Fighters and admins can insert fight results data" ON news_fight_results
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles
+                    WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            FOR SELECT TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
+            FOR UPDATE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete fight results" ON news_fight_results
+            FOR DELETE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_news_updated_at()

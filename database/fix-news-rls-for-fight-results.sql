@@ -20,6 +20,10 @@ BEGIN
     DROP POLICY IF EXISTS "Public read fight results" ON news_fight_results;
     DROP POLICY IF EXISTS "Admin manage fight results" ON news_fight_results;
     DROP POLICY IF EXISTS "Fighters can insert fight results data" ON news_fight_results;
+    DROP POLICY IF EXISTS "Fighters and admins can insert fight results data" ON news_fight_results;
+    DROP POLICY IF EXISTS "Admin can view fight results" ON news_fight_results;
+    DROP POLICY IF EXISTS "Admin can update fight results" ON news_fight_results;
+    DROP POLICY IF EXISTS "Admin can delete fight results" ON news_fight_results;
     DROP POLICY IF EXISTS "Only admins can manage news and announcements" ON news_announcements;
 EXCEPTION
     WHEN undefined_object THEN NULL;
@@ -34,15 +38,9 @@ CREATE POLICY "Public read published news" ON news_announcements
         (type = 'fight_result' AND is_published = TRUE)
     );
 
--- Fighters can insert fight_result type news (for auto-posting)
-CREATE POLICY "Fighters can insert fight results" ON news_announcements
-    FOR INSERT WITH CHECK (
-        type = 'fight_result' AND
-        EXISTS (
-            SELECT 1 FROM fighter_profiles
-            WHERE user_id = (select auth.uid())
-        )
-    );
+-- Note: "Fighters can insert fight results" policy has been merged into "Authenticated and admins can insert news"
+-- This avoids multiple permissive policies for the same role and action
+-- The combined policy allows fighters to insert fight_result type news
 
 -- Admin full access to manage all news
 -- Use is_admin_user function if available, otherwise check profiles table
@@ -109,17 +107,10 @@ END $$;
 CREATE POLICY "Public read fight results" ON news_fight_results
     FOR SELECT USING (true);
 
--- Fighters can insert fight results data (when creating fight_result news)
--- This policy allows fighters to insert into news_fight_results if they own the related news item
-CREATE POLICY "Fighters can insert fight results data" ON news_fight_results
-    FOR INSERT WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM fighter_profiles
-            WHERE user_id = (select auth.uid())
-        )
-    );
-
--- Admin full access to manage fight results
+-- Combined INSERT policy: Fighters can insert fight results data OR admins can insert any
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Fighters and admins can insert fight results data" ON news_fight_results;
 DO $$
 BEGIN
     IF EXISTS (
@@ -127,11 +118,82 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        EXECUTE 'CREATE POLICY "Admin manage fight results" ON news_fight_results
-            FOR ALL TO authenticated USING (is_admin_user())';
+        EXECUTE 'CREATE POLICY "Fighters and admins can insert fight results data" ON news_fight_results
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles
+                    WHERE user_id = (select auth.uid())
+                )
+                OR is_admin_user()
+            )';
     ELSE
-        EXECUTE 'CREATE POLICY "Admin manage fight results" ON news_fight_results
-            FOR ALL TO authenticated USING (
+        EXECUTE 'CREATE POLICY "Fighters and admins can insert fight results data" ON news_fight_results
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles
+                    WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
+
+-- Admin policies for SELECT, UPDATE, DELETE (INSERT is handled by combined policy above)
+-- PostgreSQL doesn't support FOR SELECT, UPDATE, DELETE, so we create separate policies
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Admin manage fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can view fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can update fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Admin can delete fight results" ON news_fight_results;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            FOR SELECT TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
+            FOR UPDATE TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete fight results" ON news_fight_results
+            FOR DELETE TO authenticated
+            USING (is_admin_user())';
+    ELSE
+        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            FOR SELECT TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
+            FOR UPDATE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete fight results" ON news_fight_results
+            FOR DELETE TO authenticated
+            USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
@@ -148,8 +210,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON news_fight_results TO authenticated;
 GRANT SELECT ON news_fight_results TO anon;
 
 -- Add helpful comments
-COMMENT ON POLICY "Fighters can insert fight results" ON news_announcements IS 
-    'Allows fighters to auto-post fight_result type news when they add fight records';
+-- Note: "Fighters can insert fight results" policy has been merged into "Authenticated and admins can insert news"
+-- The combined policy allows fighters to auto-post fight_result type news when they add fight records
 
 COMMENT ON POLICY "Public read published news" ON news_announcements IS 
     'Allows anyone to view published news items';

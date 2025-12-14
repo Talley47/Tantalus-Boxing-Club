@@ -104,8 +104,10 @@ BEGIN
 END $$;
 
 -- Public read access for fight results
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read fight results" ON news_fight_results
-    FOR SELECT USING (true);
+    FOR SELECT TO anon
+    USING (true);
 
 -- Combined INSERT policy: Fighters can insert fight results data OR admins can insert any
 -- This avoids multiple permissive policies for the same role and action
@@ -144,11 +146,12 @@ BEGIN
     END IF;
 END $$;
 
--- Admin policies for SELECT, UPDATE, DELETE (INSERT is handled by combined policy above)
--- PostgreSQL doesn't support FOR SELECT, UPDATE, DELETE, so we create separate policies
+-- Admin policies for UPDATE, DELETE (INSERT and SELECT are handled by combined policies above)
+-- PostgreSQL doesn't support FOR UPDATE, DELETE, so we create separate policies
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
 DROP POLICY IF EXISTS "Admin manage fight results" ON news_fight_results;
 DROP POLICY IF EXISTS "Admin can view fight results" ON news_fight_results;
+DROP POLICY IF EXISTS "Authenticated can read fight results" ON news_fight_results;
 DROP POLICY IF EXISTS "Admin can update fight results" ON news_fight_results;
 DROP POLICY IF EXISTS "Admin can delete fight results" ON news_fight_results;
 
@@ -159,9 +162,11 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+        -- Combined SELECT policy: All authenticated users can read fight results (admins have additional privileges via other policies)
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Authenticated can read fight results" ON news_fight_results
             FOR SELECT TO authenticated
-            USING (is_admin_user())';
+            USING (true)';
         
         EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
             FOR UPDATE TO authenticated
@@ -171,15 +176,11 @@ BEGIN
             FOR DELETE TO authenticated
             USING (is_admin_user())';
     ELSE
-        EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+        -- Combined SELECT policy: All authenticated users can read fight results (admins have additional privileges via other policies)
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Authenticated can read fight results" ON news_fight_results
             FOR SELECT TO authenticated
-            USING (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE id = (select auth.uid()) 
-                    AND role = ''admin''
-                )
-            )';
+            USING (true)';
         
         EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
             FOR UPDATE TO authenticated

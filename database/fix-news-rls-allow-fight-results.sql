@@ -127,12 +127,14 @@ BEGIN
         DROP POLICY IF EXISTS "Fighters can insert fight results data" ON news_fight_results;
         DROP POLICY IF EXISTS "Fighters and admins can insert fight results data" ON news_fight_results;
         DROP POLICY IF EXISTS "Admin can view fight results" ON news_fight_results;
+        DROP POLICY IF EXISTS "Authenticated can read fight results" ON news_fight_results;
         DROP POLICY IF EXISTS "Admin can update fight results" ON news_fight_results;
         DROP POLICY IF EXISTS "Admin can delete fight results" ON news_fight_results;
         
         -- Public read access for fight results
+        -- Restricted to anon only to avoid multiple permissive policies for authenticated role
         EXECUTE 'CREATE POLICY "Public read fight results" ON news_fight_results
-            FOR SELECT USING (true)';
+            FOR SELECT TO anon USING (true)';
         
         -- Combined INSERT policy: Fighters can insert fight results data OR admins can insert any
         -- This avoids multiple permissive policies for the same role and action
@@ -180,9 +182,11 @@ BEGIN
             WHERE proname = 'is_admin_user' 
             AND pronamespace = 'public'::regnamespace
         ) THEN
-            EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            -- Combined SELECT policy: All authenticated users can read fight results (admins have additional privileges via other policies)
+            -- This avoids multiple permissive policies for the same role and action
+            EXECUTE 'CREATE POLICY "Authenticated can read fight results" ON news_fight_results
                 FOR SELECT TO authenticated
-                USING (is_admin_user())';
+                USING (true)';
             
             EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
                 FOR UPDATE TO authenticated
@@ -192,20 +196,11 @@ BEGIN
                 FOR DELETE TO authenticated
                 USING (is_admin_user())';
         ELSE
-            EXECUTE 'CREATE POLICY "Admin can view fight results" ON news_fight_results
+            -- Combined SELECT policy: All authenticated users can read fight results (admins have additional privileges via other policies)
+            -- This avoids multiple permissive policies for the same role and action
+            EXECUTE 'CREATE POLICY "Authenticated can read fight results" ON news_fight_results
                 FOR SELECT TO authenticated
-                USING (
-                    EXISTS (
-                        SELECT 1 FROM profiles 
-                        WHERE id = (select auth.uid()) 
-                        AND role = ''admin''
-                    )
-                    OR EXISTS (
-                        SELECT 1 FROM auth.users
-                        WHERE id = (select auth.uid())
-                        AND (email = ''tantalusboxingclub@gmail.com'' OR email LIKE ''%@admin.tantalus%'')
-                    )
-                )';
+                USING (true)';
             
             EXECUTE 'CREATE POLICY "Admin can update fight results" ON news_fight_results
                 FOR UPDATE TO authenticated

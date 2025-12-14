@@ -39,7 +39,8 @@ CREATE POLICY "Users can view own fighter profile"
 -- 3. Users can insert their own fighter profile
 CREATE POLICY "Users can insert own fighter profile" 
     ON public.fighter_profiles 
-    FOR INSERT 
+    FOR INSERT
+    TO authenticated
     WITH CHECK ((select auth.uid()) = user_id);
 
 -- 4. Users can update their own fighter profile

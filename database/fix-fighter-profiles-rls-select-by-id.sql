@@ -43,7 +43,8 @@ END $$;
 
 CREATE POLICY "Users can insert own fighter profile" 
     ON fighter_profiles 
-    FOR INSERT 
+    FOR INSERT
+    TO authenticated
     WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own fighter profile" 

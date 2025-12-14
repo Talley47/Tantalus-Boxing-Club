@@ -79,7 +79,9 @@ CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
 -- Users can insert their own fighter profile
 DROP POLICY IF EXISTS "Users can insert own fighter profile" ON fighter_profiles;
 CREATE POLICY "Users can insert own fighter profile" ON fighter_profiles
-  FOR INSERT WITH CHECK ((select auth.uid()) = user_id);
+  FOR INSERT
+  TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
 
 -- 6. Add indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_scheduled_fights_date ON scheduled_fights(scheduled_date);

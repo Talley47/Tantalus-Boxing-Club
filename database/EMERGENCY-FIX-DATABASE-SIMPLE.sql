@@ -147,7 +147,8 @@ CREATE POLICY "Users update own profile" ON fighter_profiles
     WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Users insert own profile" ON fighter_profiles
-    FOR INSERT 
+    FOR INSERT
+    TO authenticated
     WITH CHECK (user_id = (select auth.uid()));
 
 -- SCHEDULED_FIGHTS

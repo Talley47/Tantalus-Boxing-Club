@@ -143,12 +143,12 @@ CREATE POLICY "Public read fighters" ON fighter_profiles
 
 CREATE POLICY "Users update own profile" ON fighter_profiles
     FOR UPDATE 
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
+    USING (user_id = (select auth.uid()))
+    WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Users insert own profile" ON fighter_profiles
     FOR INSERT 
-    WITH CHECK (user_id = auth.uid());
+    WITH CHECK (user_id = (select auth.uid()));
 
 -- SCHEDULED_FIGHTS
 DO $$

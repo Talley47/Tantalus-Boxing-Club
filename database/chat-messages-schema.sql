@@ -48,6 +48,7 @@ BEGIN
     DROP POLICY IF EXISTS "Users can update their own messages" ON chat_messages;
     DROP POLICY IF EXISTS "Users can delete their own messages" ON chat_messages;
     DROP POLICY IF EXISTS "Admins can delete all messages" ON chat_messages;
+    DROP POLICY IF EXISTS "Users and admins can delete messages" ON chat_messages;
 EXCEPTION
     WHEN undefined_object THEN NULL;
 END $$;
@@ -74,37 +75,45 @@ CREATE POLICY "Users can update their own messages" ON chat_messages
         AND (select auth.uid()) = user_id
     );
 
--- Policy: Users can delete their own messages (always allowed)
-CREATE POLICY "Users can delete their own messages" ON chat_messages
-    FOR DELETE
-    TO authenticated
-    USING (
-        (select auth.role()) = 'authenticated' 
-        AND (select auth.uid()) = user_id
-    );
-
--- Policy: Admins can delete all messages
+-- Policy: Users can delete their own messages OR admins can delete any message
+-- Combined into single policy to avoid multiple permissive policies for same role
 DO $$
 BEGIN
+    -- Drop old policies if they exist
+    DROP POLICY IF EXISTS "Users can delete their own messages" ON chat_messages;
+    DROP POLICY IF EXISTS "Admins can delete all messages" ON chat_messages;
+    
     -- Try to use is_admin_user function if it exists
     IF EXISTS (
         SELECT 1 FROM pg_proc 
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
-            FOR DELETE TO authenticated USING (is_admin_user())';
+        EXECUTE 'CREATE POLICY "Users and admins can delete messages" ON chat_messages
+            FOR DELETE TO authenticated USING (
+                (select auth.role()) = ''authenticated'' 
+                AND (
+                    (select auth.uid()) = user_id 
+                    OR is_admin_user()
+                )
+            )';
     ELSE
         -- Fallback: check profiles table
-        EXECUTE 'CREATE POLICY "Admins can delete all messages" ON chat_messages
+        EXECUTE 'CREATE POLICY "Users and admins can delete messages" ON chat_messages
             FOR DELETE TO authenticated USING (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE id = (select auth.uid()) 
-                    AND role = ''admin''
+                (select auth.role()) = ''authenticated'' 
+                AND (
+                    (select auth.uid()) = user_id 
+                    OR EXISTS (
+                        SELECT 1 FROM profiles 
+                        WHERE id = (select auth.uid()) 
+                        AND role = ''admin''
+                    )
                 )
             )';
     END IF;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
 END $$;
 
 -- Grant necessary permissions

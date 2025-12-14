@@ -222,8 +222,8 @@ CREATE POLICY "Public read profiles for filtering" ON profiles
 
 CREATE POLICY "Users update own profile" ON profiles
     FOR UPDATE 
-    USING (id = auth.uid())
-    WITH CHECK (id = auth.uid());
+    USING (id = (select auth.uid()))
+    WITH CHECK (id = (select auth.uid()));
 
 -- ============================================
 -- STEP 4: Add critical indexes

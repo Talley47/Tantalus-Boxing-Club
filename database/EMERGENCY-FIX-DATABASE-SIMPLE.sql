@@ -153,7 +153,9 @@ CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
     USING (user_id = (select auth.uid()))
     WITH CHECK (user_id = (select auth.uid()));
 
-CREATE POLICY "Users insert own profile" ON fighter_profiles
+-- Use consistent naming: "Users can insert own fighter profile" (matches fix-fighter-profiles-rls.sql)
+DROP POLICY IF EXISTS "Users can insert own fighter profile" ON fighter_profiles;
+CREATE POLICY "Users can insert own fighter profile" ON fighter_profiles
     FOR INSERT
     TO authenticated
     WITH CHECK (user_id = (select auth.uid()));

@@ -49,7 +49,8 @@ CREATE POLICY "Users can insert own fighter profile"
 -- 4. Users can update their own fighter profile
 CREATE POLICY "Users can update own fighter profile" 
     ON public.fighter_profiles 
-    FOR UPDATE 
+    FOR UPDATE
+    TO authenticated
     USING ((select auth.uid()) = user_id);
 
 -- 5. Admins can manage all fighter profiles (using is_admin_user function if available)

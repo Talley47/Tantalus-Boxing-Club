@@ -50,7 +50,8 @@ CREATE POLICY "Users can insert own fighter profile"
 
 CREATE POLICY "Users can update own fighter profile" 
     ON fighter_profiles 
-    FOR UPDATE 
+    FOR UPDATE
+    TO authenticated
     USING ((select auth.uid()) = user_id);
 
 -- Admin policies (if is_admin_user function exists)

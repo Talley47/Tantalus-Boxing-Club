@@ -71,7 +71,9 @@ DROP POLICY IF EXISTS "Only admins can manage news and announcements" ON news_an
 
 -- Fighter profiles policies
 DROP POLICY IF EXISTS "Public read fighters" ON fighter_profiles;
+DROP POLICY IF EXISTS "Public can view all fighter profiles" ON fighter_profiles;
 DROP POLICY IF EXISTS "Users update own profile" ON fighter_profiles;
+DROP POLICY IF EXISTS "Users can update own fighter profile" ON fighter_profiles;
 DROP POLICY IF EXISTS "Users insert own profile" ON fighter_profiles;
 
 -- Scheduled fights policies
@@ -139,12 +141,13 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE '⚠️ Could not enable RLS on fighter_profiles: %', SQLERRM;
 END $$;
 
-CREATE POLICY "Public read fighters" ON fighter_profiles
+CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
     FOR SELECT 
     USING (true);
 
-CREATE POLICY "Users update own profile" ON fighter_profiles
-    FOR UPDATE 
+CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
+    FOR UPDATE
+    TO authenticated
     USING (user_id = (select auth.uid()))
     WITH CHECK (user_id = (select auth.uid()));
 

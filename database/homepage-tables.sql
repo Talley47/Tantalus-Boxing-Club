@@ -74,7 +74,9 @@ CREATE POLICY "Anyone can view fighter profiles" ON fighter_profiles
 -- Users can only update their own fighter profile
 DROP POLICY IF EXISTS "Users can update own fighter profile" ON fighter_profiles;
 CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
-  FOR UPDATE USING ((select auth.uid()) = user_id);
+  FOR UPDATE
+  TO authenticated
+  USING ((select auth.uid()) = user_id);
 
 -- Users can insert their own fighter profile
 DROP POLICY IF EXISTS "Users can insert own fighter profile" ON fighter_profiles;

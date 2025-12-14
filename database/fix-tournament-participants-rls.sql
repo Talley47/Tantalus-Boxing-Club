@@ -47,10 +47,8 @@ BEGIN
         AND tablename = 'tournament_participants' 
         AND policyname = 'Users can join tournaments'
     ) THEN
-        EXECUTE 'CREATE POLICY "Users can join tournaments" ON tournament_participants
-            FOR INSERT TO authenticated WITH CHECK (
-                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-            )';
+        -- Note: "Users can join tournaments" policy has been removed - handled by "Fighters and creators and admins can insert participants" in comprehensive file
+        -- This avoids multiple permissive policies for the same role and action
         RAISE NOTICE 'Created Users can join tournaments policy';
     ELSE
         RAISE NOTICE 'Users can join tournaments policy already exists';
@@ -112,13 +110,8 @@ BEGIN
                     ) OR is_admin_user()
                 )';
             
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can insert participants" ON tournament_participants
-                FOR INSERT TO authenticated WITH CHECK (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR is_admin_user()
-                )';
+            -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             
             EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
                 FOR UPDATE TO authenticated USING (
@@ -144,16 +137,8 @@ BEGIN
                     )
                 )';
             
-            EXECUTE 'CREATE POLICY "Tournament creators and admins can insert participants" ON tournament_participants
-                FOR INSERT TO authenticated WITH CHECK (
-                    EXISTS (
-                        SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = (select auth.uid())
-                    ) OR EXISTS (
-                        SELECT 1 FROM profiles 
-                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
-                    )
-                )';
+            -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" in comprehensive file
+            -- This policy creation is removed to avoid multiple permissive policies
             
             EXECUTE 'CREATE POLICY "Tournament creators and admins can update participants" ON tournament_participants
                 FOR UPDATE TO authenticated USING (

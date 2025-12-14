@@ -33,17 +33,50 @@ CREATE POLICY "Public read tournament participants" ON tournament_participants
     FOR SELECT TO anon
     USING (true);
 
--- 2. Fighters can join tournaments (insert their own participation)
--- This is the critical policy that was failing
-CREATE POLICY "Fighters can join tournaments" ON tournament_participants
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (
-        fighter_id IN (
-            SELECT id FROM fighter_profiles 
-            WHERE user_id = (select auth.uid())
-        )
-    );
+-- 2. Combined INSERT policy: Fighters can join tournaments OR tournament creators can insert OR admins can insert
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Fighters and creators and admins can insert participants" ON tournament_participants;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Fighters and creators and admins can insert participants" ON tournament_participants
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                fighter_id IN (
+                    SELECT id FROM fighter_profiles 
+                    WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
+                OR is_admin_user()
+            )';
+    ELSE
+        EXECUTE 'CREATE POLICY "Fighters and creators and admins can insert participants" ON tournament_participants
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                fighter_id IN (
+                    SELECT id FROM fighter_profiles 
+                    WHERE user_id = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tournaments 
+                    WHERE id = tournament_id AND created_by = (select auth.uid())
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Note: "Fighters can view own participations" policy has been merged into "Authenticated and admins can view participants"
 -- This avoids multiple permissive policies for the same role and action
@@ -91,6 +124,7 @@ END $$;
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
 DROP POLICY IF EXISTS "Admins can manage all participants" ON tournament_participants;
 DROP POLICY IF EXISTS "Admins can insert participants" ON tournament_participants;
+DROP POLICY IF EXISTS "Tournament creators and admins can insert participants" ON tournament_participants;
 -- Note: "Admins can update participants" UPDATE policy removed - handled by "Fighters and admins can update participations"
 DROP POLICY IF EXISTS "Admins can delete participants" ON tournament_participants;
 DROP POLICY IF EXISTS "Tournament creators and admins can delete participants" ON tournament_participants;
@@ -140,9 +174,7 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        EXECUTE 'CREATE POLICY "Admins can insert participants" ON tournament_participants
-            FOR INSERT TO authenticated
-            WITH CHECK (is_admin_user())';
+        -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" policy above
         
         -- Note: UPDATE is handled by "Fighters and admins can update participations" policy above
         
@@ -158,15 +190,7 @@ BEGIN
                 OR is_admin_user()
             )';
     ELSE
-        EXECUTE 'CREATE POLICY "Admins can insert participants" ON tournament_participants
-            FOR INSERT TO authenticated
-            WITH CHECK (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE id = (select auth.uid()) 
-                    AND role = ''admin''
-                )
-            )';
+        -- Note: INSERT is handled by "Fighters and creators and admins can insert participants" policy above
         
         -- Note: UPDATE is handled by "Fighters and admins can update participations" policy above
         
@@ -213,14 +237,13 @@ END $$;
 -- Add helpful comments
 COMMENT ON POLICY "Public read tournament participants" ON tournament_participants IS 
     'Allows anonymous users to view tournament participants. Restricted to anon only to avoid multiple permissive policies.';
-COMMENT ON POLICY "Fighters can join tournaments" ON tournament_participants IS 
-    'Allows fighters to join tournaments. Checks that fighter_id matches a fighter profile owned by auth.uid().';
+COMMENT ON POLICY "Fighters and creators and admins can insert participants" ON tournament_participants IS 
+    'Allows fighters to join tournaments, tournament creators to insert participants for their tournaments, or admins to insert any. Combined policy to avoid multiple permissive policies.';
 COMMENT ON POLICY "Authenticated and admins can view participants" ON tournament_participants IS 
     'Allows fighters to view their own tournament participations or admins to view all. Combined policy to avoid multiple permissive policies.';
 COMMENT ON POLICY "Fighters and admins can update participations" ON tournament_participants IS 
     'Allows fighters to update their own participations or admins to update any. Combined policy to avoid multiple permissive policies.';
-COMMENT ON POLICY "Admins can insert participants" ON tournament_participants IS 
-    'Allows admins to insert tournament participants';
+-- Note: "Admins can insert participants" policy has been merged into "Fighters and creators and admins can insert participants"
 -- Note: "Admins can update participants" policy has been merged into "Fighters and admins can update participations"
 COMMENT ON POLICY "Tournament creators and admins can delete participants" ON tournament_participants IS 
     'Allows tournament creators to delete participants from their tournaments or admins to delete any. Combined policy to avoid multiple permissive policies.';

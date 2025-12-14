@@ -42,7 +42,9 @@ CREATE POLICY "Fighters can join tournaments" ON tournament_participants
 
 -- 3. Fighters can view their own tournament participations
 CREATE POLICY "Fighters can view own participations" ON tournament_participants
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
             WHERE user_id = (select auth.uid())

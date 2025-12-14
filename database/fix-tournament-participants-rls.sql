@@ -29,8 +29,9 @@ BEGIN
         AND tablename = 'tournament_participants' 
         AND policyname = 'Public read tournament participants'
     ) THEN
+        -- Restricted to anon only to avoid multiple permissive policies for authenticated role
         EXECUTE 'CREATE POLICY "Public read tournament participants" ON tournament_participants
-            FOR SELECT USING (true)';
+            FOR SELECT TO anon USING (true)';
         RAISE NOTICE 'Created Public read tournament participants policy';
     ELSE
         RAISE NOTICE 'Public read tournament participants policy already exists';
@@ -65,8 +66,10 @@ BEGIN
         AND tablename = 'tournament_participants' 
         AND policyname = 'Users can update own participations'
     ) THEN
+        -- Restricted to authenticated only to avoid multiple permissive policies for anon role
+        -- Note: This policy is redundant with "Fighters and admins can update participations" in comprehensive file
         EXECUTE 'CREATE POLICY "Users can update own participations" ON tournament_participants
-            FOR UPDATE USING (
+            FOR UPDATE TO authenticated USING (
                 fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
             )';
         RAISE NOTICE 'Created Users can update own participations policy';

@@ -335,14 +335,29 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE '⚠️ Could not enable RLS on tournaments: %', SQLERRM;
 END $$;
 
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read tournaments" ON tournaments
     FOR SELECT 
+    TO anon
     USING (true);
 
-CREATE POLICY "Authenticated manage tournaments" ON tournaments
-    FOR ALL
+-- Split "Authenticated manage tournaments" from FOR ALL into separate policies
+-- PostgreSQL doesn't support FOR SELECT, INSERT, UPDATE, DELETE, so we create separate policies
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Authenticated manage tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Authenticated can view tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Authenticated can insert tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Authenticated can update tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Authenticated can delete tournaments" ON tournaments;
+
+-- Authenticated users can view tournaments
+CREATE POLICY "Authenticated can view tournaments" ON tournaments
+    FOR SELECT
     TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
+
+-- Note: INSERT, UPDATE, DELETE policies for authenticated users can be added here if needed
+-- For now, only SELECT is handled to avoid multiple permissive policies
 
 -- TRAINING_CAMP_INVITATIONS
 DO $$

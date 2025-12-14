@@ -182,32 +182,100 @@ EXCEPTION
 END $$;
 
 -- Public read access for tournaments
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read tournaments" ON tournaments
-    FOR SELECT USING (true);
+    FOR SELECT TO anon
+    USING (true);
 
--- Admin write access for tournaments
-CREATE POLICY "Admin manage tournaments" ON tournaments
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM fighter_profiles fp
-            JOIN auth.users u ON fp.user_id = u.id
-            WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-            AND u.email LIKE '%@admin.tantalus%'
-        )
-    );
+-- Admin access for tournaments (split from FOR ALL into separate policies)
+-- PostgreSQL doesn't support FOR SELECT, INSERT, UPDATE, DELETE, so we create separate policies
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Admin manage tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Admin can view tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Admin can insert tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Admin can update tournaments" ON tournaments;
+DROP POLICY IF EXISTS "Admin can delete tournaments" ON tournaments;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        -- Note: SELECT is handled by "Authenticated can view tournaments" which allows all authenticated users (including admins)
+        EXECUTE 'CREATE POLICY "Admin can insert tournaments" ON tournaments
+            FOR INSERT TO authenticated
+            WITH CHECK (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can update tournaments" ON tournaments
+            FOR UPDATE TO authenticated
+            USING (is_admin_user())';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete tournaments" ON tournaments
+            FOR DELETE TO authenticated
+            USING (is_admin_user())';
+    ELSE
+        -- Fallback: check profiles table and email
+        -- Note: SELECT is handled by "Authenticated can view tournaments" which allows all authenticated users (including admins)
+        EXECUTE 'CREATE POLICY "Admin can insert tournaments" ON tournaments
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can update tournaments" ON tournaments
+            FOR UPDATE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+        
+        EXECUTE 'CREATE POLICY "Admin can delete tournaments" ON tournaments
+            FOR DELETE TO authenticated
+            USING (
+                EXISTS (
+                    SELECT 1 FROM fighter_profiles fp
+                    JOIN auth.users u ON fp.user_id = u.id
+                    WHERE fp.id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+                    AND u.email LIKE ''%@admin.tantalus%''
+                )
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Fighters can read their own tournament participations
-CREATE POLICY "Fighters read own participations" ON tournament_participants
-    FOR SELECT USING (
-        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-        OR tournament_id IN (SELECT id FROM tournaments WHERE created_by = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1))
-    );
+-- Note: "Fighters read own participations" policy has been removed - handled by "Authenticated and admins can view participants" in comprehensive file
+-- This avoids multiple permissive policies for the same role and action
+-- The combined policy allows fighters to view their own participations, tournament creators to view participants for their tournaments, or admins to view all
 
 -- Fighters can insert their own participations (join tournaments)
-CREATE POLICY "Fighters join tournaments" ON tournament_participants
-    FOR INSERT WITH CHECK (
-        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
-    );
+-- Note: "Fighters join tournaments" policy has been removed - handled by "Fighters and creators and admins can insert participants" in comprehensive file
+-- This avoids multiple permissive policies for the same role and action
 
 -- Public read access for brackets
 CREATE POLICY "Public read brackets" ON tournament_brackets

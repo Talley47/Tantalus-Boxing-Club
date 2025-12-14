@@ -42,8 +42,10 @@ ALTER TABLE fight_records ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public can view fight records" ON fight_records;
 DROP POLICY IF EXISTS "Anyone can view fight records" ON fight_records;
 
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view fight records" ON fight_records
     FOR SELECT
+    TO anon
     USING (true);
 
 -- 6. Also ensure scheduled_fights can be read

@@ -47,7 +47,7 @@ BEGIN
         AND policyname = 'Users can join tournaments'
     ) THEN
         EXECUTE 'CREATE POLICY "Users can join tournaments" ON tournament_participants
-            FOR INSERT WITH CHECK (
+            FOR INSERT TO authenticated WITH CHECK (
                 fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
             )';
         RAISE NOTICE 'Created Users can join tournaments policy';
@@ -91,7 +91,7 @@ BEGIN
         ) THEN
             -- Use is_admin_user function
             EXECUTE 'CREATE POLICY "Tournament creators and admins can manage participants" ON tournament_participants
-                FOR ALL USING (
+                FOR ALL TO authenticated USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
                         WHERE id = tournament_id AND created_by = (select auth.uid())
@@ -101,7 +101,7 @@ BEGIN
         ELSE
             -- Fallback: check profiles table
             EXECUTE 'CREATE POLICY "Tournament creators and admins can manage participants" ON tournament_participants
-                FOR ALL USING (
+                FOR ALL TO authenticated USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
                         WHERE id = tournament_id AND created_by = (select auth.uid())

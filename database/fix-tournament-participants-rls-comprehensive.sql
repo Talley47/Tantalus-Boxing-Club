@@ -31,7 +31,9 @@ CREATE POLICY "Public read tournament participants" ON tournament_participants
 -- 2. Fighters can join tournaments (insert their own participation)
 -- This is the critical policy that was failing
 CREATE POLICY "Fighters can join tournaments" ON tournament_participants
-    FOR INSERT WITH CHECK (
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
             WHERE user_id = (select auth.uid())
@@ -65,10 +67,10 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admins can manage all participants" ON tournament_participants
-            FOR ALL USING (is_admin_user())';
+            FOR ALL TO authenticated USING (is_admin_user())';
     ELSE
         EXECUTE 'CREATE POLICY "Admins can manage all participants" ON tournament_participants
-            FOR ALL USING (
+            FOR ALL TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 

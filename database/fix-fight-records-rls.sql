@@ -21,9 +21,12 @@ BEGIN
     DROP POLICY IF EXISTS "Admins can insert fight records" ON fight_records;
     DROP POLICY IF EXISTS "Admins can update fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters can view their fight records" ON fight_records;
+    DROP POLICY IF EXISTS "Fighters and admins can view fight records" ON fight_records;
+    DROP POLICY IF EXISTS "Authenticated can view fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters can insert their fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters and admins can insert fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters can update their fight records" ON fight_records;
+    DROP POLICY IF EXISTS "Fighters and admins can update fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters can delete their fight records" ON fight_records;
     DROP POLICY IF EXISTS "Fighters and admins can delete fight records" ON fight_records;
     
@@ -39,17 +42,36 @@ EXCEPTION
 END $$;
 
 -- Public read access (for rankings, statistics, etc.)
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view fight records" ON fight_records
-    FOR SELECT USING (true);
-
--- Fighters can view their own fight records
--- Since fighter_id references fighter_profiles(user_id), we can check directly
-CREATE POLICY "Fighters can view their fight records" ON fight_records
     FOR SELECT
-    TO authenticated
-    USING (
-        fighter_id = (select auth.uid())
-    );
+    TO anon
+    USING (true);
+
+-- Authenticated users can view all fight records
+-- This avoids multiple permissive policies for the same role and action
+-- Note: This policy applies to authenticated users, while "Public can view fight records" applies to anon users
+DO $$
+BEGIN
+    -- Drop old policies if they exist
+    DROP POLICY IF EXISTS "Fighters can view their fight records" ON fight_records;
+    DROP POLICY IF EXISTS "Admins can view all fight records" ON fight_records;
+    DROP POLICY IF EXISTS "Authenticated can view fight records" ON fight_records;
+    
+    -- Try to use is_admin_user function if it exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated can view fight records" ON fight_records
+            FOR SELECT TO authenticated USING (true)';
+    ELSE
+        -- Fallback: same policy (no function dependency)
+        EXECUTE 'CREATE POLICY "Authenticated can view fight records" ON fight_records
+            FOR SELECT TO authenticated USING (true)';
+    END IF;
+END $$;
 
 -- Combined INSERT policy: Fighters can insert their own records OR admins can insert any record
 -- This avoids multiple permissive policies for the same role and action
@@ -83,11 +105,9 @@ BEGIN
     END IF;
 END $$;
 
--- Fighters can update their own fight records
-CREATE POLICY "Fighters can update their fight records" ON fight_records
-    FOR UPDATE USING (
-        fighter_id = (select auth.uid())
-    );
+-- Combined UPDATE policy: Fighters can update their own records OR admins can update any record
+-- This avoids multiple permissive policies for the same role and action
+-- The policy is created in the DO block below
 
 -- Combined DELETE policy: Fighters can delete their own records OR admins can delete any record
 -- This avoids multiple permissive policies for the same role and action
@@ -134,24 +154,18 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        -- Create separate policies for SELECT and UPDATE (INSERT is handled by combined policy above)
-        EXECUTE 'CREATE POLICY "Admins can view all fight records" ON fight_records
-            FOR SELECT TO authenticated USING (is_admin_user())';
-        EXECUTE 'CREATE POLICY "Admins can update fight records" ON fight_records
-            FOR UPDATE TO authenticated USING (is_admin_user())';
+        -- Create combined UPDATE policy: Fighters can update their own records OR admins can update any record
+        EXECUTE 'CREATE POLICY "Fighters and admins can update fight records" ON fight_records
+            FOR UPDATE TO authenticated USING (
+                fighter_id = (select auth.uid()) 
+                OR is_admin_user()
+            )';
     ELSE
         -- Fallback: check profiles table
-        EXECUTE 'CREATE POLICY "Admins can view all fight records" ON fight_records
-            FOR SELECT TO authenticated USING (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE id = (select auth.uid()) 
-                    AND role = ''admin''
-                )
-            )';
-        EXECUTE 'CREATE POLICY "Admins can update fight records" ON fight_records
+        EXECUTE 'CREATE POLICY "Fighters and admins can update fight records" ON fight_records
             FOR UPDATE TO authenticated USING (
-                EXISTS (
+                fighter_id = (select auth.uid()) 
+                OR EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 
                     AND role = ''admin''
@@ -168,21 +182,15 @@ GRANT SELECT ON fight_records TO anon;
 COMMENT ON POLICY "Public can view fight records" ON fight_records IS 
     'Allows anyone to view fight records for rankings and statistics';
 
-COMMENT ON POLICY "Fighters can view their fight records" ON fight_records IS 
-    'Allows fighters to view their own fight records';
+COMMENT ON POLICY "Authenticated can view fight records" ON fight_records IS 
+    'Allows authenticated users to view all fight records. This avoids multiple permissive policies for the authenticated role.';
 
 COMMENT ON POLICY "Fighters and admins can insert fight records" ON fight_records IS 
     'Allows fighters to insert their own fight records or admins to insert any fight record. Combined policy to avoid multiple permissive policies.';
 
-COMMENT ON POLICY "Fighters can update their fight records" ON fight_records IS 
-    'Allows fighters to update their own fight records';
-
 COMMENT ON POLICY "Fighters and admins can delete fight records" ON fight_records IS 
     'Allows fighters to delete their own fight records or admins to delete any fight record. Combined policy to avoid multiple permissive policies.';
 
-COMMENT ON POLICY "Admins can view all fight records" ON fight_records IS 
-    'Allows admins to view all fight records';
-
-COMMENT ON POLICY "Admins can update fight records" ON fight_records IS 
-    'Allows admins to update all fight records';
+COMMENT ON POLICY "Fighters and admins can update fight records" ON fight_records IS 
+    'Allows fighters to update their own fight records or admins to update any fight record. Combined policy to avoid multiple permissive policies.';
 

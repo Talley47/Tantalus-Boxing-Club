@@ -41,12 +41,12 @@ CREATE POLICY "Public read published news" ON news_announcements
 -- Policy 2: Authenticated users can read all news (simple check)
 CREATE POLICY "Authenticated read all news" ON news_announcements
     FOR SELECT 
-    USING (auth.uid() IS NOT NULL);
+    USING ((select auth.uid()) IS NOT NULL);
 
 -- Policy 3: Authenticated users can insert news
 CREATE POLICY "Authenticated insert news" ON news_announcements
     FOR INSERT 
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Policy 4: Admins can update news (simple check, no complex subqueries)
 CREATE POLICY "Admin update news" ON news_announcements

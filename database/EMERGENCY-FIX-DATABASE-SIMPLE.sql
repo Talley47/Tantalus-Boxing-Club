@@ -112,18 +112,18 @@ CREATE POLICY "Public read published news" ON news_announcements
 
 CREATE POLICY "Authenticated read all news" ON news_announcements
     FOR SELECT 
-    USING (auth.uid() IS NOT NULL);
+    USING ((select auth.uid()) IS NOT NULL);
 
 CREATE POLICY "Authenticated insert news" ON news_announcements
     FOR INSERT 
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 CREATE POLICY "Admin manage news" ON news_announcements
     FOR ALL 
     USING (
         EXISTS (
             SELECT 1 FROM auth.users
-            WHERE id = auth.uid()
+            WHERE id = (select auth.uid())
             AND email = 'tantalusboxingclub@gmail.com'
         )
     );

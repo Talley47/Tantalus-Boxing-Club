@@ -87,7 +87,7 @@ DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
 
 CREATE POLICY "Authenticated read all news" ON news_announcements
     FOR SELECT 
-    USING (auth.uid() IS NOT NULL);
+    USING ((select auth.uid()) IS NOT NULL);
 
 -- Ensure scheduled fights are publicly readable
 DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;

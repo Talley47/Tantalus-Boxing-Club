@@ -16,6 +16,12 @@ CREATE INDEX IF NOT EXISTS idx_news_announcements_created_at
 ON news_announcements(created_at DESC);
 
 -- Step 4: Create partial index on is_published for filtering
+-- Drop duplicate indexes if they exist
+DROP INDEX IF EXISTS idx_news_published;
+DROP INDEX IF EXISTS idx_news_published_simple;
+DROP INDEX IF EXISTS idx_news_is_published;
+
+-- Create index with consistent naming (idx_news_announcements_is_published)
 CREATE INDEX IF NOT EXISTS idx_news_announcements_is_published 
 ON news_announcements(is_published)
 WHERE is_published = TRUE;

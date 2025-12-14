@@ -29,7 +29,7 @@ CREATE POLICY "Public can view all fighter profiles"
 CREATE POLICY "Users can view own fighter profile" 
     ON fighter_profiles 
     FOR SELECT 
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Ensure INSERT and UPDATE policies exist
 DO $$
@@ -44,12 +44,12 @@ END $$;
 CREATE POLICY "Users can insert own fighter profile" 
     ON fighter_profiles 
     FOR INSERT 
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own fighter profile" 
     ON fighter_profiles 
     FOR UPDATE 
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Admin policies (if is_admin_user function exists)
 DO $$
@@ -78,7 +78,7 @@ EXCEPTION
             USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

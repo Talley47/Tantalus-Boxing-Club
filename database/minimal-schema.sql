@@ -65,13 +65,13 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can view own fighter profile" ON public.fighter_profiles
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own fighter profile" ON public.fighter_profiles
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert own fighter profile" ON public.fighter_profiles
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK ((select auth.uid()) = user_id);
 
 -- Public read for rankings
 CREATE POLICY "Public can view fighter profiles" ON public.fighter_profiles

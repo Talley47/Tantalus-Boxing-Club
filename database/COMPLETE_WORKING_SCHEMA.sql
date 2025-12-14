@@ -110,11 +110,11 @@ CREATE POLICY "Users can view own fighter profile"
 
 CREATE POLICY "Users can insert own fighter profile" 
     ON public.fighter_profiles FOR INSERT 
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own fighter profile" 
     ON public.fighter_profiles FOR UPDATE 
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Public can view all fighter profiles (for rankings)
 CREATE POLICY "Public can view all fighter profiles" 

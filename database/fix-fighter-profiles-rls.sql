@@ -34,19 +34,19 @@ CREATE POLICY "Public can view fighter profiles"
 CREATE POLICY "Users can view own fighter profile" 
     ON public.fighter_profiles 
     FOR SELECT 
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- 3. Users can insert their own fighter profile
 CREATE POLICY "Users can insert own fighter profile" 
     ON public.fighter_profiles 
     FOR INSERT 
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- 4. Users can update their own fighter profile
 CREATE POLICY "Users can update own fighter profile" 
     ON public.fighter_profiles 
     FOR UPDATE 
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- 5. Admins can manage all fighter profiles (using is_admin_user function if available)
 DO $$
@@ -70,7 +70,7 @@ BEGIN
             USING (
                 EXISTS (
                     SELECT 1 FROM public.profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

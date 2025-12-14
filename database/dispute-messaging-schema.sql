@@ -66,7 +66,9 @@ END $$;
 
 -- Admin can view all messages
 CREATE POLICY "Admin can view all dispute messages" ON dispute_messages
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = (select auth.uid()) AND role = 'admin'
@@ -75,7 +77,9 @@ CREATE POLICY "Admin can view all dispute messages" ON dispute_messages
 
 -- Fighters can view messages for their disputes
 CREATE POLICY "Fighters can view their dispute messages" ON dispute_messages
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM disputes d
             WHERE d.id = dispute_messages.dispute_id
@@ -88,7 +92,9 @@ CREATE POLICY "Fighters can view their dispute messages" ON dispute_messages
 
 -- Admin can insert dispute messages
 CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
-    FOR INSERT WITH CHECK (
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = (select auth.uid()) AND role = 'admin'
@@ -97,7 +103,9 @@ CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
 
 -- Fighters can insert messages for their disputes
 CREATE POLICY "Fighters can insert their dispute messages" ON dispute_messages
-    FOR INSERT WITH CHECK (
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
         EXISTS (
             SELECT 1 FROM disputes d
             WHERE d.id = dispute_messages.dispute_id
@@ -139,8 +147,8 @@ END $$;
 -- Fighters can view their own submissions
 CREATE POLICY "Fighters can view their submissions" ON fight_record_submissions
     FOR SELECT USING (
-        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
-        OR opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
+        OR opponent_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Admins can view all submissions
@@ -148,20 +156,20 @@ CREATE POLICY "Admin can view all submissions" ON fight_record_submissions
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
+            WHERE id = (select auth.uid()) AND role = 'admin'
         )
     );
 
 -- Fighters can insert their own submissions
 CREATE POLICY "Fighters can insert their submissions" ON fight_record_submissions
     FOR INSERT WITH CHECK (
-        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
     );
 
 -- Fighters can update their own submissions (before confirmation)
 CREATE POLICY "Fighters can update their submissions" ON fight_record_submissions
     FOR UPDATE USING (
-        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = auth.uid())
+        fighter_id IN (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()))
         AND status = 'Pending'
     );
 
@@ -170,7 +178,7 @@ CREATE POLICY "Admin can update all submissions" ON fight_record_submissions
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
+            WHERE id = (select auth.uid()) AND role = 'admin'
         )
     );
 

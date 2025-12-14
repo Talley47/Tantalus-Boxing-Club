@@ -27,10 +27,10 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admin can view all dispute messages" ON dispute_messages
-            FOR SELECT USING (is_admin_user())';
+            FOR SELECT TO authenticated USING (is_admin_user())';
     ELSE
         EXECUTE 'CREATE POLICY "Admin can view all dispute messages" ON dispute_messages
-            FOR SELECT USING (
+            FOR SELECT TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
@@ -42,7 +42,9 @@ END $$;
 -- Fighters can view messages for their disputes
 -- Simplified check: if they are the disputer or opponent in the dispute
 CREATE POLICY "Fighters can view their dispute messages" ON dispute_messages
-    FOR SELECT USING (
+    FOR SELECT
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM disputes d
             JOIN fighter_profiles fp_disputer ON fp_disputer.id = d.disputer_id
@@ -65,14 +67,14 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
-            FOR INSERT WITH CHECK (
+            FOR INSERT TO authenticated WITH CHECK (
                 is_admin_user()
                 AND sender_type = ' || quote_literal('admin') || '
                 AND sender_id = (select auth.uid())
             )';
     ELSE
         EXECUTE 'CREATE POLICY "Admin can insert dispute messages" ON dispute_messages
-            FOR INSERT WITH CHECK (
+            FOR INSERT TO authenticated WITH CHECK (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
@@ -86,7 +88,9 @@ END $$;
 -- Fighters can insert messages for their disputes
 -- Simplified: check if dispute exists and user is part of it
 CREATE POLICY "Fighters can insert their dispute messages" ON dispute_messages
-    FOR INSERT WITH CHECK (
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
         EXISTS (
             SELECT 1 FROM disputes d
             JOIN fighter_profiles fp_disputer ON fp_disputer.id = d.disputer_id
@@ -134,7 +138,6 @@ CREATE POLICY "Fighters can update their dispute messages" ON dispute_messages
 
 -- Grant necessary permissions
 GRANT SELECT, INSERT, UPDATE ON dispute_messages TO authenticated;
-GRANT SELECT ON dispute_messages TO anon;
 
 -- Add helpful comments
 COMMENT ON POLICY "Admin can view all dispute messages" ON dispute_messages IS 

@@ -15,6 +15,8 @@ BEGIN
     DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
     DROP POLICY IF EXISTS "Fighters can insert fight results" ON news_announcements;
     DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
+    DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
+    DROP POLICY IF EXISTS "Authenticated and admins can read news" ON news_announcements;
     DROP POLICY IF EXISTS "Public read fight results" ON news_fight_results;
     DROP POLICY IF EXISTS "Admin manage fight results" ON news_fight_results;
     DROP POLICY IF EXISTS "Fighters can insert fight results data" ON news_fight_results;
@@ -24,8 +26,10 @@ EXCEPTION
 END $$;
 
 -- Public read access for published news
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read published news" ON news_announcements
-    FOR SELECT USING (
+    FOR SELECT TO anon
+    USING (
         is_published = TRUE OR 
         (type = 'fight_result' AND is_published = TRUE)
     );
@@ -59,8 +63,9 @@ BEGIN
             FOR DELETE TO authenticated
             USING (is_admin_user())';
         
-        -- Admin can read all news (including unpublished)
-        EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
+        -- Combined SELECT policy: Authenticated users can read published news OR admins can read all news
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
             FOR SELECT TO authenticated
             USING (is_published = TRUE OR is_admin_user())';
     ELSE
@@ -85,8 +90,11 @@ BEGIN
                 )
             )';
         
-        EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
-            FOR SELECT USING (
+        -- Combined SELECT policy: Authenticated users can read published news OR admins can read all news
+        -- This avoids multiple permissive policies for the same role and action
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
                 is_published = TRUE OR
                 EXISTS (
                     SELECT 1 FROM profiles 

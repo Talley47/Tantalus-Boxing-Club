@@ -57,8 +57,10 @@ EXCEPTION
 END $$;
 
 -- Public read access for published news
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read published news" ON news_announcements
-    FOR SELECT USING (is_published = TRUE);
+    FOR SELECT TO anon
+    USING (is_published = TRUE);
 
 -- Admin write access for news (UPDATE and DELETE only - INSERT is handled by combined policy, SELECT by separate policy)
 -- Split into separate policies to avoid multiple permissive policies for the same role and action

@@ -61,9 +61,14 @@ END $$;
 -- Create separate admin policies for SELECT, UPDATE, DELETE (INSERT is handled by combined policy below)
 -- PostgreSQL doesn't support FOR SELECT, UPDATE, DELETE, so we create separate policies
 DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin insert news" ON news_announcements;
 DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
 DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated insert news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
 DROP POLICY IF EXISTS "Authenticated and admins can insert news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated and admins can read news" ON news_announcements;
 
 DO $$
 BEGIN
@@ -96,12 +101,38 @@ CREATE POLICY "Admin manage fight results" ON news_fight_results
     TO authenticated
     USING (is_admin_user());
 
--- Allow admin to read unpublished news
+-- Combined SELECT policy: Authenticated users can read published news OR admins can read all news
+-- This avoids multiple permissive policies for the same role and action
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
-CREATE POLICY "Admin read all news" ON news_announcements
-    FOR SELECT
-    TO authenticated
-    USING (
-        is_published = TRUE OR is_admin_user()
-    );
+DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated and admins can read news" ON news_announcements;
+
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR EXISTS (
+                    SELECT 1 FROM profiles
+                    WHERE id = (select auth.uid())
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 

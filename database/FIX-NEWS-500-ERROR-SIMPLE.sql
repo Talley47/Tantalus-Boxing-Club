@@ -31,24 +31,82 @@ ALTER TABLE news_announcements ENABLE ROW LEVEL SECURITY;
 -- ============================================
 
 -- Policy 1: Public can read published news (simple check, no complex queries)
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public read published news" ON news_announcements
     FOR SELECT 
+    TO anon
     USING (
         is_published IS NOT NULL 
         AND is_published = TRUE
     );
 
--- Policy 2: Authenticated users can read all news (simple check)
-CREATE POLICY "Authenticated read all news" ON news_announcements
-    FOR SELECT
-    TO authenticated
-    USING ((select auth.uid()) IS NOT NULL);
+-- Combined SELECT policy: Authenticated users can read published news OR admins can read all news
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Authenticated and admins can read news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR EXISTS (
+                    SELECT 1 FROM profiles
+                    WHERE id = (select auth.uid())
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
--- Policy 3: Authenticated users can insert news
-CREATE POLICY "Authenticated insert news" ON news_announcements
-    FOR INSERT
-    TO authenticated
-    WITH CHECK ((select auth.uid()) IS NOT NULL);
+-- Combined INSERT policy: Authenticated users OR admins can insert news
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Authenticated and admins can insert news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin insert news" ON news_announcements;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated and admins can insert news" ON news_announcements
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                (select auth.uid()) IS NOT NULL 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Authenticated and admins can insert news" ON news_announcements
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                (select auth.uid()) IS NOT NULL 
+                OR EXISTS (
+                    SELECT 1 FROM profiles
+                    WHERE id = (select auth.uid())
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Policy 4: Admins can update news (simple check, no complex subqueries)
 CREATE POLICY "Admin update news" ON news_announcements

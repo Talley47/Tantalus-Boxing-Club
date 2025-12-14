@@ -33,18 +33,40 @@ DROP POLICY IF EXISTS "Admin manage news" ON news_announcements;
 DROP POLICY IF EXISTS "Admin insert news" ON news_announcements;
 DROP POLICY IF EXISTS "Admin update news" ON news_announcements;
 DROP POLICY IF EXISTS "Admin delete news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated insert news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated and admins can insert news" ON news_announcements;
 
--- Recreate admin policy for INSERT, UPDATE, DELETE only (not SELECT)
--- This prevents it from being evaluated on SELECT queries
-CREATE POLICY "Admin insert news" ON news_announcements
-    FOR INSERT 
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE id = (select auth.uid())
-            AND role = 'admin'
-        )
-    );
+-- Combined INSERT policy: Authenticated users OR admins can insert news
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated and admins can insert news" ON news_announcements
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                (select auth.uid()) IS NOT NULL 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Authenticated and admins can insert news" ON news_announcements
+            FOR INSERT TO authenticated
+            WITH CHECK (
+                (select auth.uid()) IS NOT NULL 
+                OR EXISTS (
+                    SELECT 1 FROM profiles
+                    WHERE id = (select auth.uid())
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 CREATE POLICY "Admin update news" ON news_announcements
     FOR UPDATE 
@@ -74,21 +96,51 @@ CREATE POLICY "Admin delete news" ON news_announcements
     );
 
 -- Drop and recreate news policies to ensure they work for anonymous users
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 DROP POLICY IF EXISTS "Public read published news" ON news_announcements;
 
 CREATE POLICY "Public read published news" ON news_announcements
     FOR SELECT 
+    TO anon
     USING (
         COALESCE(is_published, false) = TRUE
     );
 
--- Ensure authenticated users can read all news
+-- Combined SELECT policy: Authenticated users can read published news OR admins can read all news
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
 DROP POLICY IF EXISTS "Authenticated read all news" ON news_announcements;
+DROP POLICY IF EXISTS "Admin read all news" ON news_announcements;
+DROP POLICY IF EXISTS "Authenticated and admins can read news" ON news_announcements;
 
-CREATE POLICY "Authenticated read all news" ON news_announcements
-    FOR SELECT
-    TO authenticated
-    USING ((select auth.uid()) IS NOT NULL);
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Authenticated and admins can read news" ON news_announcements
+            FOR SELECT TO authenticated
+            USING (
+                is_published = TRUE 
+                OR EXISTS (
+                    SELECT 1 FROM profiles
+                    WHERE id = (select auth.uid())
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Ensure scheduled fights are publicly readable
 DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;

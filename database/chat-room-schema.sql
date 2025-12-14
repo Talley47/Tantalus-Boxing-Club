@@ -21,23 +21,23 @@ END $$;
 -- Policy: Authenticated users can view all chat messages
 CREATE POLICY "Authenticated users can view chat messages" ON chat_messages
     FOR SELECT
-    USING (auth.role() = 'authenticated');
+    USING ((select auth.role()) = 'authenticated');
 
 -- Policy: Authenticated users can create chat messages
 CREATE POLICY "Authenticated users can create chat messages" ON chat_messages
     FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated' AND (select auth.uid()) = user_id);
+    WITH CHECK ((select auth.role()) = 'authenticated' AND (select auth.uid()) = user_id);
 
 -- Policy: Users can update their own messages
 -- Both USING and WITH CHECK clauses are required for UPDATE policies
 CREATE POLICY "Users can update their own messages" ON chat_messages
     FOR UPDATE
     USING (
-        auth.role() = 'authenticated' 
+        (select auth.role()) = 'authenticated' 
         AND (select auth.uid()) = user_id
     )
     WITH CHECK (
-        auth.role() = 'authenticated' 
+        (select auth.role()) = 'authenticated' 
         AND (select auth.uid()) = user_id
     );
 
@@ -45,7 +45,7 @@ CREATE POLICY "Users can update their own messages" ON chat_messages
 CREATE POLICY "Users can delete their own messages" ON chat_messages
     FOR DELETE
     USING (
-        auth.role() = 'authenticated' 
+        (select auth.role()) = 'authenticated' 
         AND (select auth.uid()) = user_id
     );
 

@@ -35,18 +35,18 @@ CREATE POLICY "Public read news reactions" ON news_reactions
 -- Users can insert their own reactions
 CREATE POLICY "Users insert own reactions" ON news_reactions
     FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Users can delete their own reactions
 CREATE POLICY "Users delete own reactions" ON news_reactions
     FOR DELETE
-    USING (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id);
 
 -- Users can update their own reactions (to change reaction type)
 CREATE POLICY "Users update own reactions" ON news_reactions
     FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+    USING ((select auth.uid()) = user_id)
+    WITH CHECK ((select auth.uid()) = user_id);
 
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON news_reactions TO authenticated;

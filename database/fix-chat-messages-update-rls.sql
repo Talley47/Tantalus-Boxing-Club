@@ -9,12 +9,12 @@ DROP POLICY IF EXISTS "Users can update own messages" ON chat_messages;
 CREATE POLICY "Users can update their own messages" ON chat_messages
     FOR UPDATE
     USING (
-        auth.role() = 'authenticated' 
-        AND auth.uid() = user_id
+        (select auth.role()) = 'authenticated' 
+        AND (select auth.uid()) = user_id
     )
     WITH CHECK (
-        auth.role() = 'authenticated' 
-        AND auth.uid() = user_id
+        (select auth.role()) = 'authenticated' 
+        AND (select auth.uid()) = user_id
     );
 
 -- Grant UPDATE permission

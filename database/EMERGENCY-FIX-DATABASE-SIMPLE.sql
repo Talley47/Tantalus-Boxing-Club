@@ -293,9 +293,11 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- Consolidated policy name to avoid multiple permissive policies
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 DROP POLICY IF EXISTS "Public can view scheduled fights" ON scheduled_fights;
 CREATE POLICY "Public can view scheduled fights" ON scheduled_fights
     FOR SELECT 
+    TO anon
     USING (true);
 
 -- Split "Authenticated manage fights" from FOR ALL into separate policies

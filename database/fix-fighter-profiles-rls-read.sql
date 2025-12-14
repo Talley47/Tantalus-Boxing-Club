@@ -56,8 +56,10 @@ DROP POLICY IF EXISTS "Public can view scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Public read scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Anyone can view scheduled fights" ON scheduled_fights;
 
+-- Restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view scheduled fights" ON scheduled_fights
     FOR SELECT
+    TO anon
     USING (true);
 
 -- 7. Test query (should return data if fighters exist)

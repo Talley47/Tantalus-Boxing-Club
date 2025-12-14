@@ -74,6 +74,7 @@ CREATE POLICY "Fighters can update their scheduled fights" ON scheduled_fights
 -- PostgreSQL doesn't support FOR SELECT, UPDATE, DELETE, so we create separate policies
 -- Restricted to authenticated only to avoid multiple permissive policies for anon role
 DROP POLICY IF EXISTS "Admins can manage all scheduled fights" ON scheduled_fights;
+-- Note: "Admins can view scheduled fights" SELECT policy removed - handled by "Authenticated can view scheduled fights"
 DROP POLICY IF EXISTS "Admins can view scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Admins can update scheduled fights" ON scheduled_fights;
 DROP POLICY IF EXISTS "Admins can delete scheduled fights" ON scheduled_fights;
@@ -86,11 +87,8 @@ BEGIN
         WHERE proname = 'is_admin_user' 
         AND pronamespace = 'public'::regnamespace
     ) THEN
-        -- Create separate admin policies for SELECT, UPDATE, DELETE (INSERT is handled by combined policy above)
-        EXECUTE 'CREATE POLICY "Admins can view scheduled fights" ON scheduled_fights
-            FOR SELECT TO authenticated
-            USING (is_admin_user())';
-        
+        -- Create separate admin policies for UPDATE, DELETE (INSERT and SELECT are handled by other policies)
+        -- Note: SELECT is handled by "Authenticated can view scheduled fights" which allows all authenticated users
         EXECUTE 'CREATE POLICY "Admins can update scheduled fights" ON scheduled_fights
             FOR UPDATE TO authenticated
             USING (is_admin_user())';
@@ -100,16 +98,7 @@ BEGIN
             USING (is_admin_user())';
     ELSE
         -- Fallback: check profiles table for admin role
-        EXECUTE 'CREATE POLICY "Admins can view scheduled fights" ON scheduled_fights
-            FOR SELECT TO authenticated
-            USING (
-                EXISTS (
-                    SELECT 1 FROM profiles 
-                    WHERE profiles.id = (select auth.uid()) 
-                    AND profiles.role = ''admin''
-                )
-            )';
-        
+        -- Note: SELECT is handled by "Authenticated can view scheduled fights" which allows all authenticated users
         EXECUTE 'CREATE POLICY "Admins can update scheduled fights" ON scheduled_fights
             FOR UPDATE TO authenticated
             USING (

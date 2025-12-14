@@ -69,10 +69,41 @@ CREATE POLICY "Users can update own profile" ON public.profiles
 CREATE POLICY "Users can insert own profile" ON public.profiles
     FOR INSERT WITH CHECK ((select auth.uid()) = id);
 
-CREATE POLICY "Users can view own fighter profile" ON public.fighter_profiles
-    FOR SELECT
-    TO authenticated
-    USING ((select auth.uid()) = user_id);
+-- Combined SELECT policy: Users can view their own fighter profile OR admins can view all
+-- This avoids multiple permissive policies for the same role and action
+DROP POLICY IF EXISTS "Users and admins can view fighter profiles" ON public.fighter_profiles;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Users and admins can view fighter profiles" 
+            ON public.fighter_profiles 
+            FOR SELECT
+            TO authenticated
+            USING (
+                (select auth.uid()) = user_id 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Users and admins can view fighter profiles" 
+            ON public.fighter_profiles 
+            FOR SELECT
+            TO authenticated
+            USING (
+                (select auth.uid()) = user_id 
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 CREATE POLICY "Users can update own fighter profile" ON public.fighter_profiles
     FOR UPDATE
@@ -114,9 +145,11 @@ BEGIN
     END IF;
 END $$;
 
--- Public read for rankings
+-- Public read for rankings (restricted to anon only to avoid multiple permissive policies for authenticated role)
 CREATE POLICY "Public can view all fighter profiles" ON public.fighter_profiles
-    FOR SELECT USING (true);
+    FOR SELECT
+    TO anon
+    USING (true);
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);

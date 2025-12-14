@@ -20,17 +20,48 @@ EXCEPTION
 END $$;
 
 -- Create a comprehensive public read policy that allows queries by id or user_id
+-- Public can view all fighter profiles (restricted to anon only to avoid multiple permissive policies for authenticated role)
 CREATE POLICY "Public can view all fighter profiles" 
     ON fighter_profiles 
-    FOR SELECT 
-    USING (true);  -- Allow anyone to read all fighter profiles (needed for rankings, matchmaking, disputes)
-
--- Users can view their own fighter profile (redundant but explicit)
-CREATE POLICY "Users can view own fighter profile" 
-    ON fighter_profiles 
     FOR SELECT
-    TO authenticated
-    USING ((select auth.uid()) = user_id);
+    TO anon
+    USING (true);  -- Allow anonymous users to read all fighter profiles (needed for rankings, matchmaking, disputes)
+
+-- Combined SELECT policy: Users can view their own fighter profile OR admins can view all
+-- This avoids multiple permissive policies for the same role and action
+DROP POLICY IF EXISTS "Users and admins can view fighter profiles" ON fighter_profiles;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Users and admins can view fighter profiles" 
+            ON fighter_profiles 
+            FOR SELECT
+            TO authenticated
+            USING (
+                (select auth.uid()) = user_id 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Users and admins can view fighter profiles" 
+            ON fighter_profiles 
+            FOR SELECT
+            TO authenticated
+            USING (
+                (select auth.uid()) = user_id 
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- Ensure INSERT and UPDATE policies exist
 DO $$
@@ -125,8 +156,8 @@ GRANT SELECT ON fighter_profiles TO anon;
 COMMENT ON POLICY "Public can view all fighter profiles" ON fighter_profiles IS 
     'Allows anyone to view fighter profiles for rankings, matchmaking, disputes, and public pages. Works for queries by id or user_id.';
 
-COMMENT ON POLICY "Users can view own fighter profile" ON fighter_profiles IS 
-    'Allows users to view their own fighter profile';
+COMMENT ON POLICY "Users and admins can view fighter profiles" ON fighter_profiles IS 
+    'Allows users to view their own fighter profile or admins to view all fighter profiles. Combined policy to avoid multiple permissive policies.';
 
 COMMENT ON POLICY "Users and admins can insert fighter profiles" ON fighter_profiles IS 
     'Allows users to create their own fighter profile or admins to create any fighter profile. Combined policy to avoid multiple permissive policies.';

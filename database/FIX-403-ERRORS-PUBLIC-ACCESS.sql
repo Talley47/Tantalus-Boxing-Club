@@ -155,8 +155,10 @@ CREATE POLICY "Anyone can view scheduled callouts" ON callout_requests
 DROP POLICY IF EXISTS "Public read fighters" ON fighter_profiles;
 DROP POLICY IF EXISTS "Public can view all fighter profiles" ON fighter_profiles;
 
+-- Public can view all fighter profiles - restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
-    FOR SELECT 
+    FOR SELECT
+    TO anon
     USING (true);
 
 -- Ensure profiles are publicly readable for filtering

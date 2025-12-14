@@ -135,9 +135,11 @@ BEGIN
         DROP POLICY IF EXISTS "Public read access" ON fighter_profiles;
         
         -- Create new public read policy
+        -- Public can view all fighter profiles - restricted to anon only to avoid multiple permissive policies for authenticated role
         CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
             FOR SELECT
-            USING (true);  -- Allow anyone to read
+            TO anon
+            USING (true);  -- Allow anonymous users to read
         
         RAISE NOTICE '✓ Created public read policy';
         RAISE NOTICE '═══════════════════════════════════════';

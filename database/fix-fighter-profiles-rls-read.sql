@@ -12,9 +12,11 @@ DROP POLICY IF EXISTS "Users can view all fighter profiles" ON fighter_profiles;
 DROP POLICY IF EXISTS "Authenticated users can view all fighter profiles" ON fighter_profiles;
 
 -- 3. Create a public read policy (allows anyone to read fighter profiles)
+-- Public can view all fighter profiles - restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
     FOR SELECT
-    USING (true);  -- Allow anyone to read all fighter profiles
+    TO anon
+    USING (true);  -- Allow anonymous users to read all fighter profiles
 
 -- 4. Verify the policy was created
 DO $$

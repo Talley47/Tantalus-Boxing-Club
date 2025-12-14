@@ -160,8 +160,10 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE '⚠️ Could not enable RLS on fighter_profiles: %', SQLERRM;
 END $$;
 
+-- Public can view all fighter profiles - restricted to anon only to avoid multiple permissive policies for authenticated role
 CREATE POLICY "Public can view all fighter profiles" ON fighter_profiles
-    FOR SELECT 
+    FOR SELECT
+    TO anon
     USING (true);
 
 CREATE POLICY "Users can update own fighter profile" ON fighter_profiles

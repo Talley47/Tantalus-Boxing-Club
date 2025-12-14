@@ -298,10 +298,37 @@ CREATE POLICY "Public can view scheduled fights" ON scheduled_fights
     FOR SELECT 
     USING (true);
 
-CREATE POLICY "Authenticated manage fights" ON scheduled_fights
-    FOR ALL
+-- Split "Authenticated manage fights" from FOR ALL into separate policies
+-- PostgreSQL doesn't support FOR SELECT, INSERT, UPDATE, so we create separate policies
+-- DELETE is handled by admin-only policy to avoid multiple permissive policies
+DROP POLICY IF EXISTS "Authenticated manage fights" ON scheduled_fights;
+DROP POLICY IF EXISTS "Authenticated can view scheduled fights" ON scheduled_fights;
+DROP POLICY IF EXISTS "Authenticated can insert scheduled fights" ON scheduled_fights;
+DROP POLICY IF EXISTS "Authenticated can update scheduled fights" ON scheduled_fights;
+
+-- Authenticated users can view scheduled fights
+CREATE POLICY "Authenticated can view scheduled fights" ON scheduled_fights
+    FOR SELECT
     TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
+
+-- Authenticated users can insert scheduled fights (if they're one of the fighters)
+-- Note: INSERT is also handled by "Fighters and admins can create scheduled fights" policy
+-- This policy is kept for backward compatibility but may be redundant
+CREATE POLICY "Authenticated can insert scheduled fights" ON scheduled_fights
+    FOR INSERT
+    TO authenticated
+    WITH CHECK ((select auth.uid()) IS NOT NULL);
+
+-- Authenticated users can update scheduled fights (if they're one of the fighters)
+-- Note: UPDATE may also be handled by fighter-specific policies
+CREATE POLICY "Authenticated can update scheduled fights" ON scheduled_fights
+    FOR UPDATE
+    TO authenticated
+    USING ((select auth.uid()) IS NOT NULL);
+
+-- Note: DELETE is handled by "Admins can delete scheduled fights" policy only
+-- This avoids multiple permissive policies for the same role and action
 
 -- TOURNAMENTS
 DO $$

@@ -239,7 +239,11 @@ END $$;
 -- ============================================
 -- STEP 5: Create performance indexes
 -- ============================================
-CREATE INDEX IF NOT EXISTS idx_news_published_created 
+-- Drop duplicate index if it exists (idx_news_published_created is duplicate of idx_news_announcements_published_created)
+DROP INDEX IF EXISTS idx_news_published_created;
+
+-- Create index with consistent naming (idx_news_announcements_published_created)
+CREATE INDEX IF NOT EXISTS idx_news_announcements_published_created 
 ON news_announcements(is_published, created_at DESC)
 WHERE is_published = TRUE;
 

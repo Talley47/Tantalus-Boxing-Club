@@ -7,6 +7,10 @@ DROP INDEX IF EXISTS idx_news_announcements_created;
 
 -- Step 2: Create optimized composite index for the exact query
 -- Query pattern: WHERE is_published = TRUE ORDER BY created_at DESC LIMIT 20
+-- Drop duplicate index if it exists
+DROP INDEX IF EXISTS idx_news_published_created;
+
+-- Create index with consistent naming (idx_news_announcements_published_created)
 CREATE INDEX IF NOT EXISTS idx_news_announcements_published_created 
 ON news_announcements(is_published, created_at DESC)
 WHERE is_published = TRUE;

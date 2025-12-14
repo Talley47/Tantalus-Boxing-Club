@@ -50,6 +50,7 @@ BEGIN
     DROP POLICY IF EXISTS "Users can update own fighter profile" ON public.fighter_profiles;
     DROP POLICY IF EXISTS "Users can insert own fighter profile" ON public.fighter_profiles;
     DROP POLICY IF EXISTS "Public can view fighter profiles" ON public.fighter_profiles;
+    DROP POLICY IF EXISTS "Public can view all fighter profiles" ON public.fighter_profiles;
 EXCEPTION
     WHEN undefined_object THEN NULL;
 END $$;
@@ -65,7 +66,9 @@ CREATE POLICY "Users can insert own profile" ON public.profiles
     FOR INSERT WITH CHECK ((select auth.uid()) = id);
 
 CREATE POLICY "Users can view own fighter profile" ON public.fighter_profiles
-    FOR SELECT USING ((select auth.uid()) = user_id);
+    FOR SELECT
+    TO authenticated
+    USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can update own fighter profile" ON public.fighter_profiles
     FOR UPDATE USING ((select auth.uid()) = user_id);
@@ -76,7 +79,7 @@ CREATE POLICY "Users can insert own fighter profile" ON public.fighter_profiles
     WITH CHECK ((select auth.uid()) = user_id);
 
 -- Public read for rankings
-CREATE POLICY "Public can view fighter profiles" ON public.fighter_profiles
+CREATE POLICY "Public can view all fighter profiles" ON public.fighter_profiles
     FOR SELECT USING (true);
 
 -- Create indexes for performance

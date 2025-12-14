@@ -25,7 +25,9 @@ END $$;
 -- Create comprehensive RLS policies for fighter_profiles
 
 -- 1. Anyone can view fighter profiles (for rankings, matchmaking, public pages)
-CREATE POLICY "Public can view fighter profiles" 
+-- Drop old policy name if it exists
+DROP POLICY IF EXISTS "Public can view fighter profiles" ON public.fighter_profiles;
+CREATE POLICY "Public can view all fighter profiles" 
     ON public.fighter_profiles 
     FOR SELECT 
     USING (true);
@@ -33,7 +35,8 @@ CREATE POLICY "Public can view fighter profiles"
 -- 2. Users can view their own fighter profile
 CREATE POLICY "Users can view own fighter profile" 
     ON public.fighter_profiles 
-    FOR SELECT 
+    FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) = user_id);
 
 -- 3. Users can insert their own fighter profile
@@ -83,7 +86,7 @@ GRANT SELECT, INSERT, UPDATE ON public.fighter_profiles TO authenticated;
 GRANT SELECT ON public.fighter_profiles TO anon;
 
 -- Add comment
-COMMENT ON POLICY "Public can view fighter profiles" ON public.fighter_profiles IS 
+COMMENT ON POLICY "Public can view all fighter profiles" ON public.fighter_profiles IS 
     'Allows anyone to view fighter profiles for rankings and public pages';
 
 COMMENT ON POLICY "Users can view own fighter profile" ON public.fighter_profiles IS 

@@ -28,7 +28,8 @@ CREATE POLICY "Public can view all fighter profiles"
 -- Users can view their own fighter profile (redundant but explicit)
 CREATE POLICY "Users can view own fighter profile" 
     ON fighter_profiles 
-    FOR SELECT 
+    FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) = user_id);
 
 -- Ensure INSERT and UPDATE policies exist

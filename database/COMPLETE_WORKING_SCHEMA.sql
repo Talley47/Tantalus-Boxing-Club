@@ -105,7 +105,8 @@ END $$;
 
 -- RLS Policies for fighter_profiles
 CREATE POLICY "Users can view own fighter profile" 
-    ON public.fighter_profiles FOR SELECT 
+    ON public.fighter_profiles FOR SELECT
+    TO authenticated
     USING ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users can insert own fighter profile" 

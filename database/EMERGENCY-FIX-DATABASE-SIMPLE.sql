@@ -368,6 +368,9 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE '⚠️ Could not enable RLS on training_camp_invitations: %', SQLERRM;
 END $$;
 
+-- Combined SELECT policy: Users can read their own invitations (as inviter or invitee)
+-- This avoids multiple permissive policies for the same role and action
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
 CREATE POLICY "Users read own invitations" ON training_camp_invitations
     FOR SELECT
     TO authenticated
@@ -376,8 +379,35 @@ CREATE POLICY "Users read own invitations" ON training_camp_invitations
         OR invitee_id = (select auth.uid())
     );
 
-CREATE POLICY "Users manage own invitations" ON training_camp_invitations
-    FOR ALL
+-- Split "Users manage own invitations" from FOR ALL into separate policies for INSERT, UPDATE, DELETE
+-- PostgreSQL doesn't support FOR INSERT, UPDATE, DELETE, so we create separate policies
+-- SELECT is handled by "Users read own invitations" policy above
+-- Restricted to authenticated only to avoid multiple permissive policies for anon role
+DROP POLICY IF EXISTS "Users manage own invitations" ON training_camp_invitations;
+DROP POLICY IF EXISTS "Users can insert invitations" ON training_camp_invitations;
+DROP POLICY IF EXISTS "Users can update invitations" ON training_camp_invitations;
+DROP POLICY IF EXISTS "Users can delete invitations" ON training_camp_invitations;
+
+-- Users can insert invitations (as inviter)
+CREATE POLICY "Users can insert invitations" ON training_camp_invitations
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        inviter_id = (select auth.uid())
+    );
+
+-- Users can update their own invitations (as inviter or invitee)
+CREATE POLICY "Users can update invitations" ON training_camp_invitations
+    FOR UPDATE
+    TO authenticated
+    USING (
+        inviter_id = (select auth.uid()) 
+        OR invitee_id = (select auth.uid())
+    );
+
+-- Users can delete their own invitations (as inviter or invitee)
+CREATE POLICY "Users can delete invitations" ON training_camp_invitations
+    FOR DELETE
     TO authenticated
     USING (
         inviter_id = (select auth.uid()) 

@@ -312,13 +312,9 @@ CREATE POLICY "Authenticated can view scheduled fights" ON scheduled_fights
     TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
 
--- Authenticated users can insert scheduled fights (if they're one of the fighters)
--- Note: INSERT is also handled by "Fighters and admins can create scheduled fights" policy
--- This policy is kept for backward compatibility but may be redundant
-CREATE POLICY "Authenticated can insert scheduled fights" ON scheduled_fights
-    FOR INSERT
-    TO authenticated
-    WITH CHECK ((select auth.uid()) IS NOT NULL);
+-- Note: INSERT is handled by "Fighters and admins can create scheduled fights" policy
+-- This avoids multiple permissive policies for the same role and action
+-- The combined policy allows fighters (who are one of the fighters) or admins to insert
 
 -- Authenticated users can update scheduled fights (if they're one of the fighters)
 -- Note: UPDATE may also be handled by fighter-specific policies

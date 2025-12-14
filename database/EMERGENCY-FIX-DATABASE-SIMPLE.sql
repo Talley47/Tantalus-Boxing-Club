@@ -190,7 +190,8 @@ CREATE POLICY "Public read tournaments" ON tournaments
     USING (true);
 
 CREATE POLICY "Authenticated manage tournaments" ON tournaments
-    FOR ALL 
+    FOR ALL
+    TO authenticated
     USING ((select auth.uid()) IS NOT NULL);
 
 -- TRAINING_CAMP_INVITATIONS
@@ -203,14 +204,16 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 CREATE POLICY "Users read own invitations" ON training_camp_invitations
-    FOR SELECT 
+    FOR SELECT
+    TO authenticated
     USING (
         inviter_id = (select auth.uid()) 
         OR invitee_id = (select auth.uid())
     );
 
 CREATE POLICY "Users manage own invitations" ON training_camp_invitations
-    FOR ALL 
+    FOR ALL
+    TO authenticated
     USING (
         inviter_id = (select auth.uid()) 
         OR invitee_id = (select auth.uid())

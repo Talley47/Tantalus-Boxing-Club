@@ -26,6 +26,7 @@ ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
 -- Policy 1: Users can view their own achievements
 CREATE POLICY "Users can view their own achievements" ON user_achievements
     FOR SELECT
+    TO authenticated
     USING (user_id = (select auth.uid()));
 
 -- Policy 2: Users can view other users' achievements (for public profiles/leaderboards)
@@ -44,12 +45,12 @@ BEGIN
         AND pronamespace = 'public'::regnamespace
     ) THEN
         EXECUTE 'CREATE POLICY "Admins can view all achievements" ON user_achievements
-            FOR SELECT USING (is_admin_user())';
+            FOR SELECT TO authenticated USING (is_admin_user())';
         RAISE NOTICE 'Created admin view policy using is_admin_user()';
     ELSE
         -- Fallback: check profiles table
         EXECUTE 'CREATE POLICY "Admins can view all achievements" ON user_achievements
-            FOR SELECT USING (
+            FOR SELECT TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 

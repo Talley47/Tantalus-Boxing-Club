@@ -199,14 +199,14 @@ CREATE POLICY "Admin manage tournaments" ON tournaments
 -- Fighters can read their own tournament participations
 CREATE POLICY "Fighters read own participations" ON tournament_participants
     FOR SELECT USING (
-        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1)
-        OR tournament_id IN (SELECT id FROM tournaments WHERE created_by = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1))
+        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
+        OR tournament_id IN (SELECT id FROM tournaments WHERE created_by = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1))
     );
 
 -- Fighters can insert their own participations (join tournaments)
 CREATE POLICY "Fighters join tournaments" ON tournament_participants
     FOR INSERT WITH CHECK (
-        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1)
+        fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
     );
 
 -- Public read access for brackets

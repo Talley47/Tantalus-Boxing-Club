@@ -48,7 +48,7 @@ BEGIN
     ) THEN
         EXECUTE 'CREATE POLICY "Users can join tournaments" ON tournament_participants
             FOR INSERT WITH CHECK (
-                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1)
+                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
             )';
         RAISE NOTICE 'Created Users can join tournaments policy';
     ELSE
@@ -67,7 +67,7 @@ BEGIN
     ) THEN
         EXECUTE 'CREATE POLICY "Users can update own participations" ON tournament_participants
             FOR UPDATE USING (
-                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = auth.uid() LIMIT 1)
+                fighter_id = (SELECT id FROM fighter_profiles WHERE user_id = (select auth.uid()) LIMIT 1)
             )';
         RAISE NOTICE 'Created Users can update own participations policy';
     ELSE
@@ -94,7 +94,7 @@ BEGIN
                 FOR ALL USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = auth.uid()
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
                     ) OR is_admin_user()
                 )';
             RAISE NOTICE 'Created Tournament creators and admins can manage participants policy using is_admin_user()';
@@ -104,10 +104,10 @@ BEGIN
                 FOR ALL USING (
                     EXISTS (
                         SELECT 1 FROM tournaments 
-                        WHERE id = tournament_id AND created_by = auth.uid()
+                        WHERE id = tournament_id AND created_by = (select auth.uid())
                     ) OR EXISTS (
                         SELECT 1 FROM profiles 
-                        WHERE id = auth.uid() AND role = ' || quote_literal('admin') || '
+                        WHERE id = (select auth.uid()) AND role = ' || quote_literal('admin') || '
                     )
                 )';
             RAISE NOTICE 'Created Tournament creators and admins can manage participants policy using profiles table';

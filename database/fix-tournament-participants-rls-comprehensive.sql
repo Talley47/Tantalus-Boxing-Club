@@ -34,7 +34,7 @@ CREATE POLICY "Fighters can join tournaments" ON tournament_participants
     FOR INSERT WITH CHECK (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -43,7 +43,7 @@ CREATE POLICY "Fighters can view own participations" ON tournament_participants
     FOR SELECT USING (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -52,7 +52,7 @@ CREATE POLICY "Fighters can update own participations" ON tournament_participant
     FOR UPDATE USING (
         fighter_id IN (
             SELECT id FROM fighter_profiles 
-            WHERE user_id = auth.uid()
+            WHERE user_id = (select auth.uid())
         )
     );
 
@@ -71,7 +71,7 @@ BEGIN
             FOR ALL USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
-                    WHERE id = auth.uid() 
+                    WHERE id = (select auth.uid()) 
                     AND role = ''admin''
                 )
             )';

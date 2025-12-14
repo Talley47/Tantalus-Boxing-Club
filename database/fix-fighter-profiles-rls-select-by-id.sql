@@ -70,13 +70,13 @@ EXCEPTION
         -- Use is_admin_user function for admin policies
         EXECUTE 'CREATE POLICY "Admins can manage fighter profiles" 
             ON fighter_profiles 
-            FOR ALL 
+            FOR ALL TO authenticated
             USING (is_admin_user())';
     ELSE
         -- Fallback: check profiles table for admin role
         EXECUTE 'CREATE POLICY "Admins can manage fighter profiles" 
             ON fighter_profiles 
-            FOR ALL 
+            FOR ALL TO authenticated
             USING (
                 EXISTS (
                     SELECT 1 FROM profiles 

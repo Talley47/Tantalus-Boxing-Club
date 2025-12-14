@@ -45,7 +45,8 @@ CREATE POLICY "Authenticated read all news" ON news_announcements
 
 -- Policy 3: Authenticated users can insert news
 CREATE POLICY "Authenticated insert news" ON news_announcements
-    FOR INSERT 
+    FOR INSERT
+    TO authenticated
     WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Policy 4: Admins can update news (simple check, no complex subqueries)

@@ -62,7 +62,9 @@ CREATE POLICY "Public read published news" ON news_announcements
 
 -- Admin write access for news
 CREATE POLICY "Admin manage news" ON news_announcements
-    FOR ALL USING (
+    FOR ALL
+    TO authenticated
+    USING (
         EXISTS (
             SELECT 1 FROM fighter_profiles fp
             JOIN auth.users u ON fp.user_id = u.id

@@ -94,12 +94,14 @@ CREATE POLICY "Authenticated read all news" ON news_announcements
     USING ((select auth.uid()) IS NOT NULL);
 
 CREATE POLICY "Authenticated insert news" ON news_announcements
-    FOR INSERT 
+    FOR INSERT
+    TO authenticated
     WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 -- Admin policies (simplified)
 CREATE POLICY "Admin manage news" ON news_announcements
     FOR ALL
+    TO authenticated
     USING (
         EXISTS (
             SELECT 1 FROM profiles

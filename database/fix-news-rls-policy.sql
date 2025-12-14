@@ -60,7 +60,9 @@ END $$;
 
 -- Create admin manage policy using the function
 CREATE POLICY "Admin manage news" ON news_announcements
-    FOR ALL USING (is_admin_user());
+    FOR ALL
+    TO authenticated
+    USING (is_admin_user());
 
 -- Create admin manage policy for fight results
 CREATE POLICY "Admin manage fight results" ON news_fight_results

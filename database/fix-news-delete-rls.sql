@@ -28,7 +28,7 @@ BEGIN
     ) THEN
         -- Admin can manage all news (insert, update, delete, select)
         EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL USING (is_admin_user())';
+            FOR ALL TO authenticated USING (is_admin_user())';
         
         -- Admin can read all news (including unpublished)
         EXECUTE 'CREATE POLICY "Admin read all news" ON news_announcements
@@ -36,7 +36,7 @@ BEGIN
     ELSE
         -- Fallback: check profiles table only
         EXECUTE 'CREATE POLICY "Admin manage news" ON news_announcements
-            FOR ALL USING (
+            FOR ALL TO authenticated USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = (select auth.uid()) 

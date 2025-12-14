@@ -111,10 +111,40 @@ CREATE POLICY "Users can view own fighter profile"
     TO authenticated
     USING ((select auth.uid()) = user_id);
 
-CREATE POLICY "Users can insert own fighter profile" 
-    ON public.fighter_profiles FOR INSERT
-    TO authenticated
-    WITH CHECK ((select auth.uid()) = user_id);
+-- Use combined policy to avoid multiple permissive policies
+DROP POLICY IF EXISTS "Users and admins can insert fighter profiles" ON public.fighter_profiles;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON public.fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                (select auth.uid()) = user_id 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON public.fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                (select auth.uid()) = user_id 
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 CREATE POLICY "Users can update own fighter profile" 
     ON public.fighter_profiles FOR UPDATE

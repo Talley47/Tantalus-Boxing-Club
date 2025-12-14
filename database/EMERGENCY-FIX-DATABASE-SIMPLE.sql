@@ -170,12 +170,41 @@ CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
     USING (user_id = (select auth.uid()))
     WITH CHECK (user_id = (select auth.uid()));
 
--- Use consistent naming: "Users can insert own fighter profile" (matches fix-fighter-profiles-rls.sql)
+-- Use combined policy: "Users and admins can insert fighter profiles" (matches fix-fighter-profiles-rls.sql)
 DROP POLICY IF EXISTS "Users can insert own fighter profile" ON fighter_profiles;
-CREATE POLICY "Users can insert own fighter profile" ON fighter_profiles
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (user_id = (select auth.uid()));
+DROP POLICY IF EXISTS "Users and admins can insert fighter profiles" ON fighter_profiles;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                user_id = (select auth.uid()) 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                user_id = (select auth.uid()) 
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- SCHEDULED_FIGHTS
 DO $$

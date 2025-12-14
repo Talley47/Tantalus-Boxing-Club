@@ -79,11 +79,41 @@ CREATE POLICY "Users can update own fighter profile" ON fighter_profiles
   USING ((select auth.uid()) = user_id);
 
 -- Users can insert their own fighter profile
+-- Use combined policy to avoid multiple permissive policies
 DROP POLICY IF EXISTS "Users can insert own fighter profile" ON fighter_profiles;
-CREATE POLICY "Users can insert own fighter profile" ON fighter_profiles
-  FOR INSERT
-  TO authenticated
-  WITH CHECK ((select auth.uid()) = user_id);
+DROP POLICY IF EXISTS "Users and admins can insert fighter profiles" ON fighter_profiles;
+DO $$
+BEGIN
+    -- Check if is_admin_user function exists
+    IF EXISTS (
+        SELECT 1 FROM pg_proc 
+        WHERE proname = 'is_admin_user' 
+        AND pronamespace = 'public'::regnamespace
+    ) THEN
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                (select auth.uid()) = user_id 
+                OR is_admin_user()
+            )';
+    ELSE
+        -- Fallback: check profiles table for admin role
+        EXECUTE 'CREATE POLICY "Users and admins can insert fighter profiles" 
+            ON fighter_profiles 
+            FOR INSERT
+            TO authenticated
+            WITH CHECK (
+                (select auth.uid()) = user_id 
+                OR EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = (select auth.uid()) 
+                    AND role = ''admin''
+                )
+            )';
+    END IF;
+END $$;
 
 -- 6. Add indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_scheduled_fights_date ON scheduled_fights(scheduled_date);

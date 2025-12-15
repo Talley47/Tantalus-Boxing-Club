@@ -32,6 +32,10 @@ ON news_announcements(is_published)
 WHERE is_published = TRUE;
 
 -- Recreate other useful indexes
+-- Drop duplicate index if it exists (idx_news_type is duplicate of idx_news_announcements_type)
+DROP INDEX IF EXISTS idx_news_type;
+
+-- Create index with consistent naming (idx_news_announcements_type)
 CREATE INDEX IF NOT EXISTS idx_news_announcements_type ON news_announcements(type);
 CREATE INDEX IF NOT EXISTS idx_news_announcements_featured ON news_announcements(is_featured);
 

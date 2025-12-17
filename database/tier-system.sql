@@ -144,7 +144,10 @@ RETURNS TABLE(
     old_tier TEXT,
     new_tier TEXT,
     points INTEGER
-) AS $$
+)
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
     fighter_record RECORD;
     calculated_tier TEXT;
@@ -194,7 +197,7 @@ BEGIN
             fighter_record.points;
     END LOOP;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Success message
 DO $$

@@ -100,12 +100,15 @@ DROP TRIGGER IF EXISTS update_championship_belts_updated_at ON public.championsh
 
 -- Create or replace the function
 CREATE OR REPLACE FUNCTION update_championship_belts_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Create the trigger
 CREATE TRIGGER update_championship_belts_updated_at

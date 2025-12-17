@@ -35,6 +35,7 @@ CREATE OR REPLACE FUNCTION create_notification_for_all_fighters(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     fighter_record RECORD;
@@ -104,6 +105,7 @@ CREATE OR REPLACE FUNCTION notify_new_fighter_joined()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     fighter_name TEXT;

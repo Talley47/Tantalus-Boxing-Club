@@ -175,6 +175,17 @@ CREATE TABLE IF NOT EXISTS tournaments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tournament Eligibility
+CREATE TABLE IF NOT EXISTS tournament_eligibility (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE,
+    min_tier VARCHAR(20), -- Minimum tier required (e.g., 'Pro', 'Contender', 'Elite')
+    min_points INTEGER, -- Minimum ranking points required
+    min_rank INTEGER, -- Minimum rank required
+    weight_class VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Tournament Participants
 CREATE TABLE IF NOT EXISTS tournament_participants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -506,6 +517,27 @@ ALTER TABLE scheduled_fights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE training_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE training_camps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE title_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE title_belts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tournament_eligibility ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tiers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tier_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE social_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scouting_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rivalries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rankings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE press_conferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE interviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE news_articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE analytics_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policies for fighter profiles
 DROP POLICY IF EXISTS "Users can view all fighter profiles" ON fighter_profiles;
@@ -554,6 +586,203 @@ CREATE POLICY "Users can update their own training logs" ON training_logs
 DROP POLICY IF EXISTS "Users can delete their own training logs" ON training_logs;
 CREATE POLICY "Users can delete their own training logs" ON training_logs
     FOR DELETE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_logs.fighter_id));
+
+-- Policies for training_camps
+DROP POLICY IF EXISTS "Users can view all training camps" ON training_camps;
+CREATE POLICY "Users can view all training camps" ON training_camps
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can create training camps" ON training_camps;
+CREATE POLICY "Users can create training camps" ON training_camps
+    FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_camps.created_by));
+
+DROP POLICY IF EXISTS "Users can update their own training camps" ON training_camps;
+CREATE POLICY "Users can update their own training camps" ON training_camps
+    FOR UPDATE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_camps.created_by));
+
+DROP POLICY IF EXISTS "Users can delete their own training camps" ON training_camps;
+CREATE POLICY "Users can delete their own training camps" ON training_camps
+    FOR DELETE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_camps.created_by));
+
+-- Policies for title_history
+DROP POLICY IF EXISTS "Users can view all title history" ON title_history;
+CREATE POLICY "Users can view all title history" ON title_history
+    FOR SELECT USING (true);
+
+-- Policies for title_belts
+DROP POLICY IF EXISTS "Users can view all title belts" ON title_belts;
+CREATE POLICY "Users can view all title belts" ON title_belts
+    FOR SELECT USING (true);
+
+-- Policies for tournament_eligibility
+DROP POLICY IF EXISTS "Users can view all tournament eligibility" ON tournament_eligibility;
+CREATE POLICY "Users can view all tournament eligibility" ON tournament_eligibility
+    FOR SELECT USING (true);
+
+-- Policies for tiers
+DROP POLICY IF EXISTS "Users can view all tiers" ON tiers;
+CREATE POLICY "Users can view all tiers" ON tiers
+    FOR SELECT USING (true);
+
+-- Policies for tier_history
+DROP POLICY IF EXISTS "Users can view all tier history" ON tier_history;
+CREATE POLICY "Users can view all tier history" ON tier_history
+    FOR SELECT USING (true);
+
+-- Policies for system_settings
+DROP POLICY IF EXISTS "Users can view all system settings" ON system_settings;
+CREATE POLICY "Users can view all system settings" ON system_settings
+    FOR SELECT USING (true);
+
+-- Policies for social_links
+DROP POLICY IF EXISTS "Users can view all social links" ON social_links;
+CREATE POLICY "Users can view all social links" ON social_links
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own social links" ON social_links;
+CREATE POLICY "Users can insert their own social links" ON social_links
+    FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = social_links.fighter_id));
+
+DROP POLICY IF EXISTS "Users can update their own social links" ON social_links;
+CREATE POLICY "Users can update their own social links" ON social_links
+    FOR UPDATE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = social_links.fighter_id));
+
+DROP POLICY IF EXISTS "Users can delete their own social links" ON social_links;
+CREATE POLICY "Users can delete their own social links" ON social_links
+    FOR DELETE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = social_links.fighter_id));
+
+-- Policies for scouting_reports
+DROP POLICY IF EXISTS "Users can view their own scouting reports" ON scouting_reports;
+CREATE POLICY "Users can view their own scouting reports" ON scouting_reports
+    FOR SELECT USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = scouting_reports.scout_id));
+
+DROP POLICY IF EXISTS "Users can insert their own scouting reports" ON scouting_reports;
+CREATE POLICY "Users can insert their own scouting reports" ON scouting_reports
+    FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = scouting_reports.scout_id));
+
+DROP POLICY IF EXISTS "Users can update their own scouting reports" ON scouting_reports;
+CREATE POLICY "Users can update their own scouting reports" ON scouting_reports
+    FOR UPDATE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = scouting_reports.scout_id));
+
+DROP POLICY IF EXISTS "Users can delete their own scouting reports" ON scouting_reports;
+CREATE POLICY "Users can delete their own scouting reports" ON scouting_reports
+    FOR DELETE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = scouting_reports.scout_id));
+
+-- Policies for rivalries
+DROP POLICY IF EXISTS "Users can view rivalries they are part of" ON rivalries;
+CREATE POLICY "Users can view rivalries they are part of" ON rivalries
+    FOR SELECT USING (
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter1_id) OR
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter2_id)
+    );
+
+DROP POLICY IF EXISTS "Users can create rivalries they are part of" ON rivalries;
+CREATE POLICY "Users can create rivalries they are part of" ON rivalries
+    FOR INSERT WITH CHECK (
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter1_id) OR
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter2_id)
+    );
+
+DROP POLICY IF EXISTS "Users can update rivalries they are part of" ON rivalries;
+CREATE POLICY "Users can update rivalries they are part of" ON rivalries
+    FOR UPDATE USING (
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter1_id) OR
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter2_id)
+    );
+
+DROP POLICY IF EXISTS "Users can delete rivalries they are part of" ON rivalries;
+CREATE POLICY "Users can delete rivalries they are part of" ON rivalries
+    FOR DELETE USING (
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter1_id) OR
+        auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = rivalries.fighter2_id)
+    );
+
+-- Policies for rankings
+DROP POLICY IF EXISTS "Users can view all rankings" ON rankings;
+CREATE POLICY "Users can view all rankings" ON rankings
+    FOR SELECT USING (true);
+
+-- Policies for push_tokens
+DROP POLICY IF EXISTS "Users can view their own push tokens" ON push_tokens;
+CREATE POLICY "Users can view their own push tokens" ON push_tokens
+    FOR SELECT USING (auth.uid() = push_tokens.user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own push tokens" ON push_tokens;
+CREATE POLICY "Users can insert their own push tokens" ON push_tokens
+    FOR INSERT WITH CHECK (auth.uid() = push_tokens.user_id);
+
+DROP POLICY IF EXISTS "Users can update their own push tokens" ON push_tokens;
+CREATE POLICY "Users can update their own push tokens" ON push_tokens
+    FOR UPDATE USING (auth.uid() = push_tokens.user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own push tokens" ON push_tokens;
+CREATE POLICY "Users can delete their own push tokens" ON push_tokens
+    FOR DELETE USING (auth.uid() = push_tokens.user_id);
+
+-- Policies for press_conferences
+DROP POLICY IF EXISTS "Users can view all press conferences" ON press_conferences;
+CREATE POLICY "Users can view all press conferences" ON press_conferences
+    FOR SELECT USING (true);
+
+-- Policies for notification_preferences
+DROP POLICY IF EXISTS "Users can view their own notification preferences" ON notification_preferences;
+CREATE POLICY "Users can view their own notification preferences" ON notification_preferences
+    FOR SELECT USING (auth.uid() = notification_preferences.user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own notification preferences" ON notification_preferences;
+CREATE POLICY "Users can insert their own notification preferences" ON notification_preferences
+    FOR INSERT WITH CHECK (auth.uid() = notification_preferences.user_id);
+
+DROP POLICY IF EXISTS "Users can update their own notification preferences" ON notification_preferences;
+CREATE POLICY "Users can update their own notification preferences" ON notification_preferences
+    FOR UPDATE USING (auth.uid() = notification_preferences.user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own notification preferences" ON notification_preferences;
+CREATE POLICY "Users can delete their own notification preferences" ON notification_preferences
+    FOR DELETE USING (auth.uid() = notification_preferences.user_id);
+
+-- Policies for media_likes
+DROP POLICY IF EXISTS "Users can view all media likes" ON media_likes;
+CREATE POLICY "Users can view all media likes" ON media_likes
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own media likes" ON media_likes;
+CREATE POLICY "Users can insert their own media likes" ON media_likes
+    FOR INSERT WITH CHECK (auth.uid() = media_likes.user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own media likes" ON media_likes;
+CREATE POLICY "Users can delete their own media likes" ON media_likes
+    FOR DELETE USING (auth.uid() = media_likes.user_id);
+
+-- Policies for interviews
+DROP POLICY IF EXISTS "Users can view all interviews" ON interviews;
+CREATE POLICY "Users can view all interviews" ON interviews
+    FOR SELECT USING (true);
+
+-- Policies for news_articles
+DROP POLICY IF EXISTS "Users can view all news articles" ON news_articles;
+CREATE POLICY "Users can view all news articles" ON news_articles
+    FOR SELECT USING (true);
+
+-- Policies for events
+DROP POLICY IF EXISTS "Users can view all events" ON events;
+CREATE POLICY "Users can view all events" ON events
+    FOR SELECT USING (true);
+
+-- Policies for analytics_snapshots
+DROP POLICY IF EXISTS "Users can view all analytics snapshots" ON analytics_snapshots;
+CREATE POLICY "Users can view all analytics snapshots" ON analytics_snapshots
+    FOR SELECT USING (true);
+
+-- Policies for achievements
+DROP POLICY IF EXISTS "Users can view all achievements" ON achievements;
+CREATE POLICY "Users can view all achievements" ON achievements
+    FOR SELECT USING (true);
+
+-- Policies for admin_logs
+DROP POLICY IF EXISTS "Users can view all admin logs" ON admin_logs;
+CREATE POLICY "Users can view all admin logs" ON admin_logs
+    FOR SELECT USING (true);
 
 -- Functions for automatic updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()

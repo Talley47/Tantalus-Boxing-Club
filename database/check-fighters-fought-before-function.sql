@@ -8,7 +8,10 @@ CREATE OR REPLACE FUNCTION have_fighters_fought_before(
   fighter2_profile_id UUID,
   since_date TIMESTAMP WITH TIME ZONE DEFAULT NULL
 )
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
   fight_count INTEGER;
 BEGIN
@@ -35,7 +38,7 @@ BEGIN
   
   RETURN fight_count > 0;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION have_fighters_fought_before(UUID, UUID, TIMESTAMP WITH TIME ZONE) TO authenticated;

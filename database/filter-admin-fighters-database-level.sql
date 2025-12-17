@@ -25,6 +25,8 @@ GRANT EXECUTE ON FUNCTION is_admin_user_id(UUID) TO anon;
 
 -- Create a view that automatically excludes admin fighters
 -- This view can be used instead of fighter_profiles for public queries
+-- Note: Views in PostgreSQL use the permissions of the querying user by default
+-- (Views do not support SECURITY DEFINER - only functions do)
 DROP VIEW IF EXISTS public_fighter_profiles_view CASCADE;
 CREATE VIEW public_fighter_profiles_view AS
 SELECT fp.*

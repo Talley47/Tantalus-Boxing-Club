@@ -5,8 +5,10 @@
 -- Drop and recreate the view without SECURITY DEFINER
 DROP VIEW IF EXISTS public.public_fighter_profiles_view CASCADE;
 
--- Recreate the view without any security definer properties
--- The view will use the permissions of the querying user
+-- Recreate the view without any SECURITY DEFINER properties
+-- PostgreSQL views use the permissions of the querying user by default
+-- (Views do not support SECURITY DEFINER - only functions do)
+-- The view will respect RLS policies of the querying user
 CREATE VIEW public.public_fighter_profiles_view AS
 SELECT fp.*
 FROM fighter_profiles fp

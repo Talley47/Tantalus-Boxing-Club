@@ -78,7 +78,10 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Function to update fighter tier after fight record is added
 CREATE OR REPLACE FUNCTION update_fighter_tier()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
     fighter_points INTEGER;
     fighter_tier TEXT;
@@ -126,7 +129,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Drop existing trigger if it exists
 DROP TRIGGER IF EXISTS update_fighter_tier_trigger ON fight_records;

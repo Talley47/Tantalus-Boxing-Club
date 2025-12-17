@@ -173,29 +173,38 @@ CREATE POLICY "Admins can manage all callouts" ON callout_requests
 
 -- Function to automatically expire old training camp invitations
 CREATE OR REPLACE FUNCTION expire_training_camp_invitations()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     UPDATE training_camp_invitations
     SET status = 'expired', updated_at = NOW()
     WHERE status = 'pending' 
     AND expires_at < NOW();
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to automatically expire old callout requests
 CREATE OR REPLACE FUNCTION expire_callout_requests()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     UPDATE callout_requests
     SET status = 'expired', updated_at = NOW()
     WHERE status = 'pending' 
     AND expires_at < NOW();
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to check if fighter can start training camp (not within 3 days of fight deadline)
 CREATE OR REPLACE FUNCTION can_start_training_camp(fighter_user_id UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
     days_until_fight INTEGER;
 BEGIN
@@ -211,7 +220,7 @@ BEGIN
     -- If fighter has a fight within 4 days, they cannot start training camp
     RETURN days_until_fight = 0;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================
 -- 6. GRANTS

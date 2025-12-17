@@ -327,6 +327,9 @@ CREATE TABLE IF NOT EXISTS training_objectives (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Enable RLS on training_objectives
+ALTER TABLE training_objectives ENABLE ROW LEVEL SECURITY;
+
 -- Training Logs
 CREATE TABLE IF NOT EXISTS training_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -438,7 +441,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 -- Achievements
 CREATE TABLE IF NOT EXISTS achievements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT NOT NULL,
     icon VARCHAR(50) NOT NULL,
     category VARCHAR(20) NOT NULL CHECK (category IN ('Performance', 'Tournament', 'Special', 'Milestone')),
@@ -505,7 +508,6 @@ ALTER TABLE matchmaking_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_fights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_assets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE training_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policies for fighter profiles
 DROP POLICY IF EXISTS "Users can view all fighter profiles" ON fighter_profiles;
@@ -538,23 +540,6 @@ DROP POLICY IF EXISTS "Users can update their own notifications" ON notification
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE USING (auth.uid() = user_id);
 
--- Policies for training_logs
-DROP POLICY IF EXISTS "Users can view their own training logs" ON training_logs;
-CREATE POLICY "Users can view their own training logs" ON training_logs
-    FOR SELECT USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_logs.fighter_id));
-
-DROP POLICY IF EXISTS "Users can insert their own training logs" ON training_logs;
-CREATE POLICY "Users can insert their own training logs" ON training_logs
-    FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_logs.fighter_id));
-
-DROP POLICY IF EXISTS "Users can update their own training logs" ON training_logs;
-CREATE POLICY "Users can update their own training logs" ON training_logs
-    FOR UPDATE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_logs.fighter_id));
-
-DROP POLICY IF EXISTS "Users can delete their own training logs" ON training_logs;
-CREATE POLICY "Users can delete their own training logs" ON training_logs
-    FOR DELETE USING (auth.uid() = (SELECT user_id FROM fighter_profiles WHERE id = training_logs.fighter_id));
-
 -- Functions for automatic updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -562,7 +547,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
 -- Triggers for updated_at
 DROP TRIGGER IF EXISTS update_fighter_profiles_updated_at ON fighter_profiles;
@@ -658,40 +643,16 @@ INSERT INTO tiers (name, min_points, max_points, color, description) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Insert default achievements (skip if they already exist)
--- Note: achievements table doesn't have UNIQUE on name, so we'll use a DO block
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'First Victory') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('First Victory', 'Win your first fight', '🥊', 'Milestone', 'Common', 5);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Knockout Artist') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('Knockout Artist', 'Win 10 fights by knockout', '💥', 'Performance', 'Rare', 50);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Undefeated') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('Undefeated', 'Win 10 fights in a row', '👑', 'Performance', 'Epic', 50);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Fight of the Night') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('Fight of the Night', 'Participate in a Fight of the Night', '⭐', 'Special', 'Rare', 0);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Tournament Champion') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('Tournament Champion', 'Win a tournament', '🏆', 'Tournament', 'Legendary', 0);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Elite Fighter') THEN
-        INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
-        ('Elite Fighter', 'Reach Elite tier', '💎', 'Milestone', 'Legendary', 150);
-    END IF;
-END $$;
+INSERT INTO achievements (name, description, icon, category, rarity, points_required) VALUES
+('First Victory', 'Win your first fight', '🥊', 'Milestone', 'Common', 5),
+('Knockout Artist', 'Win 10 fights by knockout', '💥', 'Performance', 'Rare', 50),
+('Undefeated', 'Win 10 fights in a row', '👑', 'Performance', 'Epic', 50),
+('Fight of the Night', 'Participate in a Fight of the Night', '⭐', 'Special', 'Rare', 0),
+('Tournament Champion', 'Win a tournament', '🏆', 'Tournament', 'Legendary', 0),
+('Elite Fighter', 'Reach Elite tier', '💎', 'Milestone', 'Legendary', 150)
+ON CONFLICT (name) DO NOTHING;
 
+-- Insert default system settings
 -- Insert default system settings (skip if they already exist)
 -- Note: value column is JSONB, so values must be valid JSON
 INSERT INTO system_settings (key, value, description) VALUES
@@ -704,3 +665,5 @@ INSERT INTO system_settings (key, value, description) VALUES
 ('notification_retention_days', '30'::jsonb, 'Days to keep notifications'),
 ('analytics_snapshot_frequency', '"daily"'::jsonb, 'How often to create analytics snapshots')
 ON CONFLICT (key) DO NOTHING;
+
+-- End of schema-clean.sql

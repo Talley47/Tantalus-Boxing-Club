@@ -4,7 +4,12 @@
 -- Create a function to check if a user_id is an admin
 -- This can be used in WHERE clauses to filter out admin fighters
 CREATE OR REPLACE FUNCTION is_admin_user_id(user_id_param UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     RETURN EXISTS (
         SELECT 1 FROM profiles
@@ -12,7 +17,7 @@ BEGIN
         AND role = 'admin'
     );
 END;
-$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+$$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION is_admin_user_id(UUID) TO authenticated;

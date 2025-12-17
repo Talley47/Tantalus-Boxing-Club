@@ -6,6 +6,7 @@
 CREATE OR REPLACE FUNCTION are_fighters_opponents(fighter1_profile_id UUID, fighter2_profile_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 DECLARE
     has_scheduled_fight BOOLEAN := FALSE;
@@ -76,6 +77,7 @@ $$;
 CREATE OR REPLACE FUNCTION prevent_opponents_training_camp()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 BEGIN
     -- Check if inviter and invitee are opponents

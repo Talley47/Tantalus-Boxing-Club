@@ -4,7 +4,11 @@
 
 -- Function to cancel old mandatory fights that are past their 1-week deadline
 CREATE OR REPLACE FUNCTION cancel_old_mandatory_fights()
-RETURNS TABLE(cleared_count INTEGER) AS $$
+RETURNS TABLE(cleared_count INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   cleared_count INTEGER;
   one_week_ago TIMESTAMP WITH TIME ZONE;
@@ -23,7 +27,7 @@ BEGIN
   
   RETURN QUERY SELECT cleared_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Grant execute permission to authenticated users (admins will call this)
 GRANT EXECUTE ON FUNCTION cancel_old_mandatory_fights() TO authenticated;

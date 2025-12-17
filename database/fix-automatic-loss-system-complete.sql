@@ -156,7 +156,10 @@ $$ LANGUAGE plpgsql;
 -- ============================================
 -- Updates points, wins/losses/draws, knockouts, and percentages
 CREATE OR REPLACE FUNCTION update_fighter_stats_after_fight()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
     fighter_points INTEGER;
     calculated_points INTEGER;
@@ -218,14 +221,17 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================
 -- 7. UPDATE FIGHTER TIER TRIGGER (WITH DEMOTION/PROMOTION)
 -- ============================================
 -- Handles tier updates, demotion (5 consecutive losses), and promotion back (5 consecutive wins)
 CREATE OR REPLACE FUNCTION update_fighter_tier_after_fight()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 DECLARE
     fighter_points INTEGER;
     fighter_tier TEXT;
@@ -307,7 +313,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================
 -- 8. AUTO-CREATE OPPONENT LOSS TRIGGER

@@ -9,10 +9,13 @@ DROP VIEW IF EXISTS public.public_fighter_profiles_view CASCADE;
 -- PostgreSQL views use the permissions of the querying user by default
 -- (Views do not support SECURITY DEFINER - only functions do)
 -- The view will respect RLS policies of the querying user
+-- IMPORTANT: We use a direct JOIN instead of the SECURITY DEFINER function
+-- to avoid security scanner warnings about SECURITY DEFINER views
 CREATE VIEW public.public_fighter_profiles_view AS
 SELECT fp.*
 FROM fighter_profiles fp
-WHERE NOT is_admin_user_id(fp.user_id);
+LEFT JOIN profiles p ON fp.user_id = p.id
+WHERE (p.role IS NULL OR p.role != 'admin');
 
 -- Grant SELECT on the view
 GRANT SELECT ON public.public_fighter_profiles_view TO authenticated;

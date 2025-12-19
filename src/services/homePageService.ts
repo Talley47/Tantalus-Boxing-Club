@@ -73,45 +73,54 @@ export class HomePageService {
       // Note: Using application-level filtering since there's no FK relationship for JOIN
       const { data, error, status, statusText } = await supabase
         .from('fighter_profiles')
-        .select('user_id, name, handle, tier, points, weight_class, wins, losses, draws, height_feet, height_inches, weight, reach, stance, hometown, birthday, trainer, gym, platform, timezone, creative_fighter_image_url')
+        .select('user_id, name, handle, tier, points, weight_class, wins, losses, draws, height_feet, height_inches, weight, reach, stance, hometown, birthday, trainer, gym')
         .not('user_id', 'is', null)
         .order('points', { ascending: false })
         .limit(limit);
 
-      // Only log query details in development if there's an error
-      if (error && process.env.NODE_ENV === 'development') {
-        console.log('Supabase query response:', {
+      // Log query details for debugging
+      if (error) {
+        console.error('❌ Error fetching top fighters:', error);
+        console.error('Query details:', {
           hasData: !!data,
           dataLength: (data as any)?.length || 0,
           hasError: !!error,
           error: error,
           status: status,
-          statusText: statusText
+          statusText: statusText,
+          errorCode: error.code,
+          errorMessage: error.message
         });
-      }
-
-      if (error) {
-        console.error('❌ Error fetching top fighters:', error);
         
         // If it's a permission error, provide specific guidance
         if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
           console.error('🔒 PERMISSION ERROR: RLS policies are blocking access!');
-          console.error('💡 SOLUTION: Run database/fix-fighter-profiles-rls-read.sql in Supabase SQL Editor');
+          console.error('💡 SOLUTION: Run database/fix-homepage-authenticated-access.sql in Supabase SQL Editor');
         }
         
         return [];
       }
 
-      // Removed console.log to improve performance
-      
+      // Log when no data is returned (could be RLS or empty database)
       if (!data || data.length === 0) {
-        if (!(window as any).__fighterWarningShown) {
-          console.info('ℹ️ No fighters found in database. This is normal if no fighter profiles have been created yet.');
-          console.info('💡 To test: Register a fighter account or run database/fix-fighter-profiles-rls-read.sql');
-          (window as any).__fighterWarningShown = true;
-        }
+        console.error('⚠️ ⚠️ ⚠️ NO FIGHTERS RETURNED FROM QUERY ⚠️ ⚠️ ⚠️');
+        console.error('Possible reasons:');
+        console.error('  1. RLS policies are blocking access (MOST LIKELY)');
+        console.error('     - Authenticated users need a policy to view all fighter profiles');
+        console.error('     - If you are logged in, you are an authenticated user');
+        console.error('  2. Database is empty (but you said fighters exist in Supabase)');
+        console.error('  3. All fighters were filtered out as admins');
+        console.error('');
+        console.error('🔧 FIX: Run this SQL script in Supabase SQL Editor:');
+        console.error('   database/fix-homepage-authenticated-access.sql');
+        console.error('');
+        console.error('Or run this SQL directly:');
+        console.error('   CREATE POLICY "Authenticated users can view all fighter profiles" ON fighter_profiles');
+        console.error('       FOR SELECT TO authenticated USING (true);');
         return [];
       }
+
+      console.log(`✅ Fetched ${data.length} fighter profiles from database`);
 
       // Filter out admin users from raw data before mapping
       const filteredData = await filterAdminFighters(data);
@@ -176,8 +185,8 @@ export class HomePageService {
         losses: fighter.losses || 0,
         draws: fighter.draws || 0,
         // Physical information
-        height_feet: fighter.height_feet,
-        height_inches: fighter.height_inches,
+        height_feet: (fighter as any).height_feet,
+        height_inches: (fighter as any).height_inches,
         weight: fighter.weight,
         reach: fighter.reach,
         stance: fighter.stance,
@@ -185,9 +194,9 @@ export class HomePageService {
         birthday: fighter.birthday,
         trainer: fighter.trainer,
         gym: fighter.gym,
-        platform: (fighter as any).platform,
-        timezone: (fighter as any).timezone,
-        creative_fighter_image_url: (fighter as any).creative_fighter_image_url,
+        platform: undefined, // Column doesn't exist in database
+        timezone: undefined, // Column doesn't exist in database
+        creative_fighter_image_url: undefined, // Column doesn't exist in database
         belts: beltsByUserId.get(fighter.user_id) || []
       }));
 

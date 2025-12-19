@@ -27,11 +27,14 @@ GRANT EXECUTE ON FUNCTION is_admin_user_id(UUID) TO anon;
 -- This view can be used instead of fighter_profiles for public queries
 -- Note: Views in PostgreSQL use the permissions of the querying user by default
 -- (Views do not support SECURITY DEFINER - only functions do)
+-- IMPORTANT: We use a direct JOIN instead of the SECURITY DEFINER function
+-- to avoid security scanner warnings about SECURITY DEFINER views
 DROP VIEW IF EXISTS public_fighter_profiles_view CASCADE;
 CREATE VIEW public_fighter_profiles_view AS
 SELECT fp.*
 FROM fighter_profiles fp
-WHERE NOT is_admin_user_id(fp.user_id);
+LEFT JOIN profiles p ON fp.user_id = p.id
+WHERE (p.role IS NULL OR p.role != 'admin');
 
 -- Grant SELECT on the view
 GRANT SELECT ON public_fighter_profiles_view TO authenticated;

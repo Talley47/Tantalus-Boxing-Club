@@ -110,6 +110,8 @@ const getSupabaseClient = (): SupabaseClient => {
   // Store in global window object to persist across hot reloads
   if (typeof window !== 'undefined') {
     window.__TANTALUS_SUPABASE_CLIENT__ = instance;
+    // Also expose as window.supabase for easier debugging and test scripts
+    (window as any).supabase = instance;
   }
   
   return instance;

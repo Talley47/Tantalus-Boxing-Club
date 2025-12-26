@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 FIX RLS NOW - Copy & Paste</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #e74c3c;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .step h2 {
+            color: #333;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .step p {
+            color: #666;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+        .sql-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 20px 0;
+            position: relative;
+        }
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        .copy-btn.copied {
+            background: #28a745;
+            animation: pulse 0.5s;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .success-box {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .success-box.show {
+            display: block;
+            animation: slideIn 0.5s;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning strong {
+            color: #856404;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 FIX RLS BLOCKING FIGHTERS</h1>
+        <p class="subtitle">Copy the SQL below and run it in Supabase</p>
+
+        <div class="step">
+            <h2><span class="step-number">1</span> Open Supabase SQL Editor</h2>
+            <p>Go to: <strong>https://supabase.com/dashboard</strong> → Your Project → <strong>SQL Editor</strong></p>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">2</span> Copy This SQL</h2>
+            <p>Click the green button below to copy all the SQL code</p>
+            
+            <div class="sql-box" id="sqlContent">GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON TABLE public.fighter_profiles TO anon, authenticated;
+ALTER TABLE public.fighter_profiles ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'fighter_profiles'
+      AND (cmd = 'SELECT' OR cmd = 'ALL')
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.fighter_profiles', r.policyname);
+  END LOOP;
+END $$;
+CREATE POLICY "Authenticated users can view fighter profiles"
+ON public.fighter_profiles
+FOR SELECT
+TO authenticated
+USING (true);
+CREATE POLICY "Anonymous users can view fighter profiles"
+ON public.fighter_profiles
+FOR SELECT
+TO anon
+USING (true);
+SELECT 
+  '✅ SUCCESS - RLS FIXED!' as status,
+  COUNT(*) as total_fighters,
+  COUNT(*) FILTER (WHERE user_id IS NOT NULL) as fighters_with_user_id
+FROM public.fighter_profiles;</div>
+
+            <button class="copy-btn" onclick="copySQL()">📋 COPY SQL CODE</button>
+            <div class="success-box" id="successBox">
+                ✅ SQL Copied! Now paste it in Supabase SQL Editor and click "Run"
+            </div>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">3</span> Paste & Run</h2>
+            <p>In Supabase SQL Editor: <strong>Paste</strong> (Ctrl+V) → Click <strong>"Run"</strong></p>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">4</span> Verify Success</h2>
+            <p>You should see:</p>
+            <ul style="margin-left: 20px; margin-top: 10px; color: #666;">
+                <li>✅ <code>status: "✅ SUCCESS - RLS FIXED!"</code></li>
+                <li>✅ <code>total_fighters: [your number]</code></li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">5</span> Refresh Your App</h2>
+            <p><strong>Windows/Linux:</strong> Press <code>Ctrl+Shift+R</code><br>
+            <strong>Mac:</strong> Press <code>Cmd+Shift+R</code></p>
+            <p style="margin-top: 10px; color: #28a745; font-weight: bold;">🎉 Fighters should now appear on your homepage!</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Still not working?</strong><br>
+            Run the diagnostic script: <code>database/CHECK-FIGHTER-PROFILES-RLS-NOW.sql</code><br>
+            This will tell you exactly what's wrong.
+        </div>
+    </div>
+
+    <script>
+        function copySQL() {
+            const sqlContent = document.getElementById('sqlContent').textContent;
+            navigator.clipboard.writeText(sqlContent).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const successBox = document.getElementById('successBox');
+                
+                btn.textContent = '✅ COPIED!';
+                btn.classList.add('copied');
+                successBox.classList.add('show');
+                
+                setTimeout(() => {
+                    btn.textContent = '📋 COPY SQL CODE';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy. Please manually select and copy the SQL code.');
+            });
+        }
+    </script>
+</body>
+</html>
+

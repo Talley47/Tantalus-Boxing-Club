@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 Fix RLS - Copy SQL Button</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #e74c3c;
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .step h2 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .step p {
+            color: #666;
+            line-height: 1.6;
+            margin-left: 40px;
+        }
+        .copy-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin: 30px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .copy-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .copy-button:active {
+            transform: translateY(0);
+        }
+        .copy-button.copied {
+            background: #27ae60;
+        }
+        .sql-preview {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #27ae60;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning strong {
+            color: #856404;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Fix RLS Blocking Fighters</h1>
+        <p class="subtitle">Copy SQL → Paste in Supabase → Click Run → Done!</p>
+
+        <div class="step">
+            <h2><span class="step-number">1</span> Open Supabase SQL Editor</h2>
+            <p>Go to <a href="https://supabase.com/dashboard" target="_blank">supabase.com/dashboard</a> → Your Project → <strong>SQL Editor</strong> (left sidebar)</p>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">2</span> Click the Big Button Below</h2>
+            <p>This will copy the SQL fix to your clipboard automatically!</p>
+        </div>
+
+        <button class="copy-button" onclick="copySQL()">
+            📋 COPY SQL TO CLIPBOARD
+        </button>
+
+        <div class="success-message" id="successMessage">
+            ✅ <strong>SQL Copied!</strong> Now paste it in Supabase SQL Editor and click "Run"
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">3</span> Paste & Run in Supabase</h2>
+            <p>In Supabase SQL Editor: Press <strong>Ctrl+V</strong> (or Cmd+V on Mac) → Click <strong>"Run"</strong> button</p>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">4</span> Verify Success</h2>
+            <p>You should see: <strong>✅ SUCCESS - RLS FIXED!</strong> and a fighter count</p>
+        </div>
+
+        <div class="step">
+            <h2><span class="step-number">5</span> Refresh Your App</h2>
+            <p>Press <strong>Ctrl+Shift+R</strong> (Windows) or <strong>Cmd+Shift+R</strong> (Mac) to hard refresh</p>
+            <p><strong>Fighters should appear immediately! 🎉</strong></p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Still not working?</strong><br>
+            Run the diagnostic: Open <code>database/CHECK-FIGHTER-PROFILES-RLS-NOW.sql</code> → Copy ALL → Paste in Supabase → Run → Share results
+        </div>
+
+        <div class="sql-preview" id="sqlPreview">
+            <!-- SQL will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const sql = `GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON TABLE public.fighter_profiles TO anon, authenticated;
+ALTER TABLE public.fighter_profiles ENABLE ROW LEVEL SECURITY;
+DO $$ DECLARE r RECORD; BEGIN FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'fighter_profiles' AND (cmd = 'SELECT' OR cmd = 'ALL') LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.fighter_profiles', r.policyname); END LOOP; END $$;
+CREATE POLICY "Authenticated users can view fighter profiles" ON public.fighter_profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Anonymous users can view fighter profiles" ON public.fighter_profiles FOR SELECT TO anon USING (true);
+SELECT '✅ SUCCESS - RLS FIXED!' as status, COUNT(*) as total_fighters FROM public.fighter_profiles;`;
+
+        // Display SQL preview
+        document.getElementById('sqlPreview').textContent = sql;
+
+        function copySQL() {
+            navigator.clipboard.writeText(sql).then(() => {
+                const button = document.querySelector('.copy-button');
+                const successMsg = document.getElementById('successMessage');
+                
+                button.textContent = '✅ COPIED!';
+                button.classList.add('copied');
+                successMsg.classList.add('show');
+                
+                setTimeout(() => {
+                    button.textContent = '📋 COPY SQL TO CLIPBOARD';
+                    button.classList.remove('copied');
+                }, 3000);
+            }).catch(err => {
+                alert('Failed to copy. Please manually select and copy the SQL from the preview box below.');
+            });
+        }
+    </script>
+</body>
+</html>
+

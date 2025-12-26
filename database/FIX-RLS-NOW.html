@@ -159,7 +159,7 @@
     <div class="container">
         <div class="header">
             <h1>⚡ Fix RLS - Copy & Paste SQL</h1>
-            <p>This will disable Row Level Security on fighter_profiles table</p>
+            <p>This will fix Row Level Security policies on fighter_profiles table</p>
         </div>
         <div class="content">
             <div class="step">
@@ -168,7 +168,7 @@
                 <p style="margin-top: 10px;">Click the "Copy SQL" button to copy the entire SQL command to your clipboard.</p>
                 <div class="sql-box" id="sqlBox">
                     <button class="copy-btn" onclick="copySQL()" id="copyBtn">📋 Copy SQL</button>
-                    <div id="sqlContent">DO $$ DECLARE r RECORD; BEGIN FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'fighter_profiles' LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.fighter_profiles', r.policyname); END LOOP; END $$; ALTER TABLE public.fighter_profiles DISABLE ROW LEVEL SECURITY; GRANT SELECT ON TABLE public.fighter_profiles TO anon, authenticated; SELECT 'SUCCESS - RLS DISABLED' as status, COUNT(*) as visible_rows FROM public.fighter_profiles;</div>
+                    <div id="sqlContent">GRANT USAGE ON SCHEMA public TO anon, authenticated; GRANT SELECT ON TABLE public.fighter_profiles TO anon, authenticated; ALTER TABLE public.fighter_profiles ENABLE ROW LEVEL SECURITY; DO $$ DECLARE r RECORD; BEGIN FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'fighter_profiles' AND (cmd = 'SELECT' OR cmd = 'ALL') LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.fighter_profiles', r.policyname); END LOOP; END $$; CREATE POLICY "Authenticated users can view fighter profiles" ON public.fighter_profiles FOR SELECT TO authenticated USING (true); CREATE POLICY "Anonymous users can view fighter profiles" ON public.fighter_profiles FOR SELECT TO anon USING (true); SELECT 'SUCCESS - RLS FIXED' as status, COUNT(*) as visible_rows FROM public.fighter_profiles;</div>
                 </div>
             </div>
 
@@ -191,7 +191,7 @@
                     <li>In Supabase SQL Editor, click <span class="highlight">"New Query"</span></li>
                     <li>Paste the SQL you copied (Ctrl+V or Cmd+V)</li>
                     <li>Click <span class="highlight">"Run"</span> button (or press Ctrl+Enter)</li>
-                    <li>Wait for the results - you should see <span class="highlight">"SUCCESS - RLS DISABLED"</span> and a row count</li>
+                    <li>Wait for the results - you should see <span class="highlight">"SUCCESS - RLS FIXED"</span> and a row count</li>
                 </ul>
             </div>
 
@@ -209,15 +209,15 @@
             <div class="success">
                 <strong>✅ Expected Result:</strong> After running the SQL, you should see a result table with:
                 <ul style="margin-top: 10px;">
-                    <li><code>status</code> column showing: <code>"SUCCESS - RLS DISABLED"</code></li>
+                    <li><code>status</code> column showing: <code>"SUCCESS - RLS FIXED"</code></li>
                     <li><code>visible_rows</code> column showing: the number of fighter profiles in your database</li>
                 </ul>
             </div>
 
-            <div class="warning">
-                <strong>⚠️ Important:</strong> This completely disables Row Level Security (RLS) on the <code>fighter_profiles</code> table. 
-                This removes all security restrictions, making all fighter profiles publicly readable. 
-                For production, you should re-enable RLS with proper policies using <code>database/RE-ENABLE-RLS-PROPERLY.sql</code>.
+            <div class="success">
+                <strong>✅ Security Note:</strong> This keeps Row Level Security (RLS) enabled on the <code>fighter_profiles</code> table 
+                but adds permissive policies that allow both authenticated and anonymous users to read fighter profiles. 
+                This is the recommended approach - RLS stays enabled for security, but the policies allow public read access.
             </div>
 
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">

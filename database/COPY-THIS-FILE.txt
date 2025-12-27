@@ -1,0 +1,41 @@
+================================================================================
+🚨🚨🚨 STOP! READ THIS FIRST! 🚨🚨🚨
+================================================================================
+
+YOU ARE COPYING THE WRONG FILE!
+
+You tried to copy a .md file (markdown) into the SQL editor.
+SQL editors ONLY accept .sql files!
+
+================================================================================
+WHAT TO DO:
+================================================================================
+
+1. Close this file (this is just instructions)
+
+2. Open this file instead:
+   → 🚨-RUN-THIS-NOW.sql
+   (It ends with .sql, NOT .md!)
+
+3. Copy ALL content from 🚨-RUN-THIS-NOW.sql
+
+4. Paste it in Supabase SQL Editor
+
+5. Click "Run"
+
+================================================================================
+HOW TO TELL THE DIFFERENCE:
+================================================================================
+
+✅ CORRECT FILE: 🚨-RUN-THIS-NOW.sql
+   - Ends with .sql
+   - Starts with: -- ============================================================================
+   - Contains SQL code (GRANT, CREATE POLICY, etc.)
+
+❌ WRONG FILE: 🎯-OPEN-THIS-FIRST.md
+   - Ends with .md
+   - Starts with: # 🎯 OPEN THIS FIRST
+   - Contains instructions only
+
+================================================================================
+

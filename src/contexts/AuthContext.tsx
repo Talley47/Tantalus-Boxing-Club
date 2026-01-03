@@ -625,6 +625,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .single();
 
       if (error) {
+        // Handle column not found errors gracefully
+        if (error.code === 'PGRST204' || error.message?.includes('Could not find') || error.message?.includes('column') && error.message?.includes('schema cache')) {
+          // Column doesn't exist - remove it from update and retry
+          const missingColumnMatch = error.message?.match(/Could not find the '(\w+)' column/);
+          if (missingColumnMatch) {
+            const missingColumn = missingColumnMatch[1];
+            console.warn(`Column '${missingColumn}' does not exist in database, removing from update and retrying`);
+            delete cleanUpdates[missingColumn];
+            
+            // Retry without the missing column
+            const { data: retryData, error: retryError } = await supabase
+              .from('fighter_profiles')
+              .update(cleanUpdates)
+              .eq('user_id', fighterProfile.user_id)
+              .select()
+              .single();
+            
+            if (retryError) {
+              // If still error, log and throw
+              console.error('Supabase update error (after removing missing column):', retryError);
+              throw new Error(`Failed to update profile: ${retryError.message || 'Unknown error'}`);
+            }
+            
+            return retryData;
+          }
+        }
+        
         // Log detailed error information for debugging
         console.error('Supabase update error:', {
           message: error.message,

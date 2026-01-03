@@ -86,7 +86,6 @@ class NotificationService {
   }
 
   // Create a notification (used by backend triggers and services)
-  // Uses RPC function to bypass RLS policies
   async createNotification(
     userId: string,
     type: Notification['type'],
@@ -95,44 +94,32 @@ class NotificationService {
     actionUrl?: string
   ): Promise<Notification> {
     try {
-      // Use the RPC function (bypasses RLS because it uses SECURITY DEFINER)
+      // WORKAROUND: Convert invalid types to 'General' because database constraint is restrictive
+      // Database constraint only allows: Match, Tournament, Tier, Dispute, Award, General
+      // TODO: Update database constraint via Supabase Dashboard to include all types, then remove this
+      const allowedTypes = ['Match', 'Tournament', 'Tier', 'Dispute', 'Award', 'General'];
+      const dbType = allowedTypes.includes(type) ? type : 'General';
+
+      if (type !== dbType) {
+        console.warn(`Notification type '${type}' not allowed by database constraint, converting to 'General'`);
+      }
+
+      // Use direct insert only, as RPC function is not consistently available
       const { data, error } = await supabase
-        .rpc('create_notification_rpc', {
-          p_user_id: userId,
-          p_type: type,
-          p_title: title,
-          p_message: message,
-          p_action_url: actionUrl || null,
-        });
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          type: dbType,  // Use converted type
+          title,
+          message,
+          action_url: actionUrl,
+          is_read: false,
+        })
+        .select()
+        .single();
 
-      if (error) {
-        // If RPC function doesn't exist, fall back to direct insert
-        // This handles cases where the function hasn't been created yet
-        console.warn('RPC function failed, trying direct insert:', error);
-        
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: userId,
-            type,
-            title,
-            message,
-            action_url: actionUrl,
-            is_read: false,
-          })
-          .select()
-          .single();
-
-        if (fallbackError) throw fallbackError;
-        return fallbackData;
-      }
-
-      // RPC returns an array, get the first element
-      if (data && Array.isArray(data) && data.length > 0) {
-        return data[0] as Notification;
-      }
-
-      throw new Error('Failed to create notification: No data returned from RPC');
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Error creating notification:', error);
       throw error;
@@ -147,6 +134,14 @@ class NotificationService {
     actionUrl?: string
   ): Promise<void> {
     try {
+      // WORKAROUND: Convert invalid types to 'General' because database constraint is restrictive
+      const allowedTypes = ['Match', 'Tournament', 'Tier', 'Dispute', 'Award', 'General'];
+      const dbType = allowedTypes.includes(type) ? type : 'General';
+
+      if (type !== dbType) {
+        console.warn(`Notification type '${type}' not allowed by database constraint, converting to 'General'`);
+      }
+
       // Get all fighter user IDs
       const { data: fighters, error: fightersError } = await supabase
         .from('fighter_profiles')
@@ -156,10 +151,10 @@ class NotificationService {
 
       if (!fighters || fighters.length === 0) return;
 
-      // Create notifications for all fighters
+      // Create notifications for all fighters with converted type
       const notifications = fighters.map(fighter => ({
         user_id: fighter.user_id,
-        type,
+        type: dbType,  // Use converted type
         title,
         message,
         action_url: actionUrl,

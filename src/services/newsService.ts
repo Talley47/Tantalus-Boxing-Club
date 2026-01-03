@@ -58,16 +58,21 @@ export class NewsService {
     includeUnpublished: boolean = false
   ): Promise<NewsItem[]> {
     try {
+      // Check authentication status for diagnostics
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('🔐 Auth status for news query:', {
+        isAuthenticated: !!user,
+        userId: user?.id || 'none',
+        authError: authError?.message || 'none'
+      });
+
+      // WORKAROUND: Don't filter by is_published in database query - causes timeout
+      // Fetch more items and filter client-side instead
       let query = supabase
         .from('news_announcements')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (!includeUnpublished) {
-        // Try to filter by is_published, but handle gracefully if column doesn't exist
-        query = query.eq('is_published', true);
-      }
+        .limit(limit * 2); // Fetch more items to filter client-side
 
       if (type) {
         query = query.eq('type', type);
@@ -76,62 +81,88 @@ export class NewsService {
       const { data, error } = await query;
 
       if (error) {
-        // Log the error for debugging
-        console.error('Error fetching news items:', {
+        console.error('❌ Error fetching news items:', {
           message: error.message,
           code: error.code,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
+          isAuthenticated: !!user,
+          userId: user?.id || 'none'
         });
         
-        // If error is related to is_published column, try without it
-        if (error.message?.includes('is_published') || error.code === '42703' || error.code === 'PGRST116') {
-          console.warn('is_published column may not exist or RLS issue, retrying without filter');
-          let retryQuery = supabase
-            .from('news_announcements')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(limit);
-          
-          if (type) {
-            retryQuery = retryQuery.eq('type', type);
-          }
-          
-          const { data: retryData, error: retryError } = await retryQuery;
-          if (retryError) {
-            console.error('Error fetching news items (retry failed):', {
-              message: retryError.message,
-              code: retryError.code,
-              details: retryError.details,
-              hint: retryError.hint
-            });
-            return []; // Return empty array instead of throwing
-          }
-          
-          const newsWithFightResults = await Promise.all(
-            (retryData || []).map(async (item) => {
-              if (item.type === 'fight_result') {
-                try {
-                  const fightResults = await this.getFightResultsForNews(item.id);
-                  return { ...item, fight_results: fightResults };
-                } catch (e) {
-                  console.warn('Failed to fetch fight results for news item:', item.id);
-                  return item;
-                }
-              }
-              return item;
-            })
-          );
-          
-          return newsWithFightResults;
+        // Handle timeout specifically
+        if (error.code === '57014') { // Statement timeout
+          console.warn('⏱️ News items query timed out. Returning empty array.');
+          return [];
         }
-        console.error('Error fetching news items:', error);
-        return []; // Return empty array instead of throwing to prevent breaking the page
+        
+        // Handle RLS/permission errors
+        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+          console.error('🚫 RLS Policy Error - User may not have permission to read news_announcements');
+          console.error('   This usually means RLS policies need to be updated for authenticated users');
+          console.error('   Run the SQL script: database/🚨-URGENT-FIX-NEWS-RLS-AUTHENTICATED.sql');
+        }
+        
+        return [];
       }
+
+      // Diagnostic logging
+      console.log('📰 News query result:', {
+        totalFetched: data?.length || 0,
+        includeUnpublished,
+        isAuthenticated: !!user,
+        userId: user?.id || 'none',
+        sampleItems: (data || []).slice(0, 3).map(item => ({
+          id: item.id,
+          title: item.title,
+          is_published: item.is_published,
+          type: item.type
+        })),
+        allItemsPublished: (data || []).every(item => item.is_published === true),
+        allItemsUnpublished: (data || []).every(item => item.is_published === false),
+        publishedCount: (data || []).filter(item => item.is_published === true).length,
+        unpublishedCount: (data || []).filter(item => item.is_published === false).length,
+        nullPublishedCount: (data || []).filter(item => item.is_published === null || item.is_published === undefined).length
+      });
+
+      // Handle empty result set (might be RLS blocking authenticated users)
+      if ((!data || data.length === 0) && user) {
+        console.error('🚫 RLS POLICY ISSUE: No news items returned for authenticated user.');
+        console.error('   This means RLS is blocking access to news_announcements table.');
+        console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
+        console.error('   DROP POLICY IF EXISTS "Authenticated read published news" ON public.news_announcements;');
+        console.error('   CREATE POLICY "Authenticated read published news"');
+        console.error('   ON public.news_announcements FOR SELECT TO authenticated');
+        console.error('   USING (is_published IS NOT NULL AND is_published = TRUE);');
+        console.error('   Or run: database/🔧-SIMPLE-FIX-NEWS-RLS.sql');
+        return [];
+      }
+
+      // Client-side filter for published items if not including unpublished
+      // Handle NULL is_published as unpublished (safety check)
+      const filteredData = includeUnpublished
+        ? (data || [])
+        : (data || []).filter(item => {
+            const isPublished = item.is_published === true;
+            if (!isPublished && data && data.length > 0) {
+              console.log('🔍 Filtered out unpublished item:', {
+                id: item.id,
+                title: item.title,
+                is_published: item.is_published,
+                type: item.type
+              });
+            }
+            return isPublished;
+          });
+
+      console.log('✅ After filtering:', {
+        totalPublished: filteredData.length,
+        willReturn: Math.min(filteredData.length, limit)
+      });
 
       // Get fight results for fight_result type news
       const newsWithFightResults = await Promise.all(
-        (data || []).map(async (item) => {
+        filteredData.slice(0, limit).map(async (item) => { // Limit after client-side filter
           if (item.type === 'fight_result') {
             try {
               const fightResults = await this.getFightResultsForNews(item.id);

@@ -363,42 +363,71 @@ export class HomePageService {
   // Get news and announcements
   static async getNewsAndAnnouncements(limit: number = 10): Promise<NewsItem[]> {
     try {
+      // WORKAROUND: Don't filter by is_published in database query - causes timeout
+      // Fetch more items and filter client-side instead
       let query = supabase
         .from('news_announcements')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(limit);
-
-      // Filter by is_published if column exists
-      // This matches the pattern used in NewsService
-      query = query.eq('is_published', true);
+        .limit(limit * 2); // Fetch more items to filter client-side
 
       const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching news and announcements:', error);
-        
-        // If error is related to is_published column, try without it
-        if (error.message?.includes('is_published') || error.code === '42703' || error.code === 'PGRST116') {
-          console.warn('is_published column may not exist or RLS issue, retrying without filter');
-          const { data: retryData, error: retryError } = await supabase
-            .from('news_announcements')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(limit);
-          
-          if (retryError) {
-            console.error('Error fetching news (retry without filter):', retryError);
-            return [];
-          }
-          
-          return retryData || [];
+        // Handle timeout specifically
+        if (error.code === '57014') { // Statement timeout
+          console.warn('News and announcements query timed out. Returning empty array.');
+          return [];
         }
-        
         return [];
       }
 
-      return data || [];
+      // Diagnostic logging
+      console.log('📰 HomePage news query result:', {
+        totalFetched: data?.length || 0,
+        sampleItems: (data || []).slice(0, 3).map(item => ({
+          id: item.id,
+          title: item.title,
+          is_published: item.is_published,
+          type: item.type
+        }))
+      });
+
+      // Handle empty result set (might be RLS blocking authenticated users)
+      const { data: { user } } = await supabase.auth.getUser();
+      if ((!data || data.length === 0) && user) {
+        console.error('🚫 RLS POLICY ISSUE: No news items returned for authenticated user.');
+        console.error('   This means RLS is blocking access to news_announcements table.');
+        console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
+        console.error('   DROP POLICY IF EXISTS "Authenticated read published news" ON public.news_announcements;');
+        console.error('   CREATE POLICY "Authenticated read published news"');
+        console.error('   ON public.news_announcements FOR SELECT TO authenticated');
+        console.error('   USING (is_published IS NOT NULL AND is_published = TRUE);');
+        console.error('   Or run: database/🔧-SIMPLE-FIX-NEWS-RLS.sql');
+        return [];
+      }
+
+      // Client-side filter for published items
+      // Handle NULL is_published as unpublished (safety check)
+      const filteredData = (data || []).filter(item => {
+        const isPublished = item.is_published === true;
+        if (!isPublished && data && data.length > 0) {
+          console.log('🔍 Filtered out unpublished item:', {
+            id: item.id,
+            title: item.title,
+            is_published: item.is_published
+          });
+        }
+        return isPublished;
+      });
+
+      console.log('✅ After filtering:', {
+        totalPublished: filteredData.length,
+        willReturn: Math.min(filteredData.length, limit)
+      });
+
+      return filteredData.slice(0, limit); // Limit after client-side filter
     } catch (error) {
       console.error('Error in getNewsAndAnnouncements:', error);
       return [];

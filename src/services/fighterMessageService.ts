@@ -33,7 +33,7 @@ class FighterMessageService {
   // Get all conversations for the current fighter
   async getConversations(fighterId: string): Promise<Conversation[]> {
     try {
-      // Get all unique conversations (both sent and received)
+      // Fetch messages without FK joins (PostgREST can't auto-detect the FK relationship)
       const { data: messages, error } = await supabase
         .from('fighter_direct_messages')
         .select(`
@@ -43,21 +43,32 @@ class FighterMessageService {
           message,
           read_at,
           created_at,
-          sender:fighter_profiles!fighter_direct_messages_sender_id_fkey(
-            user_id,
-            name,
-            handle
-          ),
-          recipient:fighter_profiles!fighter_direct_messages_recipient_id_fkey(
-            user_id,
-            name,
-            handle
-          )
+          updated_at
         `)
         .or(`sender_id.eq.${fighterId},recipient_id.eq.${fighterId}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Get unique user IDs from messages
+      const userIds = new Set<string>();
+      (messages || []).forEach((msg: any) => {
+        userIds.add(msg.sender_id);
+        userIds.add(msg.recipient_id);
+      });
+
+      // Fetch all fighter profiles at once
+      const { data: profiles, error: profilesError } = await supabase
+        .from('fighter_profiles')
+        .select('user_id, name, handle')
+        .in('user_id', Array.from(userIds));
+
+      if (profilesError) throw profilesError;
+
+      // Create a map for quick profile lookup
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, p])
+      );
 
       // Group messages by conversation partner
       const conversationsMap = new Map<string, Conversation>();
@@ -67,19 +78,17 @@ class FighterMessageService {
           ? msg.recipient_id 
           : msg.sender_id;
         
-        const otherFighter = msg.sender_id === fighterId
-          ? msg.recipient
-          : msg.sender;
+        const otherFighterProfile = profileMap.get(otherFighterId);
 
-        if (!otherFighter) return;
+        if (!otherFighterProfile) return; // Skip if profile not found
 
         const conversationKey = otherFighterId;
 
         if (!conversationsMap.has(conversationKey)) {
           conversationsMap.set(conversationKey, {
             other_fighter_id: otherFighterId,
-            other_fighter_name: otherFighter.name || 'Unknown',
-            other_fighter_handle: otherFighter.handle || 'unknown',
+            other_fighter_name: otherFighterProfile.name || 'Unknown',
+            other_fighter_handle: otherFighterProfile.handle || 'unknown',
             unread_count: 0,
             last_message_time: msg.created_at,
           });
@@ -97,10 +106,10 @@ class FighterMessageService {
             read_at: msg.read_at,
             created_at: msg.created_at,
             updated_at: msg.updated_at || msg.created_at,
-            sender_name: msg.sender?.name,
-            sender_handle: msg.sender?.handle,
-            recipient_name: msg.recipient?.name,
-            recipient_handle: msg.recipient?.handle,
+            sender_name: profileMap.get(msg.sender_id)?.name,
+            sender_handle: profileMap.get(msg.sender_id)?.handle,
+            recipient_name: profileMap.get(msg.recipient_id)?.name,
+            recipient_handle: profileMap.get(msg.recipient_id)?.handle,
           };
           conversation.last_message_time = msg.created_at;
         }

@@ -92,8 +92,16 @@ export const getOverallRankings = async (limit: number = 1000): Promise<RankingE
     const rankings = await calculateRankingsWithTiebreakers(filteredFighters, fightRecords || []);
 
     return rankings;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching overall rankings:', error);
+    
+    // Check for RLS/permission errors
+    if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+      console.error('🚫 RLS Policy Error - User may not have permission to read fighter_profiles');
+      console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
+      console.error('   File: database/COPY-THIS-AND-RUN.sql');
+    }
+    
     return [];
   }
 };

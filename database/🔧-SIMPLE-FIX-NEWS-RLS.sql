@@ -22,17 +22,5 @@ USING (
   AND is_published = TRUE
 );
 
--- Verify the policy was created
-SELECT 
-  '✅ Policy Created' as status,
-  policyname,
-  cmd as command,
-  roles,
-  qual as using_clause
-FROM pg_policies
-WHERE schemaname = 'public'
-  AND tablename = 'news_announcements'
-  AND cmd = 'SELECT'
-  AND 'authenticated' = ANY(roles::text[])
-ORDER BY policyname;
+-- ✅ Policy created! Logged-in users can now see published news.
 

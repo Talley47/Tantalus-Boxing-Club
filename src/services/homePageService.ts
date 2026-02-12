@@ -81,7 +81,6 @@ export class HomePageService {
         .from('fighter_profiles')
         .select('id, user_id, name')
         .limit(5);
-      
       console.log('🔍 DIAGNOSTIC QUERY RESULT:', {
         canSeeAnyData: !!diagnosticData && diagnosticData.length > 0,
         rowCount: diagnosticData?.length || 0,
@@ -164,6 +163,7 @@ export class HomePageService {
 
       // Filter out admin users from raw data before mapping
       const filteredData = await filterAdminFighters(data);
+      console.log(`✅ After admin filter: ${filteredData.length} fighters (removed ${data.length - filteredData.length} admins)`);
 
       // Fetch championship belts for all fighters
       const fighterUserIds = filteredData.map(f => f.user_id).filter(Boolean);
@@ -363,15 +363,13 @@ export class HomePageService {
   // Get news and announcements
   static async getNewsAndAnnouncements(limit: number = 10): Promise<NewsItem[]> {
     try {
-      // WORKAROUND: Don't filter by is_published in database query - causes timeout
+      // WORKAROUND: Don't filter by is_published in database query - causes timeout/RLS issues
       // Fetch more items and filter client-side instead
-      let query = supabase
+      const { data, error } = await supabase
         .from('news_announcements')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit * 2); // Fetch more items to filter client-side
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching news and announcements:', error);
@@ -379,6 +377,13 @@ export class HomePageService {
         if (error.code === '57014') { // Statement timeout
           console.warn('News and announcements query timed out. Returning empty array.');
           return [];
+        }
+        // Handle RLS/permission errors
+        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+          console.error('🚫 RLS POLICY ISSUE: No news items returned for authenticated user.');
+          console.error('   This means RLS is blocking access to news_announcements table.');
+          console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
+          console.error('   File: database/🔧-SIMPLE-FIX-NEWS-RLS.sql');
         }
         return [];
       }
@@ -394,40 +399,19 @@ export class HomePageService {
         }))
       });
 
-      // Handle empty result set (might be RLS blocking authenticated users)
-      const { data: { user } } = await supabase.auth.getUser();
-      if ((!data || data.length === 0) && user) {
-        console.error('🚫 RLS POLICY ISSUE: No news items returned for authenticated user.');
-        console.error('   This means RLS is blocking access to news_announcements table.');
-        console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
-        console.error('   DROP POLICY IF EXISTS "Authenticated read published news" ON public.news_announcements;');
-        console.error('   CREATE POLICY "Authenticated read published news"');
-        console.error('   ON public.news_announcements FOR SELECT TO authenticated');
-        console.error('   USING (is_published IS NOT NULL AND is_published = TRUE);');
-        console.error('   Or run: database/🔧-SIMPLE-FIX-NEWS-RLS.sql');
-        return [];
-      }
+      // Note: If data is empty, we'll continue and return empty array after filtering
+      // This allows the UI to handle empty state gracefully
 
       // Client-side filter for published items
-      // Handle NULL is_published as unpublished (safety check)
-      const filteredData = (data || []).filter(item => {
-        const isPublished = item.is_published === true;
-        if (!isPublished && data && data.length > 0) {
-          console.log('🔍 Filtered out unpublished item:', {
-            id: item.id,
-            title: item.title,
-            is_published: item.is_published
-          });
-        }
-        return isPublished;
+      const publishedData = (data || []).filter(item => item.is_published === true);
+
+      console.log('✅ News items fetched:', {
+        totalFetched: data?.length || 0,
+        totalPublished: publishedData.length,
+        willReturn: Math.min(publishedData.length, limit)
       });
 
-      console.log('✅ After filtering:', {
-        totalPublished: filteredData.length,
-        willReturn: Math.min(filteredData.length, limit)
-      });
-
-      return filteredData.slice(0, limit); // Limit after client-side filter
+      return publishedData.slice(0, limit);
     } catch (error) {
       console.error('Error in getNewsAndAnnouncements:', error);
       return [];

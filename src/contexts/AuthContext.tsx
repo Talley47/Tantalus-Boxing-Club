@@ -195,21 +195,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (error) {
-        // Don't log "User already registered" as an error - it's expected and user-friendly
-        // Only log unexpected errors
+        // Don't log expected errors - they're user-friendly or rate limits
+        const errorMsgLower = error.message?.toLowerCase() || '';
         const isExpectedError = 
-          error.message?.toLowerCase().includes('already registered') ||
-          error.message?.toLowerCase().includes('user already registered') ||
-          error.message?.toLowerCase().includes('email already registered');
+          errorMsgLower.includes('already registered') ||
+          errorMsgLower.includes('user already registered') ||
+          errorMsgLower.includes('email already registered') ||
+          error.status === 429 ||
+          errorMsgLower.includes('rate limit');
         
         if (!isExpectedError) {
           console.error('Supabase auth error:', error);
+        } else if (error.status === 429 || errorMsgLower.includes('rate limit')) {
+          console.log('⚠️ Rate limit detected in AuthContext - will be handled in RegisterPage');
         }
         
         // Create a more user-friendly error message
+        // Preserve the status code for proper error handling downstream
         const friendlyError = new Error(error.message);
         (friendlyError as any).status = error.status;
         (friendlyError as any).code = error.status;
+        // Also preserve the original error object for detailed inspection
+        (friendlyError as any).originalError = error;
         throw friendlyError;
       }
 
@@ -238,7 +245,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             existingProfile.height_inches === 8 || 
             existingProfile.weight === 150 || 
             existingProfile.reach === 70 ||
-            !existingProfile.fighterName || existingProfile.name === 'Fighter';
+            !existingProfile.name || existingProfile.name === 'Fighter';
           
           if (needsUpdate) {
             console.log('Fighter profile missing or has defaults. Creating/updating with registration data...');
@@ -284,28 +291,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 .eq('user_id', data.user.id);
               
               if (updateError) {
-                console.error('Error updating fighter profile:', updateError);
+                const errorDetails = {
+                  error: updateError,
+                  code: updateError.code,
+                  message: updateError.message,
+                  details: updateError.details,
+                  hint: updateError.hint,
+                  profileData: profileData
+                };
+                console.error('❌ Error updating fighter profile:', errorDetails);
+                // Throw error so it can be caught and displayed to user
+                const errorMessage = updateError.message || updateError.code || 'Unknown error';
+                const errorHint = updateError.hint ? ` ${updateError.hint}` : '';
+                throw new Error(`Failed to update fighter profile: ${errorMessage}${errorHint}`);
               } else {
-                console.log('Fighter profile updated successfully with registration data');
+                console.log('✅ Fighter profile updated successfully with registration data');
               }
             } else {
               // Create new profile
-              const { error: insertError } = await supabase
+              const { data: insertedProfile, error: insertError } = await supabase
                 .from('fighter_profiles')
-                .insert(profileData);
+                .insert(profileData)
+                .select()
+                .single();
               
               if (insertError) {
-                console.error('Error creating fighter profile:', insertError);
+                const errorDetails = {
+                  error: insertError,
+                  code: insertError.code,
+                  message: insertError.message,
+                  details: insertError.details,
+                  hint: insertError.hint,
+                  profileData: profileData,
+                  userId: data.user.id,
+                  authUid: (await supabase.auth.getUser()).data.user?.id
+                };
+                console.error('❌ Error creating fighter profile:', errorDetails);
+                
+                // Check for RLS/permission errors specifically
+                if (insertError.code === '42501' || insertError.message?.includes('permission') || insertError.message?.includes('policy') || insertError.message?.includes('RLS')) {
+                  console.error('🚫 RLS POLICY ERROR: User may not have permission to INSERT into fighter_profiles');
+                  console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
+                  console.error('   File: database/🔧-FIX-FIGHTER-PROFILE-INSERT-RLS.sql');
+                  throw new Error(`Permission denied: Cannot create fighter profile. This is likely an RLS policy issue. Please contact support or run the SQL fix script.`);
+                }
+                
+                // Throw error so it can be caught and displayed to user
+                const errorMessage = insertError.message || insertError.code || 'Unknown error';
+                const errorHint = insertError.hint ? ` ${insertError.hint}` : '';
+                throw new Error(`Failed to create fighter profile: ${errorMessage}${errorHint}`);
               } else {
-                console.log('Fighter profile created successfully with registration data');
+                console.log('✅ Fighter profile created successfully:', insertedProfile);
               }
             }
           } else {
             console.log('Fighter profile already exists with correct data');
           }
         } catch (profileError: any) {
-          console.error('Error ensuring fighter profile:', profileError);
-          // Don't fail registration - profile can be created later
+          console.error('❌ Error ensuring fighter profile:', profileError);
+          // Re-throw the error so registration form can display it
+          // This allows user to see what went wrong while still having an account
+          throw profileError;
         }
       }
       

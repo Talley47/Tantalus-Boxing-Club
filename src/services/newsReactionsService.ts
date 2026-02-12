@@ -26,6 +26,30 @@ export class NewsReactionsService {
         p_news_id: newsId,
       });
 
+      // If RPC function doesn't exist (404/PGRST202), fallback to direct query
+      if (error && (error.code === 'PGRST202' || error.code === '42883' || error.message?.includes('404') || error.message?.includes('not found'))) {
+        console.warn('RPC function get_news_reaction_counts not found, using direct query fallback');
+        
+        // Fallback: Query news_reactions table directly
+        const { data: reactions, error: queryError } = await supabase
+          .from('news_reactions')
+          .select('reaction_type')
+          .eq('news_id', newsId);
+
+        if (queryError) {
+          console.error('Error fetching reactions (fallback):', queryError);
+          return {};
+        }
+
+        // Count reactions by type
+        const counts: ReactionCounts = {};
+        (reactions || []).forEach((reaction: { reaction_type: ReactionType }) => {
+          counts[reaction.reaction_type] = (counts[reaction.reaction_type] || 0) + 1;
+        });
+
+        return counts;
+      }
+
       if (error) throw error;
 
       const counts: ReactionCounts = {};
@@ -49,6 +73,26 @@ export class NewsReactionsService {
         p_news_id: newsId,
         p_user_id: userId,
       });
+
+      // If RPC function doesn't exist (404/PGRST202), fallback to direct query
+      if (error && (error.code === 'PGRST202' || error.code === '42883' || error.message?.includes('404') || error.message?.includes('not found'))) {
+        console.warn('RPC function get_user_news_reaction not found, using direct query fallback');
+        
+        // Fallback: Query news_reactions table directly
+        const { data: reaction, error: queryError } = await supabase
+          .from('news_reactions')
+          .select('reaction_type')
+          .eq('news_id', newsId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (queryError) {
+          console.error('Error fetching user reaction (fallback):', queryError);
+          return null;
+        }
+
+        return reaction?.reaction_type || null;
+      }
 
       if (error) throw error;
 

@@ -66,7 +66,7 @@ export class NewsService {
         authError: authError?.message || 'none'
       });
 
-      // WORKAROUND: Don't filter by is_published in database query - causes timeout
+      // WORKAROUND: Don't filter by is_published in database query - causes timeout/RLS issues
       // Fetch more items and filter client-side instead
       let query = supabase
         .from('news_announcements')
@@ -125,44 +125,24 @@ export class NewsService {
         nullPublishedCount: (data || []).filter(item => item.is_published === null || item.is_published === undefined).length
       });
 
-      // Handle empty result set (might be RLS blocking authenticated users)
-      if ((!data || data.length === 0) && user) {
-        console.error('🚫 RLS POLICY ISSUE: No news items returned for authenticated user.');
-        console.error('   This means RLS is blocking access to news_announcements table.');
-        console.error('   FIX: Run this SQL in Supabase Dashboard → SQL Editor:');
-        console.error('   DROP POLICY IF EXISTS "Authenticated read published news" ON public.news_announcements;');
-        console.error('   CREATE POLICY "Authenticated read published news"');
-        console.error('   ON public.news_announcements FOR SELECT TO authenticated');
-        console.error('   USING (is_published IS NOT NULL AND is_published = TRUE);');
-        console.error('   Or run: database/🔧-SIMPLE-FIX-NEWS-RLS.sql');
-        return [];
-      }
+      // Note: If data is empty, we'll continue and return empty array after filtering
+      // This allows the UI to handle empty state gracefully
 
       // Client-side filter for published items if not including unpublished
       // Handle NULL is_published as unpublished (safety check)
       const filteredData = includeUnpublished
         ? (data || [])
-        : (data || []).filter(item => {
-            const isPublished = item.is_published === true;
-            if (!isPublished && data && data.length > 0) {
-              console.log('🔍 Filtered out unpublished item:', {
-                id: item.id,
-                title: item.title,
-                is_published: item.is_published,
-                type: item.type
-              });
-            }
-            return isPublished;
-          });
+        : (data || []).filter(item => item.is_published === true);
 
-      console.log('✅ After filtering:', {
-        totalPublished: filteredData.length,
+      console.log('✅ News items fetched:', {
+        totalFetched: filteredData.length,
+        includeUnpublished,
         willReturn: Math.min(filteredData.length, limit)
       });
 
       // Get fight results for fight_result type news
       const newsWithFightResults = await Promise.all(
-        filteredData.slice(0, limit).map(async (item) => { // Limit after client-side filter
+        filteredData.slice(0, limit).map(async (item) => {
           if (item.type === 'fight_result') {
             try {
               const fightResults = await this.getFightResultsForNews(item.id);

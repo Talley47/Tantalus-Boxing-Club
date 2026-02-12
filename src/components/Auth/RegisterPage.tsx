@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -66,6 +66,9 @@ const RegisterPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Ref to prevent double submission (more reliable than just loading state)
+  const isSubmittingRef = useRef(false);
   
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -201,26 +204,32 @@ const RegisterPage = () => {
 
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
-    console.log('handleSubmit called', { 
-      e, 
-      activeStep,
-      formData: {
-        ...formData,
-        reach: formData.reach,
-        reachType: typeof formData.reach,
-        reachLength: formData.reach?.toString().length
-      }
-    });
+    // Always prevent default form behavior
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
+    
+    // Prevent double submission using ref (more reliable than loading state)
+    if (isSubmittingRef.current || loading) {
+      console.log('⚠️ Submission already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    // Set submission lock immediately
+    isSubmittingRef.current = true;
     setLoading(true);
     setError('');
 
-    if (!validateStep2()) {
-      console.log('Validation failed');
+    // Validate step 2
+    const isValid = validateStep2();
+    console.log('✅ Validation result:', isValid);
+    
+    if (!isValid) {
+      console.log('❌ Validation failed - check error message above');
+      isSubmittingRef.current = false;
       setLoading(false);
+      // Error message should already be set by validateStep2()
       return;
     }
     
@@ -231,6 +240,7 @@ const RegisterPage = () => {
       const trimmedEmail = formData.email.trim().toLowerCase();
       if (!trimmedEmail || !trimmedEmail.includes('@')) {
         setError('Please enter a valid email address');
+        isSubmittingRef.current = false;
         setLoading(false);
         return;
       }
@@ -288,34 +298,158 @@ const RegisterPage = () => {
         birthday: userData.birthday
       });
       
-      await signUp(trimmedEmail, formData.password, userData);
+      console.log('📤 Calling signUp with:', { email: trimmedEmail, userData });
       
-      // Registration successful - redirect to login page with success message
-      const successMessage = encodeURIComponent('Account created successfully! Please check your email to verify your account, then login.');
-      navigate(`/login?message=${successMessage}`);
+      try {
+        await signUp(trimmedEmail, formData.password, userData);
+        console.log('✅ signUp completed successfully');
+        
+        // Registration successful - redirect to login page with success message
+        const successMessage = encodeURIComponent('Account created successfully! Please check your email to verify your account, then login.');
+        navigate(`/login?message=${successMessage}`);
+      } catch (signUpError: any) {
+        console.error('❌ signUp threw an error:', signUpError);
+        // Re-throw to be caught by outer catch block
+        throw signUpError;
+      }
     } catch (err: any) {
-      // Check for specific error codes and messages
-      const errorMessage = err.message || '';
-      const errorCode = err.status || err.code || '';
+      console.error('🔵 CATCH BLOCK REACHED - Error caught in outer catch block');
+      console.error('🔵 Raw error object:', err);
+      console.error('🔵 Error keys:', Object.keys(err || {}));
+      console.error('🔵 Error status:', err?.status);
+      console.error('🔵 Error code:', err?.code);
+      console.error('🔵 Error message:', err?.message);
+      
+      // Extract error information - handle multiple error object structures
+      // Check both direct properties and nested error object
+      const errorMessage = err?.message || (err as any)?.error?.message || (err as any)?.toString?.() || String(err || 'Unknown error occurred');
+      
+      // IMMEDIATE check for rate limit in error message (before extracting status code)
+      const errorMsgLower = errorMessage.toLowerCase();
+      if (errorMsgLower.includes('rate limit') || errorMsgLower.includes('email rate limit') || errorMsgLower.includes('429')) {
+        const rateLimitMessage = 'Too many registration attempts. Please wait a few minutes before trying again. Supabase limits email sending to prevent spam.';
+        console.error('🚫 RATE LIMIT DETECTED IMMEDIATELY (by message):', rateLimitMessage);
+        console.error('🔍 Error message was:', errorMessage);
+        setError(rateLimitMessage);
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      // Try multiple ways to get the status code
+      let errorCode = err?.status || err?.code;
+      if (!errorCode && (err as any)?.error) {
+        errorCode = (err as any).error.status || (err as any).error.code;
+      }
+      // Also check originalError if it exists
+      if (!errorCode && (err as any)?.originalError) {
+        errorCode = (err as any).originalError.status || (err as any).originalError.code;
+      }
+      // If still no code, try to extract from error message or check for common patterns
+      if (!errorCode && errorMessage) {
+        // Check if message contains status codes
+        const statusMatch = errorMessage.match(/\b(429|401|422|500)\b/);
+        if (statusMatch) {
+          errorCode = parseInt(statusMatch[1], 10);
+        }
+      }
+      
+      const errorCodeNum = typeof errorCode === 'number' ? errorCode : (errorCode ? parseInt(String(errorCode), 10) : NaN);
+      const errorCodeStr = String(errorCode || '');
+      
+      // IMMEDIATE rate limit check - check status code first before anything else
+      if (errorCodeNum === 429 || errorCodeStr === '429') {
+        const rateLimitMessage = 'Too many registration attempts. Please wait a few minutes before trying again. Supabase limits email sending to prevent spam.';
+        console.error('🚫 RATE LIMIT DETECTED IMMEDIATELY (by status code):', rateLimitMessage);
+        setError(rateLimitMessage);
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      // Debug: Log the error structure to help diagnose
+      console.error('🔍 Error object structure:', {
+        err,
+        message: err?.message,
+        status: err?.status,
+        code: err?.code,
+        errorMessage,
+        errorCode,
+        errorCodeNum,
+        errorCodeStr
+      });
+      
+      // Check for rate limit FIRST (most common issue during testing)
+      // Note: We already checked the message above, but check again with status code
+      const isRateLimit = 
+        errorCodeNum === 429 || 
+        errorCodeStr === '429' || 
+        errorMsgLower.includes('rate limit') || 
+        errorMsgLower.includes('too many requests') ||
+        errorMsgLower.includes('email rate limit') ||
+        errorMsgLower.includes('rate limit exceeded') ||
+        errorMsgLower.includes('429') ||
+        (errorMsgLower.includes('exceeded') && errorMsgLower.includes('rate'));
+      
+      console.error('🔍 Rate limit check:', {
+        isRateLimit,
+        errorCodeNum,
+        errorCodeStr,
+        errorMsgLower,
+        checks: {
+          codeNum429: errorCodeNum === 429,
+          codeStr429: errorCodeStr === '429',
+          includesRateLimit: errorMsgLower.includes('rate limit'),
+          includesTooMany: errorMsgLower.includes('too many requests'),
+          includesEmailRateLimit: errorMsgLower.includes('email rate limit')
+        }
+      });
+      
+      if (isRateLimit) {
+        const rateLimitMessage = 'Too many registration attempts. Please wait a few minutes before trying again. Supabase limits email sending to prevent spam.';
+        console.error('🚫 RATE LIMIT DETECTED:', rateLimitMessage);
+        console.error('🔍 Detection details:', { 
+          errorCodeNum, 
+          errorCodeStr, 
+          errorMessage,
+          errorCode,
+          isRateLimit 
+        });
+        setError(rateLimitMessage);
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      // Log other errors for debugging
+      console.error('❌ Registration error caught:', {
+        error: err,
+        message: errorMessage,
+        code: errorCode,
+        status: err?.status,
+        codeNum: errorCodeNum,
+        codeStr: errorCodeStr
+      });
       
       // Don't log expected errors like "User already registered" - they're user-friendly
       const isExpectedError = 
-        errorMessage.toLowerCase().includes('already registered') ||
-        errorMessage.toLowerCase().includes('user already registered') ||
-        errorMessage.toLowerCase().includes('email already registered') ||
-        (errorCode === '422' && errorMessage.toLowerCase().includes('already'));
+        errorMsgLower.includes('already registered') ||
+        errorMsgLower.includes('user already registered') ||
+        errorMsgLower.includes('email already registered') ||
+        (errorCodeNum === 422 && errorMsgLower.includes('already'));
       
       if (!isExpectedError) {
-        console.error('Registration error:', err);
+        console.error('❌ Unexpected registration error:', err);
       }
       
-      if (errorMessage.includes('Invalid API key') || errorCode === '401') {
+      // Handle other error types
+      if (errorMessage.includes('Invalid API key') || errorCodeNum === 401 || errorCodeStr === '401') {
         setError('Supabase configuration error. Please check your environment variables.');
       } else if (
         errorMessage.includes('duplicate key') || 
         errorMessage.includes('already registered') || 
         errorMessage.includes('User already registered') ||
-        errorCode === '422' && errorMessage.includes('already')
+        (errorCodeNum === 422 && errorMessage.includes('already'))
       ) {
         setError('An account with this email already exists. Please try logging in instead, or use a different email address.');
       } else if (errorMessage.includes('violates foreign key')) {
@@ -324,12 +458,21 @@ const RegisterPage = () => {
         setError('Password must be at least 12 characters long. Please choose a stronger password.');
       } else if (errorMessage.includes('invalid format') || errorMessage.includes('Unable to validate email')) {
         setError('Please enter a valid email address. Make sure it includes @ and a domain name.');
-      } else if (errorCode === '422') {
+      } else if (errorMessage.includes('Failed to create fighter profile') || errorMessage.includes('Failed to update fighter profile')) {
+        // Profile creation failed but account was created
+        setError(`Account created successfully, but fighter profile creation failed: ${errorMessage}. Please try logging in and creating your profile manually.`);
+        console.error('⚠️ Profile creation failed - account exists but profile does not');
+      } else if (errorCodeNum === 422 || errorCodeStr === '422') {
         setError('Unable to create account. This email may already be registered. Please try logging in or use a different email.');
       } else {
-        setError(errorMessage || 'Failed to create account. Please check your internet connection and try again.');
+        // Always show the error message to the user
+        const displayMessage = errorMessage || 'Failed to create account. Please check your internet connection and try again.';
+        setError(displayMessage);
+        console.error('❌ Registration failed with error:', displayMessage);
       }
     } finally {
+      // Always reset submission lock and loading state
+      isSubmittingRef.current = false;
       setLoading(false);
     }
   };
@@ -424,7 +567,15 @@ const RegisterPage = () => {
 
       case 1:
         return (
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+          <Box 
+            component="form" 
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit(e);
+            }} 
+            sx={{ mt: 1, width: '100%' }}
+          >
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}

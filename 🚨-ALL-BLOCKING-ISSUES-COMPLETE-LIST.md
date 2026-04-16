@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-01-23)** — this doc is kept for history only. See [`BLOCKERS_TODAY.md`](./BLOCKERS_TODAY.md) for the current state and the audit-first playbook.
+
 # 🚨 COMPLETE LIST OF ALL BLOCKING ISSUES
 ## Tantalus Boxing Club Application - Comprehensive Scan
 

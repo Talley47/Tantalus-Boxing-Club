@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-01-23)** — this doc is kept for history only. Most of the Jan-16 issues have been resolved; see [`BLOCKERS_TODAY.md`](./BLOCKERS_TODAY.md) for the current state.
+
 # 🚨 BLOCKING ISSUES REPORT
 ## Tantalus Boxing Club - Next.js Application
 

@@ -1,0 +1,41 @@
+{
+  "name": "Tantalus Boxing Club",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "React dev server",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "git config --global --add safe.directory \"${containerWorkspaceFolder}\"",
+  "remoteEnv": {
+    "AUTO_COMMIT_DEBOUNCE_MS": "5000",
+    "AUTO_COMMIT_BRANCH": "main",
+    "AUTO_COMMIT_REMOTE": "origin"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "github.vscode-pull-request-github"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.autoSave": "afterDelay",
+        "files.autoSaveDelay": 1000
+      }
+    },
+    "codespaces": {
+      "openFiles": [
+        "AUTO_COMMIT_SETUP.md"
+      ]
+    }
+  }
+}

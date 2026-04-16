@@ -1282,9 +1282,30 @@ const FighterProfile: React.FC = () => {
       
       setIsEditing(false);
       setCreativeFighterImageFile(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      setError('Failed to update profile. Please try again.');
+      const rawMessage: string =
+        error?.message || error?.error_description || error?.hint || 'Unknown error';
+
+      let friendly = `Failed to update profile: ${rawMessage}`;
+      if (/row-level security|RLS|policy|permission denied/i.test(rawMessage)) {
+        friendly =
+          'Update blocked by the database security policy (RLS). You can only update your own fighter profile while signed in. ' +
+          `Details: ${rawMessage}`;
+      } else if (/check constraint/i.test(rawMessage)) {
+        friendly =
+          'Update rejected by a database check constraint. One of your values (for example stance, tier, or weight class) is not allowed. ' +
+          `Details: ${rawMessage}`;
+      } else if (/Could not find.*column|column.*schema cache/i.test(rawMessage)) {
+        friendly =
+          'Update tried to write a column that does not exist in the database. Run the schema audit and reconcile the missing column. ' +
+          `Details: ${rawMessage}`;
+      } else if (/JWT|auth|not authenticated/i.test(rawMessage)) {
+        friendly =
+          'Your session has expired or is missing. Sign out and back in, then retry. ' +
+          `Details: ${rawMessage}`;
+      }
+      setError(friendly);
     } finally {
       setLoading(false);
       setUploadingCreativeFighterImage(false);
